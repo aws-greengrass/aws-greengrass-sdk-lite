@@ -76,6 +76,16 @@
 #endif
 
 #ifdef __has_attribute
+#if __has_attribute(nonnull_if_nonzero)
+#define NONNULL_IF_NONZERO(...) __attribute__((nonnull_if_nonzero(__VA_ARGS__)))
+#endif
+#endif
+
+#ifndef NONNULL_IF_NONZERO
+#define NONNULL_IF_NONZERO(...)
+#endif
+
+#ifdef __has_attribute
 #if __has_attribute(null_terminated_string_arg)
 #define NULL_TERMINATED_STRING_ARG(pos) \
     __attribute__((null_terminated_string_arg(pos)))
