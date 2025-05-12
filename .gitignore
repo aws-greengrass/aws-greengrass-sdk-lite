@@ -1,0 +1,9 @@
+build/
+build-*/
+run/
+.direnv/
+.cache/
+idir/
+result
+result-*
+compile_commands.json

@@ -35,7 +35,7 @@
 struct timespec;
 
 /// Maximum size of eventstream packet.
-/// Can be configured with `-DGGL_IPC_MAX_MSG_LEN=<N>`.
+/// Can be configured with `-D GGL_IPC_MAX_MSG_LEN=<N>`.
 #ifndef GGL_IPC_MAX_MSG_LEN
 #define GGL_IPC_MAX_MSG_LEN 10000
 #endif
