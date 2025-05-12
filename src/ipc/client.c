@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <ggl/arena.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/cleanup.h>
 #include <ggl/error.h>
@@ -15,6 +16,7 @@
 #include <ggl/flags.h>
 #include <ggl/io.h>
 #include <ggl/ipc/client.h>
+#include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/error.h>
 #include <ggl/json_decode.h>
 #include <ggl/json_encode.h>
@@ -35,6 +37,13 @@
 
 static uint8_t payload_array[GGL_IPC_MAX_MSG_LEN];
 static pthread_mutex_t payload_array_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+static GglError send_message(
+    int conn,
+    const EventStreamHeader *headers,
+    size_t headers_len,
+    GglMap *payload
+) NONNULL_IF_NONZERO(2, 5);
 
 static GglError send_message(
     int conn,
@@ -113,8 +122,8 @@ static GglError get_message(
     return GGL_ERR_OK;
 }
 
-GglError ggipc_connect_by_name(
-    GglBuffer socket_path, GglBuffer component_name, GglBuffer *svcuid, int *fd
+GglError ggipc_connect_with_payload(
+    GglBuffer socket_path, GglMap payload, int *fd, GglBuffer *svcuid
 ) {
     int conn = -1;
     GglError ret = ggl_connect(socket_path, &conn);
@@ -132,10 +141,6 @@ GglError ggipc_connect_by_name(
           { EVENTSTREAM_STRING, .string = GGL_STR("0.1.0") } },
     };
     size_t headers_len = sizeof(headers) / sizeof(headers[0]);
-
-    GglMap payload
-        = GGL_MAP(ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))
-        );
 
     ret = send_message(conn, headers, headers_len, &payload);
     if (ret != GGL_ERR_OK) {
@@ -168,6 +173,18 @@ GglError ggipc_connect_by_name(
         GGL_LOGW("Eventstream connection ack has unexpected payload.");
     }
 
+    if (svcuid == NULL) {
+        conn_cleanup = -1;
+        *fd = conn;
+
+        return GGL_ERR_OK;
+    }
+
+    if (svcuid->len < GGL_IPC_SVCUID_STR_LEN) {
+        GGL_LOGE("Insufficient buffer space provided for svcuid.");
+        return GGL_ERR_NOMEM;
+    }
+
     EventStreamHeaderIter iter = msg.headers;
     EventStreamHeader header;
 
@@ -178,24 +195,18 @@ GglError ggipc_connect_by_name(
                 return GGL_ERR_INVALID;
             }
 
-            if (svcuid != NULL) {
-                if (svcuid->len < header.value.string.len) {
-                    GGL_LOGE("Insufficient buffer space for svcuid.");
-                    return GGL_ERR_NOMEM;
-                }
-
-                memcpy(
-                    svcuid->data,
-                    header.value.string.data,
-                    header.value.string.len
-                );
-                svcuid->len = header.value.string.len;
+            if (svcuid->len < header.value.string.len) {
+                GGL_LOGE("Response svcuid too long.");
+                return GGL_ERR_NOMEM;
             }
 
-            if (fd != NULL) {
-                conn_cleanup = -1;
-                *fd = conn;
-            }
+            memcpy(
+                svcuid->data, header.value.string.data, header.value.string.len
+            );
+            svcuid->len = header.value.string.len;
+
+            conn_cleanup = -1;
+            *fd = conn;
 
             return GGL_ERR_OK;
         }
@@ -203,6 +214,76 @@ GglError ggipc_connect_by_name(
 
     GGL_LOGE("Response missing svcuid header.");
     return GGL_ERR_FAILURE;
+}
+
+GglError ggipc_connect_by_name(
+    GglBuffer socket_path, GglBuffer component_name, int *fd, GglBuffer *svcuid
+) {
+    return ggipc_connect_with_payload(
+        socket_path,
+        GGL_MAP(ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))),
+        fd,
+        svcuid
+    );
+}
+
+static GglError handle_application_error(
+    GglBuffer payload, GglArena *alloc, GglIpcError *remote_err
+) {
+    if (remote_err == NULL) {
+        return GGL_ERR_REMOTE;
+    }
+
+    GglArena error_alloc
+        = ggl_arena_init(GGL_BUF((uint8_t[sizeof(GglObject) * 4]) { 0 }));
+
+    GglObject err_result;
+    GglError ret
+        = ggl_json_decode_destructive(payload, &error_alloc, &err_result);
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Failed to decode IPC error payload.");
+        return ret;
+    }
+    if (ggl_obj_type(err_result) != GGL_TYPE_MAP) {
+        GGL_LOGE("Failed to decode IPC error payload.");
+        return GGL_ERR_PARSE;
+    }
+
+    GglObject *error_code_obj;
+    GglObject *message_obj;
+
+    ret = ggl_map_validate(
+        ggl_obj_into_map(err_result),
+        GGL_MAP_SCHEMA(
+            { GGL_STR("_errorCode"),
+              GGL_REQUIRED,
+              GGL_TYPE_BUF,
+              &error_code_obj },
+            { GGL_STR("_message"), GGL_OPTIONAL, GGL_TYPE_BUF, &message_obj },
+        )
+    );
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Error response does not match known schema.");
+        return ret;
+    }
+    GglBuffer error_code = ggl_obj_into_buf(*error_code_obj);
+
+    remote_err->error_code = get_ipc_err_info(error_code);
+    remote_err->message = GGL_STR("");
+
+    if (message_obj != NULL) {
+        GglBuffer err_msg = ggl_obj_into_buf(*message_obj);
+
+        ret = ggl_arena_claim_buf(&err_msg, alloc);
+        if (ret != GGL_ERR_OK) {
+            GGL_LOGW("Insufficient memory provided for IPC error message.");
+            // TODO: truncate error message to what fits
+        } else {
+            remote_err->message = err_msg;
+        }
+    }
+
+    return GGL_ERR_REMOTE;
 }
 
 GglError ggipc_call(
@@ -254,64 +335,7 @@ GglError ggipc_call(
             common_headers.stream_id
         );
 
-        if (remote_err == NULL) {
-            return GGL_ERR_REMOTE;
-        }
-
-        GglArena error_alloc
-            = ggl_arena_init(GGL_BUF((uint8_t[sizeof(GglObject) * 4]) { 0 }));
-
-        GglObject err_result;
-        ret = ggl_json_decode_destructive(
-            msg.payload, &error_alloc, &err_result
-        );
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGE("Failed to decode IPC error payload.");
-            return ret;
-        }
-        if (ggl_obj_type(err_result) != GGL_TYPE_MAP) {
-            GGL_LOGE("Failed to decode IPC error payload.");
-            return GGL_ERR_PARSE;
-        }
-
-        GglObject *error_code_obj;
-        GglObject *message_obj;
-
-        ret = ggl_map_validate(
-            ggl_obj_into_map(err_result),
-            GGL_MAP_SCHEMA(
-                { GGL_STR("_errorCode"),
-                  GGL_REQUIRED,
-                  GGL_TYPE_BUF,
-                  &error_code_obj },
-                { GGL_STR("_message"),
-                  GGL_OPTIONAL,
-                  GGL_TYPE_BUF,
-                  &message_obj },
-            )
-        );
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGE("Error response does not match known schema.");
-            return ret;
-        }
-        GglBuffer error_code = ggl_obj_into_buf(*error_code_obj);
-
-        remote_err->error_code = get_ipc_err_info(error_code);
-        remote_err->message = GGL_STR("");
-
-        if (message_obj != NULL) {
-            GglBuffer err_msg = ggl_obj_into_buf(*message_obj);
-
-            ret = ggl_arena_claim_buf(&err_msg, alloc);
-            if (ret != GGL_ERR_OK) {
-                GGL_LOGW("Insufficient memory provided for IPC error message.");
-                // TODO: truncate error message to what fits
-            } else {
-                remote_err->message = err_msg;
-            }
-        }
-
-        return GGL_ERR_REMOTE;
+        return handle_application_error(msg.payload, alloc, remote_err);
     }
 
     if (common_headers.message_type != EVENTSTREAM_APPLICATION_MESSAGE) {

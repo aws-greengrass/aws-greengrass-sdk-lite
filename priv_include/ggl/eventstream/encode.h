@@ -7,6 +7,7 @@
 
 //! AWS EventStream message encoding.
 
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/eventstream/types.h>
@@ -20,6 +21,6 @@ GglError eventstream_encode(
     const EventStreamHeader *headers,
     size_t header_count,
     GglReader payload
-);
+) NONNULL(1) NONNULL_IF_NONZERO(2, 3);
 
 #endif
