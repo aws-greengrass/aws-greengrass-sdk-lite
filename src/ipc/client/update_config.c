@@ -1,0 +1,67 @@
+// aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#include <ggl/buffer.h>
+#include <ggl/constants.h>
+#include <ggl/error.h>
+#include <ggl/ipc/client.h>
+#include <ggl/log.h>
+#include <ggl/map.h>
+#include <ggl/object.h>
+#include <ggl/vector.h>
+#include <string.h>
+#include <time.h>
+
+struct timespec;
+
+GglError ggipc_update_config(
+    int conn,
+    GglBufList key_path,
+    const struct timespec *timestamp,
+    GglObject value_to_merge
+) {
+    if ((timestamp != NULL)
+        && ((timestamp->tv_sec < 0) || (timestamp->tv_nsec < 0))) {
+        GGL_LOGE("Timestamp is negative.");
+        return GGL_ERR_UNSUPPORTED;
+    }
+
+    GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
+    GglError ret = GGL_ERR_OK;
+    for (size_t i = 0; i < key_path.len; i++) {
+        ggl_obj_vec_chain_push(&ret, &path_vec, ggl_obj_buf(key_path.bufs[i]));
+    }
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Key path too long.");
+        return GGL_ERR_NOMEM;
+    }
+
+    double timestamp_float = 0.0;
+    if (timestamp != NULL) {
+        timestamp_float
+            = (double) timestamp->tv_sec + ((double) timestamp->tv_nsec * 1e-9);
+    }
+
+    GglMap args = GGL_MAP(
+        ggl_kv(GGL_STR("keyPath"), ggl_obj_list(path_vec.list)),
+        ggl_kv(GGL_STR("timestamp"), ggl_obj_f64(timestamp_float)),
+        ggl_kv(GGL_STR("valueToMerge"), value_to_merge)
+    );
+
+    ret = ggipc_call(
+        conn,
+        GGL_STR("aws.greengrass#UpdateConfiguration"),
+        GGL_STR("aws.greengrass#UpdateConfigurationRequest"),
+        args,
+        NULL,
+        NULL,
+        NULL
+    );
+    if (ret == GGL_ERR_REMOTE) {
+        GGL_LOGE("Server error.");
+        return GGL_ERR_FAILURE;
+    }
+
+    return ret;
+}
