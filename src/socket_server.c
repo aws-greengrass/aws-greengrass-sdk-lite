@@ -70,7 +70,6 @@ static void new_client_available(
     }
 
     // Socket is now owned by the pool
-    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores) false positive
     client_fd_cleanup = -1;
 
     ret = ggl_socket_epoll_add(epoll_fd, client_fd, handle);

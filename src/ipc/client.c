@@ -200,8 +200,6 @@ GglError ggipc_connect_by_name(
             }
 
             if (fd != NULL) {
-                // false positive
-                // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
                 conn_cleanup = -1;
                 *fd = conn;
             }

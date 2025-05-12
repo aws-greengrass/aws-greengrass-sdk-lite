@@ -72,7 +72,6 @@ GglError ggl_connect(GglBuffer path, int *fd) {
         return GGL_ERR_FATAL;
     }
 
-    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores) false positive
     sockfd_cleanup = -1;
     *fd = sockfd;
     return GGL_ERR_OK;
