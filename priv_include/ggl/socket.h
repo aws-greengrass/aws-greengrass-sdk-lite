@@ -1,4 +1,4 @@
-// aws-greengrass-lite - AWS IoT Greengrass runtime for constrained devices
+// aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
