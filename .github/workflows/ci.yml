@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  run-checks:
+    # To run all of the below checks locally, run `nix flake check -L`
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: build with GCC
+            check: packages-default
+          - name: build with Clang
+            check: build-clang
+          - name: cross-build for arm32 Musl
+            check: build-musl-pi
+          - name: formatting
+            check: formatting
+          - name: clang-tidy
+            check: clang-tidy
+          - name: header includes
+            check: iwyu
+          - name: editorconfig
+            check: editorconfig
+          - name: spelling
+            check: spelling
+          - name: cmake-lint
+            check: cmake-lint
+    name: Check ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+          filter: "tree:0"
+      - name: Install Nix
+        run:
+          curl --proto '=https' --tlsv1.2 -sSf -L
+          https://install.lix.systems/lix | sh -s -- install --no-confirm
+
+      - name: Check ${{ matrix.name }}
+        run: |
+          sudo tee -a /etc/nix/nix.conf > /dev/null <<EOF
+          extra-substituters = https://d17qv3gttz4z4k.cloudfront.net
+          extra-trusted-public-keys = gglite-nix-cache-1:Zdz1mEqn//xa8ORxHkc76auwxmX8/6C2K/zWRjmq8Co=
+          log-lines = 0
+          EOF
+          nix build -L .#checks.x86_64-linux.${{ matrix.check }}
