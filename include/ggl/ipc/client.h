@@ -62,7 +62,7 @@ GglError ggipc_update_config(
 /// base64 encoding will allocate 4 bytes for every 3 payload bytes.
 /// Additionally, up to 128 bytes may be allocated for an error message.
 GglError ggipc_publish_to_topic_binary(
-    int conn, GglBuffer topic, GglBuffer payload, GglArena *alloc
+    int conn, GglBuffer topic, GglBuffer payload, GglArena alloc
 );
 
 GglError ggipc_publish_to_topic_obj(
