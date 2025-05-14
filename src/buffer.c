@@ -18,6 +18,9 @@ GglBuffer ggl_buffer_from_null_term(char *str) {
 
 bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2) {
     if (buf1.len == buf2.len) {
+        if (buf1.len == 0) {
+            return true;
+        }
         return memcmp(buf1.data, buf2.data, buf1.len) == 0;
     }
     return false;
