@@ -6,7 +6,6 @@
 #define GGL_IPC_CLIENT_H
 
 #include <ggl/arena.h>
-#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/ipc/error.h>
@@ -17,13 +16,6 @@
 struct timespec;
 
 #define GGL_IPC_SVCUID_STR_LEN (16)
-
-/// Connect to GG-IPC server using component name.
-/// If svcuid is non-null, it will be filled with the component's identity
-/// token. Buffer must be able to hold at least GGL_IPC_SVCUID_STR_LEN.
-GglError ggipc_connect_by_name(
-    GglBuffer socket_path, GglBuffer component_name, int *fd, GglBuffer *svcuid
-) NONNULL(3);
 
 GglError ggipc_call(
     int conn,

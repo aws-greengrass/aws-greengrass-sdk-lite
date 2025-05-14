@@ -45,6 +45,10 @@ static GglError send_message(
     GglMap *payload
 ) NONNULL_IF_NONZERO(2, 5);
 
+static GglError ggipc_connect_with_payload(
+    GglBuffer socket_path, GglMap payload, int *fd, GglBuffer *svcuid
+) NONNULL(3);
+
 static GglError send_message(
     int conn,
     const EventStreamHeader *headers,
@@ -122,15 +126,27 @@ static GglError get_message(
     return GGL_ERR_OK;
 }
 
-GglError ggipc_connect_with_payload(
+static GglError ggipc_connect_with_payload(
     GglBuffer socket_path, GglMap payload, int *fd, GglBuffer *svcuid
 ) {
     int conn = -1;
     GglError ret = ggl_connect(socket_path, &conn);
     if (ret != GGL_ERR_OK) {
+        GGL_LOGE(
+            "Failed to connect to GG-IPC socket at %.*s.",
+            (int) socket_path.len,
+            socket_path.data
+        );
         return ret;
     }
     GGL_CLEANUP_ID(conn_cleanup, cleanup_close, conn);
+
+    GGL_LOGI(
+        "Connected to GG-IPC socket at %.*s on fd %d",
+        (int) socket_path.len,
+        socket_path.data,
+        conn
+    );
 
     EventStreamHeader headers[] = {
         { GGL_STR(":message-type"),
