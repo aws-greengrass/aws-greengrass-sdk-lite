@@ -17,6 +17,7 @@ void ggl_register_init_fn(GglInitEntry *entry) {
 
 void ggl_sdk_init(void) {
     GglInitEntry *list = init_list;
+    init_list = NULL;
 
     while (list != NULL) {
         GglError ret = list->fn();
