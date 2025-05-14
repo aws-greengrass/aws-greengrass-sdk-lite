@@ -40,6 +40,8 @@ const char *ggl_strerror(GglError err) {
         return "REMOTE";
     case GGL_ERR_EXPECTED:
         return "EXPECTED";
+    case GGL_ERR_TIMEOUT:
+        return "TIMEOUT";
     }
 
     assert(false);

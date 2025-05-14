@@ -43,6 +43,8 @@ typedef enum NODISCARD GglError {
     GGL_ERR_REMOTE,
     /// Expected non-ok status
     GGL_ERR_EXPECTED,
+    /// Request timed out
+    GGL_ERR_TIMEOUT,
 } GglError;
 
 const char *ggl_strerror(GglError err);

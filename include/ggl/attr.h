@@ -97,6 +97,16 @@
 #endif
 
 #ifdef __has_attribute
+#if __has_attribute(access)
+#define ACCESS(...) __attribute__((access(__VA_ARGS__)))
+#endif
+#endif
+
+#ifndef ACCESS
+#define ACCESS(...)
+#endif
+
+#ifdef __has_attribute
 #if __has_attribute(cold)
 #define COLD __attribute__((cold))
 #endif
