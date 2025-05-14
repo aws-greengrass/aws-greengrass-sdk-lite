@@ -2,35 +2,17 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <assert.h>
 #include <ggl/arena.h>
-#include <ggl/attr.h>
 #include <ggl/base64.h>
 #include <ggl/buffer.h>
-#include <ggl/cleanup.h>
-#include <ggl/constants.h>
 #include <ggl/error.h>
-#include <ggl/eventstream/decode.h>
-#include <ggl/eventstream/encode.h>
-#include <ggl/eventstream/rpc.h>
-#include <ggl/eventstream/types.h>
-#include <ggl/flags.h>
-#include <ggl/io.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/error.h>
-#include <ggl/json_decode.h>
-#include <ggl/json_encode.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
-#include <ggl/socket.h>
-#include <ggl/vector.h>
 #include <inttypes.h>
-#include <limits.h>
-#include <pthread.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 
 // TODO: use GglByteVec for payload to allow in-place base64 encoding.
 GglError ggipc_publish_to_iot_core(
