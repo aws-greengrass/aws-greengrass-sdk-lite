@@ -116,4 +116,14 @@
 #define CONST
 #endif
 
+#ifdef __has_attribute
+#if __has_attribute(flag_enum)
+#define FLAG_ENUM __attribute__((flag_enum))
+#endif
+#endif
+
+#ifndef FLAG_ENUM
+#define FLAG_ENUM
+#endif
+
 #endif

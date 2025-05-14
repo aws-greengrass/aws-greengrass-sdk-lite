@@ -21,7 +21,7 @@ typedef enum {
 } EventStreamMessageType;
 
 /// `:message-flags` header flags
-typedef enum {
+typedef enum FLAG_ENUM {
     EVENTSTREAM_CONNECTION_ACCEPTED = 1,
     EVENTSTREAM_TERMINATE_STREAM = 2,
 } EventStreamMessageFlags;
