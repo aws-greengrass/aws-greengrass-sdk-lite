@@ -35,10 +35,6 @@ GglError ggipc_call(
     GglIpcError *remote_err
 );
 
-GglError ggipc_private_get_system_config(
-    int conn, GglBuffer key, GglBuffer *value
-);
-
 GglError ggipc_get_config_str(
     int conn, GglBufList key_path, GglBuffer *component_name, GglBuffer *value
 );

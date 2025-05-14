@@ -17,4 +17,8 @@ GglError ggipc_connect_with_payload(
     GglBuffer socket_path, GglMap payload, int *fd, GglBuffer *svcuid
 ) NONNULL(3);
 
+GglError ggipc_private_get_system_config(
+    int conn, GglBuffer key, GglBuffer *value
+);
+
 #endif
