@@ -17,7 +17,7 @@
 
 // TODO: use GglByteVec for payload to allow in-place base64 encoding.
 GglError ggipc_publish_to_iot_core(
-    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena *alloc
+    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
 ) {
     if (qos > 2) {
         GGL_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
@@ -26,7 +26,7 @@ GglError ggipc_publish_to_iot_core(
     GGL_LOGT("Topic name len: %zu", topic_name.len);
     GglBuffer qos_buffer = GGL_BUF((uint8_t[1]) { qos + (uint8_t) '0' });
     GglBuffer encoded_payload;
-    GglError ret = ggl_base64_encode(payload, alloc, &encoded_payload);
+    GglError ret = ggl_base64_encode(payload, &alloc, &encoded_payload);
     if (ret != GGL_ERR_OK) {
         return ret;
     }

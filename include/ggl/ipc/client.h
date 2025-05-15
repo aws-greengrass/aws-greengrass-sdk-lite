@@ -51,7 +51,7 @@ GglError ggipc_publish_to_topic_obj(GglBuffer topic, GglObject payload);
 /// base64 encoding will allocate 4 bytes for every 3 payload bytes.
 /// Additionally, up to 128 bytes may be allocated for an error message.
 GglError ggipc_publish_to_iot_core(
-    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena *alloc
+    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
 );
 
 #endif
