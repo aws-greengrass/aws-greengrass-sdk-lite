@@ -3,6 +3,7 @@ coverity
 EPOLLIN
 ggipc
 iwyu
+libggl
 LOGD
 LOGE
 LOGI

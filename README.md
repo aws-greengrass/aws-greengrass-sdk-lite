@@ -15,6 +15,10 @@ any bugs or missing features.
 For development purposes, it is recommended to pin your usage to a specific
 commit or tag.
 
+## Building
+
+For building the SDK and samples, see the [build guide](docs/BUILD.md).
+
 ## Security
 
 See [CONTRIBUTING](docs/CONTRIBUTING.md#security-issue-notifications) for more
