@@ -7,7 +7,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <ggl/arena.h>
-#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/cleanup.h>
 #include <ggl/error.h>
@@ -40,13 +39,17 @@ static pthread_mutex_t call_state_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 static uint8_t payload_array[GGL_IPC_MAX_MSG_LEN];
 
-static GglError ggipc_connect_with_payload(
-    GglBuffer socket_path, GglMap payload, int *fd, GglBuffer *svcuid
-) NONNULL(3);
+static int conn_fd = -1;
+
+static bool connected(void) {
+    return conn_fd >= 0;
+}
 
 static GglError ggipc_connect_with_payload(
-    GglBuffer socket_path, GglMap payload, int *fd, GglBuffer *svcuid
+    GglBuffer socket_path, GglMap payload, GglBuffer *svcuid
 ) {
+    assert(!connected());
+
     int conn = -1;
     GglError ret = ggl_connect(socket_path, &conn);
     if (ret != GGL_ERR_OK) {
@@ -127,7 +130,7 @@ static GglError ggipc_connect_with_payload(
 
     if (svcuid == NULL) {
         conn_cleanup = -1;
-        *fd = conn;
+        conn_fd = conn;
 
         return GGL_ERR_OK;
     }
@@ -158,7 +161,7 @@ static GglError ggipc_connect_with_payload(
             svcuid->len = header.value.string.len;
 
             conn_cleanup = -1;
-            *fd = conn;
+            conn_fd = conn;
 
             return GGL_ERR_OK;
         }
@@ -169,28 +172,24 @@ static GglError ggipc_connect_with_payload(
 }
 
 GglError ggipc_connect_with_name(
-    GglBuffer socket_path, GglBuffer component_name, int *fd, GglBuffer *svcuid
+    GglBuffer socket_path, GglBuffer component_name, GglBuffer *svcuid
 ) {
     return ggipc_connect_with_payload(
         socket_path,
         GGL_MAP(ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))),
-        fd,
         svcuid
     );
 }
 
-GglError ggipc_connect_with_token(
-    GglBuffer socket_path, GglBuffer auth_token, int *fd
-) {
+GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
     return ggipc_connect_with_payload(
         socket_path,
         GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token))),
-        fd,
         NULL
     );
 }
 
-GglError ggipc_connect(int *fd) {
+GglError ggipc_connect(void) {
     // Unsafe, but function is documented as such
     // NOLINTBEGIN(concurrency-mt-unsafe)
     char *svcuid = getenv("SVCUID");
@@ -205,8 +204,7 @@ GglError ggipc_connect(int *fd) {
 
     return ggipc_connect_with_token(
         ggl_buffer_from_null_term(socket_path),
-        ggl_buffer_from_null_term(svcuid),
-        fd
+        ggl_buffer_from_null_term(svcuid)
     );
     // NOLINTEND(concurrency-mt-unsafe)
 }
@@ -348,7 +346,6 @@ static void cleanup_pthread_cond(pthread_cond_t **cond) {
 }
 
 GglError ggipc_call(
-    int conn,
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
@@ -356,6 +353,10 @@ GglError ggipc_call(
     GglObject *result,
     GglIpcError *remote_err
 ) {
+    if (!connected()) {
+        return GGL_ERR_NOCONN;
+    }
+
     EventStreamHeader headers[] = {
         { GGL_STR(":message-type"),
           { EVENTSTREAM_INT32, .int32 = EVENTSTREAM_APPLICATION_MESSAGE } },
@@ -391,7 +392,7 @@ GglError ggipc_call(
     ggipc_set_stream_handler_at(1, &call_stream_handler, &ctx);
 
     GglError ret = ggipc_send_message(
-        conn, headers, headers_len, &params, GGL_BUF(payload_array)
+        conn_fd, headers, headers_len, &params, GGL_BUF(payload_array)
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to send message %d", ret);
@@ -532,7 +533,6 @@ static GglError subscribe_stream_handler(
 }
 
 GglError ggipc_subscribe(
-    int conn,
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
@@ -541,6 +541,10 @@ GglError ggipc_subscribe(
     GglObject *result,
     GglIpcError *remote_err
 ) {
+    if (!connected()) {
+        return GGL_ERR_NOCONN;
+    }
+
     pthread_condattr_t notify_condattr;
     pthread_condattr_init(&notify_condattr);
     pthread_condattr_setclock(&notify_condattr, CLOCK_MONOTONIC);
@@ -583,7 +587,7 @@ GglError ggipc_subscribe(
     GGL_MTX_SCOPE_GUARD(&call_state_mtx);
 
     ret = ggipc_send_message(
-        conn, headers, headers_len, &params, GGL_BUF(payload_array)
+        conn_fd, headers, headers_len, &params, GGL_BUF(payload_array)
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to send message %d", ret);

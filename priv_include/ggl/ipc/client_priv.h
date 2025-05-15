@@ -5,7 +5,6 @@
 #ifndef GGL_IPC_CLIENT_PRIV_H
 #define GGL_IPC_CLIENT_PRIV_H
 
-#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 
@@ -24,11 +23,9 @@
 /// If svcuid is non-null, it will be filled with the component's identity
 /// token. Buffer must be able to hold at least GGL_IPC_SVCUID_STR_LEN.
 GglError ggipc_connect_with_name(
-    GglBuffer socket_path, GglBuffer component_name, int *fd, GglBuffer *svcuid
-) NONNULL(3);
-
-GglError ggipc_private_get_system_config(
-    int conn, GglBuffer key, GglBuffer *value
+    GglBuffer socket_path, GglBuffer component_name, GglBuffer *svcuid
 );
+
+GglError ggipc_private_get_system_config(GglBuffer key, GglBuffer *value);
 
 #endif

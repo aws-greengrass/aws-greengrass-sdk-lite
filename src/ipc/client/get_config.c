@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 GglError ggipc_get_config_str(
-    int conn, GglBufList key_path, GglBuffer *component_name, GglBuffer *value
+    GglBufList key_path, GglBuffer *component_name, GglBuffer *value
 ) {
     GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
     GglError ret = GGL_ERR_OK;
@@ -47,7 +47,6 @@ GglError ggipc_get_config_str(
     GglObject resp = { 0 };
     GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
     ret = ggipc_call(
-        conn,
         GGL_STR("aws.greengrass#GetConfiguration"),
         GGL_STR("aws.greengrass#GetConfigurationRequest"),
         args.map,
@@ -105,7 +104,6 @@ GglError ggipc_get_config_str(
 }
 
 GglError ggipc_get_config_obj(
-    int conn,
     GglBufList key_path,
     GglBuffer *component_name,
     GglArena *alloc,
@@ -137,7 +135,6 @@ GglError ggipc_get_config_obj(
     GglObject resp = { 0 };
     GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
     ret = ggipc_call(
-        conn,
         GGL_STR("aws.greengrass#GetConfiguration"),
         GGL_STR("aws.greengrass#GetConfigurationRequest"),
         args.map,

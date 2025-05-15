@@ -17,11 +17,7 @@
 
 // TODO: use GglByteVec for payload to allow in-place base64 encoding.
 GglError ggipc_publish_to_iot_core(
-    int conn,
-    GglBuffer topic_name,
-    GglBuffer payload,
-    uint8_t qos,
-    GglArena *alloc
+    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena *alloc
 ) {
     if (qos > 2) {
         GGL_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
@@ -43,7 +39,6 @@ GglError ggipc_publish_to_iot_core(
     GglArena error_alloc = ggl_arena_init(GGL_BUF((uint8_t[128]) { 0 }));
     GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
     ret = ggipc_call(
-        conn,
         GGL_STR("aws.greengrass#PublishToIoTCore"),
         GGL_STR("aws.greengrass#PublishToIoTCoreRequest"),
         args,

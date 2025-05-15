@@ -16,7 +16,7 @@
 #include <stdint.h>
 
 static GglError publish_to_topic_common(
-    int conn, GglBuffer topic, GglMap publish_message
+    GglBuffer topic, GglMap publish_message
 ) {
     GglMap args = GGL_MAP(
         ggl_kv(GGL_STR("topic"), ggl_obj_buf(topic)),
@@ -26,7 +26,6 @@ static GglError publish_to_topic_common(
     GglArena error_alloc = ggl_arena_init(GGL_BUF((uint8_t[128]) { 0 }));
     GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
     GglError ret = ggipc_call(
-        conn,
         GGL_STR("aws.greengrass#PublishToTopic"),
         GGL_STR("aws.greengrass#PublishToTopicRequest"),
         args,
@@ -51,7 +50,7 @@ static GglError publish_to_topic_common(
 }
 
 GglError ggipc_publish_to_topic_binary(
-    int conn, GglBuffer topic, GglBuffer payload, GglArena alloc
+    GglBuffer topic, GglBuffer payload, GglArena alloc
 ) {
     GglBuffer encoded_payload;
     GglError ret = ggl_base64_encode(payload, &alloc, &encoded_payload);
@@ -64,15 +63,13 @@ GglError ggipc_publish_to_topic_binary(
         = GGL_MAP(ggl_kv(GGL_STR("binaryMessage"), ggl_obj_map(binary_message))
         );
 
-    return publish_to_topic_common(conn, topic, publish_message);
+    return publish_to_topic_common(topic, publish_message);
 }
 
-GglError ggipc_publish_to_topic_obj(
-    int conn, GglBuffer topic, GglObject payload
-) {
+GglError ggipc_publish_to_topic_obj(GglBuffer topic, GglObject payload) {
     GglMap json_message = GGL_MAP(ggl_kv(GGL_STR("message"), payload));
     GglMap publish_message
         = GGL_MAP(ggl_kv(GGL_STR("jsonMessage"), ggl_obj_map(json_message)));
 
-    return publish_to_topic_common(conn, topic, publish_message);
+    return publish_to_topic_common(topic, publish_message);
 }

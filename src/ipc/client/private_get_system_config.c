@@ -12,14 +12,11 @@
 #include <ggl/map.h>
 #include <ggl/object.h>
 
-GglError ggipc_private_get_system_config(
-    int conn, GglBuffer key, GglBuffer *value
-) {
+GglError ggipc_private_get_system_config(GglBuffer key, GglBuffer *value) {
     GglArena alloc = ggl_arena_init(*value);
     GglObject resp = { 0 };
     GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
     GglError ret = ggipc_call(
-        conn,
         GGL_STR("aws.greengrass.private#GetSystemConfig"),
         GGL_STR("aws.greengrass.private#GetSystemConfigRequest"),
         GGL_MAP(ggl_kv(GGL_STR("key"), ggl_obj_buf(key))),

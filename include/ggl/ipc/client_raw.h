@@ -19,7 +19,6 @@ typedef struct {
 } GgIpcSubscribeCallback;
 
 GglError ggipc_call(
-    int conn,
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
@@ -29,7 +28,6 @@ GglError ggipc_call(
 );
 
 GglError ggipc_subscribe(
-    int conn,
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,

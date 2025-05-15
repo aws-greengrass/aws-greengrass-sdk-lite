@@ -17,7 +17,6 @@
 struct timespec;
 
 GglError ggipc_update_config(
-    int conn,
     GglBufList key_path,
     const struct timespec *timestamp,
     GglObject value_to_merge
@@ -51,7 +50,6 @@ GglError ggipc_update_config(
     );
 
     ret = ggipc_call(
-        conn,
         GGL_STR("aws.greengrass#UpdateConfiguration"),
         GGL_STR("aws.greengrass#UpdateConfigurationRequest"),
         args,
