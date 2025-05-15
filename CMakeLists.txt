@@ -98,8 +98,6 @@ if(PROJECT_IS_TOP_LEVEL)
   try_add_cflag_if(trivial-auto-var-init-pattern $<CONFIG:Debug>
                    -ftrivial-auto-var-init=pattern)
 
-  add_cflags($<$<CONFIG:Debug>:-fsanitize=undefined,address>)
-
   try_add_cflag_if(function-sections $<NOT:$<CONFIG:Debug>> -ffunction-sections)
   try_add_cflag_if(data-sections $<NOT:$<CONFIG:Debug>> -fdata-sections)
 
