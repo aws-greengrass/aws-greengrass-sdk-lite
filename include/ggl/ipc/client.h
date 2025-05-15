@@ -23,12 +23,12 @@ GglError ggipc_connect(void);
 GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 
 GglError ggipc_get_config_str(
-    GglBufList key_path, GglBuffer *component_name, GglBuffer *value
+    GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 );
 
 GglError ggipc_get_config_obj(
     GglBufList key_path,
-    GglBuffer *component_name,
+    const GglBuffer *component_name,
     GglArena *alloc,
     GglObject *value
 );

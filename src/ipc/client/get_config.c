@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 GglError ggipc_get_config_str(
-    GglBufList key_path, GglBuffer *component_name, GglBuffer *value
+    GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 ) {
     GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
     GglError ret = GGL_ERR_OK;
@@ -105,7 +105,7 @@ GglError ggipc_get_config_str(
 
 GglError ggipc_get_config_obj(
     GglBufList key_path,
-    GglBuffer *component_name,
+    const GglBuffer *component_name,
     GglArena *alloc,
     GglObject *value
 ) {
