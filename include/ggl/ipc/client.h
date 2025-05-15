@@ -6,6 +6,7 @@
 #define GGL_IPC_CLIENT_H
 
 #include <ggl/arena.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/object.h>
@@ -53,5 +54,13 @@ GglError ggipc_publish_to_topic_obj(GglBuffer topic, GglObject payload);
 GglError ggipc_publish_to_iot_core(
     GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
 );
+
+typedef void (*GgIpcSubscribeToIotCoreCallback)(
+    GglBuffer topic, GglBuffer payload
+);
+
+GglError ggipc_subscribe_to_iot_core(
+    GglBuffer topic_filter, uint8_t qos, GgIpcSubscribeToIotCoreCallback handler
+) NONNULL(3);
 
 #endif
