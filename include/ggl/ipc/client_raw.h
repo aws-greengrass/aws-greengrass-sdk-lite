@@ -13,10 +13,12 @@
 
 #define GGL_IPC_SVCUID_STR_LEN (16)
 
-typedef struct {
-    GglError (*fn)(void *ctx, GglBuffer service_model_type, GglObject data);
-    void *ctx;
-} GgIpcSubscribeCallback;
+/// Maximum number of eventstream streams. Limits subscriptions.
+/// Max subscriptions is this minus 2.
+/// Can be configured with `-D GGL_IPC_MAX_MSG_LEN=<N>`.
+#ifndef GGL_IPC_MAX_STREAMS
+#define GGL_IPC_MAX_STREAMS 16
+#endif
 
 GglError ggipc_call(
     GglBuffer operation,
@@ -27,11 +29,16 @@ GglError ggipc_call(
     GglIpcError *remote_err
 );
 
+typedef GglError (*GgIpcSubscribeCallback)(
+    void *ctx, GglBuffer service_model_type, GglObject data
+);
+
 GglError ggipc_subscribe(
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
-    const GgIpcSubscribeCallback *on_response,
+    GgIpcSubscribeCallback on_response,
+    void *ctx,
     GglArena *alloc,
     GglObject *result,
     GglIpcError *remote_err

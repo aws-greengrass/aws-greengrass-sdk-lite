@@ -41,6 +41,13 @@ static uint8_t payload_array[GGL_IPC_MAX_MSG_LEN];
 
 static int conn_fd = -1;
 
+typedef struct {
+    GgIpcSubscribeCallback fn;
+    void *ctx;
+} CallerSubHandler;
+
+static CallerSubHandler sub_callbacks[GGL_IPC_MAX_STREAMS - 2];
+
 static bool connected(void) {
     return conn_fd >= 0;
 }
@@ -437,13 +444,14 @@ typedef struct {
     GglArena *alloc;
     GglObject *result;
     GglIpcError *remote_err;
-    const GgIpcSubscribeCallback *sub_callback;
+    GgIpcSubscribeCallback sub_callback;
+    void *sub_callback_ctx;
 } SubscribeCallbackCtx;
 
 static GglError call_sub_callback(
     void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
 ) {
-    const GgIpcSubscribeCallback *sub_callback = ctx;
+    CallerSubHandler *sub_callback = ctx;
     if (common_headers.message_type != EVENTSTREAM_APPLICATION_MESSAGE) {
         GGL_LOGE(
             "Unexpected message type %" PRId32 " on stream %d.",
@@ -504,6 +512,8 @@ static GglError call_sub_callback(
 static GglError subscribe_stream_handler(
     void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
 ) {
+    assert(common_headers.stream_id >= 2);
+
     SubscribeCallbackCtx *call_ctx = ctx;
 
     GGL_MTX_SCOPE_GUARD(call_ctx->mtx);
@@ -519,10 +529,13 @@ static GglError subscribe_stream_handler(
     if (call_ctx->ret != GGL_ERR_OK) {
         ggipc_set_stream_handler_at(common_headers.stream_id, NULL, NULL);
     } else {
+        CallerSubHandler *caller_handler
+            = &sub_callbacks[common_headers.stream_id - 2];
+        caller_handler->fn = call_ctx->sub_callback;
+        caller_handler->ctx = call_ctx->sub_callback_ctx;
+
         ggipc_set_stream_handler_at(
-            common_headers.stream_id,
-            &call_sub_callback,
-            (void *) call_ctx->sub_callback
+            common_headers.stream_id, &call_sub_callback, caller_handler
         );
     }
 
@@ -536,7 +549,8 @@ GglError ggipc_subscribe(
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
-    const GgIpcSubscribeCallback *on_response,
+    GgIpcSubscribeCallback on_response,
+    void *ctx,
     GglArena *alloc,
     GglObject *result,
     GglIpcError *remote_err
@@ -554,7 +568,7 @@ GglError ggipc_subscribe(
     GGL_CLEANUP(cleanup_pthread_cond, &notify_cond);
     pthread_mutex_t notify_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-    SubscribeCallbackCtx ctx = {
+    SubscribeCallbackCtx resp_ctx = {
         .mtx = &notify_mtx,
         .cond = &notify_cond,
         .ready = false,
@@ -563,11 +577,13 @@ GglError ggipc_subscribe(
         .result = result,
         .remote_err = remote_err,
         .sub_callback = on_response,
+        .sub_callback_ctx = ctx,
     };
 
     int32_t stream_id;
-    GglError ret
-        = ggipc_set_stream_handler(&subscribe_stream_handler, &ctx, &stream_id);
+    GglError ret = ggipc_set_stream_handler(
+        &subscribe_stream_handler, &resp_ctx, &stream_id
+    );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("GG-IPC subscribe call failed to get available stream id.");
         return ret;
@@ -602,7 +618,7 @@ GglError ggipc_subscribe(
     {
         GGL_MTX_SCOPE_GUARD(&notify_mtx);
 
-        while (!ctx.ready) {
+        while (!resp_ctx.ready) {
             int cond_ret
                 = pthread_cond_timedwait(&notify_cond, &notify_mtx, &timeout);
             if ((cond_ret != 0) && (cond_ret != EINTR)) {
@@ -618,11 +634,11 @@ GglError ggipc_subscribe(
     // in case of error or else the handler for follow-up responses).
 
     ggipc_clear_stream_handler_if_eq(
-        stream_id, &subscribe_stream_handler, &ctx
+        stream_id, &subscribe_stream_handler, &resp_ctx
     );
 
     // At this point we know first handler has run or will not run. Stream may
     // be set to call the subscription response handler.
 
-    return ctx.ret;
+    return resp_ctx.ret;
 }

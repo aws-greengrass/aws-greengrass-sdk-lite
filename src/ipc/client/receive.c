@@ -14,6 +14,7 @@
 #include <ggl/file.h>
 #include <ggl/init.h>
 #include <ggl/ipc/client_priv.h>
+#include <ggl/ipc/client_raw.h>
 #include <ggl/log.h>
 #include <ggl/socket_epoll.h>
 #include <inttypes.h>
@@ -22,13 +23,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
-
-/// Maximum number of eventstream streams. Limits subscriptions.
-/// Max subscriptions is this minus 2.
-/// Can be configured with `-D GGL_IPC_MAX_MSG_LEN=<N>`.
-#ifndef GGL_IPC_MAX_STREAMS
-#define GGL_IPC_MAX_STREAMS 16
-#endif
 
 static_assert(
     GGL_IPC_MAX_STREAMS >= 2, "At least 2 streams must be supported."
@@ -39,6 +33,9 @@ noreturn static void *recv_thread(void *args) ACCESS(none, 1);
 
 static int epoll_fd = -1;
 
+// TODO: These could be 1 byte per stream (4 possible values for stream handler;
+// one is NULL, two are serialized so can grab ctx from global, and last can get
+// its ctx using stream id)
 static GglIpcStreamHandler stream_handler[GGL_IPC_MAX_STREAMS] = { 0 };
 static void *stream_handler_ctx[GGL_IPC_MAX_STREAMS];
 
