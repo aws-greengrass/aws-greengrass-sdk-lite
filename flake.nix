@@ -16,6 +16,7 @@
             ./priv_include
             ./src
             ./.clang-tidy
+            ./samples
           ];
         };
 
@@ -65,6 +66,8 @@
             meta = defaultMeta;
           };
 
+        packages.ggl-sdk-static = { pkgsStatic }: pkgsStatic.ggl-sdk;
+
         checks =
           let
             clangBuildDir = { pkgs, pkg-config, clang-tools, cmake, ... }:
@@ -95,7 +98,7 @@
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
               clangd-tidy -j$(nproc) -p ${clangBuildDir pkgs} --color=always \
-                $(fd . ${filteredSrc} -e c -e h) |\
+                $(fd . ${filteredSrc}/src -e c -e h) |\
                 sed 's|\.\.${filteredSrc}/||'
             '';
 

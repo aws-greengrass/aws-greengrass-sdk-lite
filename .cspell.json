@@ -9,5 +9,10 @@
     }
   ],
   "dictionaries": ["project"],
-  "ignorePaths": ["**/CMakeLists.txt", "**/*.nix", "**/iwyu_mappings.yml"]
+  "ignorePaths": [
+    "**/CMakeLists.txt",
+    "**/*.yml",
+    "**/*.nix",
+    "**/iwyu_mappings.yml"
+  ]
 }

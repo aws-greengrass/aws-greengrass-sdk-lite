@@ -11,6 +11,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(ENABLE_WERROR "Compile warnings as errors")
 
+  option(BUILD_SAMPLES "Build sample components" ON)
+
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
   include(GNUInstallDirs)
@@ -180,4 +182,14 @@ target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
 if(PROJECT_IS_TOP_LEVEL)
   install(TARGETS ggl-sdk)
+
+  if(BUILD_SAMPLES)
+    file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
+    foreach(sample_dir ${SAMPLE_DIRS})
+      get_filename_component(sample_name ${sample_dir} NAME_WLE)
+      add_executable(sample_${sample_name} ${sample_dir}/main.c)
+      target_link_libraries(sample_${sample_name} PRIVATE ggl-sdk)
+      install(TARGETS sample_${sample_name})
+    endforeach()
+  endif()
 endif()

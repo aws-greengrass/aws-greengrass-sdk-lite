@@ -1,0 +1,29 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "aws-greengrass-sdk-lite.samples.iot_core_mqtt"
+ComponentVersion: "1.0.0"
+ComponentType: "aws.greengrass.generic"
+ComponentDescription:
+  Example component using aws-greengrass-sdk-lite to publish/subscribe to AWS
+  IoT Core
+ComponentPublisher: AWS
+ComponentConfiguration:
+  DefaultConfiguration:
+    accessControl:
+      aws.greengrass.ipc.mqttproxy:
+        access_policy:
+          policyDescription: "Allows pub/sub to IoT Core topic hello"
+          operations:
+            - aws.greengrass#PublishToIoTCore"
+            - aws.greengrass#SubscribeToIoTCore"
+          resources:
+            - "hello"
+Manifests:
+  - Platform:
+      os: linux
+      runtime: "*"
+    Lifecycle:
+      run:
+        Script: "{artifacts:path}/sample_iot_core_mqtt"
+    Artifacts:
+      - URI: s3://EXAMPLE_BUCKET/sample_iot_core_mqtt
