@@ -5,7 +5,7 @@
 #ifndef GGL_IPC_CLIENT_IO_H
 #define GGL_IPC_CLIENT_IO_H
 
-#include "ggl/attr.h"
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/eventstream/decode.h>

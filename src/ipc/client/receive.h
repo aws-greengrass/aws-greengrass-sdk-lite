@@ -25,4 +25,9 @@ void ggipc_set_stream_handler_at(
     int32_t stream, GglIpcStreamHandler handler, void *ctx
 );
 
+/// Clears stream if current handler and ctx match
+void ggipc_clear_stream_handler_if_eq(
+    int32_t stream, GglIpcStreamHandler handler, void *ctx
+);
+
 #endif

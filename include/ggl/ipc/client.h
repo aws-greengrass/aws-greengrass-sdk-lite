@@ -17,11 +17,27 @@ struct timespec;
 
 #define GGL_IPC_SVCUID_STR_LEN (16)
 
+typedef struct {
+    GglError (*fn)(void *ctx, GglBuffer service_model_type, GglObject data);
+    void *ctx;
+} GgIpcSubscribeCallback;
+
 GglError ggipc_call(
     int conn,
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
+    GglArena *alloc,
+    GglObject *result,
+    GglIpcError *remote_err
+);
+
+GglError ggipc_subscribe(
+    int conn,
+    GglBuffer operation,
+    GglBuffer service_model_type,
+    GglMap params,
+    const GgIpcSubscribeCallback *on_response,
     GglArena *alloc,
     GglObject *result,
     GglIpcError *remote_err

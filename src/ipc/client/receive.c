@@ -4,10 +4,10 @@
 
 #include "receive.h"
 #include "eventstream_io.h"
-#include "ggl/cleanup.h"
 #include <assert.h>
 #include <ggl/attr.h>
 #include <ggl/buffer.h>
+#include <ggl/cleanup.h>
 #include <ggl/error.h>
 #include <ggl/eventstream/decode.h>
 #include <ggl/eventstream/rpc.h>
@@ -42,7 +42,15 @@ static int epoll_fd = -1;
 static GglIpcStreamHandler stream_handler[GGL_IPC_MAX_STREAMS] = { 0 };
 static void *stream_handler_ctx[GGL_IPC_MAX_STREAMS];
 
-static pthread_mutex_t stream_state_mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t stream_state_mtx;
+
+__attribute__((constructor)) static void init_ipc_recv_stream_mtx(void) {
+    pthread_mutexattr_t mutattr = { 0 };
+    pthread_mutexattr_init(&mutattr);
+    pthread_mutexattr_settype(&mutattr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&stream_state_mtx, &mutattr);
+    pthread_mutexattr_destroy(&mutattr);
+}
 
 __attribute__((constructor)) static void register_init_ipc_recv_thread(void) {
     static GglInitEntry entry = { .fn = &init_ipc_recv_thread };
@@ -76,6 +84,21 @@ void ggipc_set_stream_handler_at(
 
     stream_handler_ctx[stream] = ctx;
     stream_handler[stream] = handler;
+}
+
+void ggipc_clear_stream_handler_if_eq(
+    int32_t stream, GglIpcStreamHandler handler, void *ctx
+) {
+    assert(stream > 0);
+    assert(stream < GGL_IPC_MAX_STREAMS);
+
+    GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
+
+    if ((stream_handler_ctx[stream] == ctx)
+        && (stream_handler[stream] == handler)) {
+        stream_handler_ctx[stream] = NULL;
+        stream_handler[stream] = NULL;
+    }
 }
 
 GglError ggipc_set_stream_handler(
