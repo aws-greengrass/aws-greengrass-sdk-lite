@@ -173,7 +173,7 @@ target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)
 target_include_directories(ggl-sdk PRIVATE include priv_include)
 target_include_directories(ggl-sdk SYSTEM INTERFACE include)
 
-target_compile_definitions(ggl-sdk PRIVATE "GGL_MODULE=(\"${ggl-sdk}\")")
+target_compile_definitions(ggl-sdk PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
 string(TOUPPER "${GGL_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
