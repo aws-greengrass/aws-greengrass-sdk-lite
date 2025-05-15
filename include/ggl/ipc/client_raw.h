@@ -6,6 +6,7 @@
 #define GGL_IPC_CLIENT_RAW_H
 
 #include <ggl/arena.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/ipc/error.h>
@@ -42,6 +43,6 @@ GglError ggipc_subscribe(
     GglArena *alloc,
     GglObject *result,
     GglIpcError *remote_err
-);
+) NONNULL(4);
 
 #endif
