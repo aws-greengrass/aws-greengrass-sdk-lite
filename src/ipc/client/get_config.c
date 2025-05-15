@@ -21,6 +21,10 @@
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 ) {
+    if (value != NULL) {
+        *value = GGL_STR("");
+    }
+
     GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
     GglError ret = GGL_ERR_OK;
     for (size_t i = 0; i < key_path.len; i++) {
@@ -109,6 +113,10 @@ GglError ggipc_get_config_obj(
     GglArena *alloc,
     GglObject *value
 ) {
+    if (value != NULL) {
+        *value = GGL_OBJ_NULL;
+    }
+
     GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
     GglError ret = GGL_ERR_OK;
     for (size_t i = 0; i < key_path.len; i++) {

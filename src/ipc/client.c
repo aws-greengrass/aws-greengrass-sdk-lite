@@ -360,6 +360,13 @@ GglError ggipc_call(
     GglObject *result,
     GglIpcError *remote_err
 ) {
+    if (result != NULL) {
+        *result = GGL_OBJ_NULL;
+    }
+    if (remote_err != NULL) {
+        *remote_err = GGL_IPC_ERROR_DEFAULT;
+    }
+
     if (!connected()) {
         return GGL_ERR_NOCONN;
     }
@@ -562,6 +569,13 @@ GglError ggipc_subscribe(
     GglObject *result,
     GglIpcError *remote_err
 ) {
+    if (result != NULL) {
+        *result = GGL_OBJ_NULL;
+    }
+    if (remote_err != NULL) {
+        *remote_err = GGL_IPC_ERROR_DEFAULT;
+    }
+
     if (!connected()) {
         return GGL_ERR_NOCONN;
     }
