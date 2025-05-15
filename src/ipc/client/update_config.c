@@ -6,6 +6,7 @@
 #include <ggl/constants.h>
 #include <ggl/error.h>
 #include <ggl/ipc/client.h>
+#include <ggl/ipc/client_raw.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>

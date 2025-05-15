@@ -8,6 +8,7 @@
 #include <ggl/error.h>
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
+#include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/error.h>
 #include <ggl/log.h>
 #include <ggl/map.h>

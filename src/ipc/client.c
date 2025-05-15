@@ -16,8 +16,8 @@
 #include <ggl/eventstream/types.h>
 #include <ggl/file.h> // IWYU pragma: keep (TODO: remove after file.h refactor)
 #include <ggl/flags.h>
-#include <ggl/ipc/client.h>
 #include <ggl/ipc/client_priv.h>
+#include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/error.h>
 #include <ggl/ipc/limits.h>
 #include <ggl/json_decode.h>
