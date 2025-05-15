@@ -30,7 +30,7 @@ GglError ggipc_call(
 );
 
 typedef GglError (*GgIpcSubscribeCallback)(
-    void *ctx, GglBuffer service_model_type, GglObject data
+    void *ctx, GglBuffer service_model_type, GglMap data
 );
 
 GglError ggipc_subscribe(

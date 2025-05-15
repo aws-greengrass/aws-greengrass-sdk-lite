@@ -506,7 +506,14 @@ static GglError call_sub_callback(
         return GGL_ERR_OK;
     }
 
-    return sub_callback->fn(sub_callback->ctx, service_model_type, response);
+    if (ggl_obj_type(response) != GGL_TYPE_MAP) {
+        GGL_LOGE("IPC response payload JSON is not an object.");
+        return GGL_ERR_OK;
+    }
+
+    return sub_callback->fn(
+        sub_callback->ctx, service_model_type, ggl_obj_into_map(response)
+    );
 }
 
 static GglError subscribe_stream_handler(
