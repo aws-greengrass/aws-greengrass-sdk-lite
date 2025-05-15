@@ -37,6 +37,19 @@ GglError ggipc_publish_to_topic_binary(
     GglBuffer topic, GglBuffer payload, GglArena alloc
 );
 
+typedef struct {
+    void (*json_handler)(GglBuffer topic, GglMap payload);
+    void (*binary_handler)(GglBuffer topic, GglBuffer payload);
+} GgIpcSubscribeToTopicCallbacks;
+
+/// Subscribe to messages on a local topic
+/// `handlers` must have static lifetime.
+/// `json_handler` or `binary_handler` may be NULL if that payload type is not
+/// expected.
+GglError ggipc_subscribe_to_topic(
+    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *handlers
+) NONNULL(2);
+
 /// Publish an MQTT message to AWS IoT Core on a topic
 /// Uses an allocator to base64-encode a binary message.
 /// base64 encoding will allocate 4 bytes for every 3 payload bytes.
