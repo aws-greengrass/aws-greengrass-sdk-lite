@@ -23,7 +23,7 @@
 /// Connect to GG-IPC server using component name.
 /// If svcuid is non-null, it will be filled with the component's identity
 /// token. Buffer must be able to hold at least GGL_IPC_SVCUID_STR_LEN.
-GglError ggipc_connect_by_name(
+GglError ggipc_connect_with_name(
     GglBuffer socket_path, GglBuffer component_name, int *fd, GglBuffer *svcuid
 ) NONNULL(3);
 

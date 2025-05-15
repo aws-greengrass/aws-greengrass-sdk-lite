@@ -16,6 +16,7 @@
 #include <ggl/eventstream/types.h>
 #include <ggl/file.h> // IWYU pragma: keep (TODO: remove after file.h refactor)
 #include <ggl/flags.h>
+#include <ggl/ipc/client.h>
 #include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/error.h>
@@ -31,6 +32,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 /// Protects payload array and use of stream 1
 /// Serializes requests to IPC server
@@ -166,7 +168,7 @@ static GglError ggipc_connect_with_payload(
     return GGL_ERR_FAILURE;
 }
 
-GglError ggipc_connect_by_name(
+GglError ggipc_connect_with_name(
     GglBuffer socket_path, GglBuffer component_name, int *fd, GglBuffer *svcuid
 ) {
     return ggipc_connect_with_payload(
@@ -175,6 +177,38 @@ GglError ggipc_connect_by_name(
         fd,
         svcuid
     );
+}
+
+GglError ggipc_connect_with_token(
+    GglBuffer socket_path, GglBuffer auth_token, int *fd
+) {
+    return ggipc_connect_with_payload(
+        socket_path,
+        GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token))),
+        fd,
+        NULL
+    );
+}
+
+GglError ggipc_connect(int *fd) {
+    // Unsafe, but function is documented as such
+    // NOLINTBEGIN(concurrency-mt-unsafe)
+    char *svcuid = getenv("SVCUID");
+    if (svcuid == NULL) {
+        return GGL_ERR_CONFIG;
+    }
+    char *socket_path
+        = getenv("AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT");
+    if (socket_path == NULL) {
+        return GGL_ERR_CONFIG;
+    }
+
+    return ggipc_connect_with_token(
+        ggl_buffer_from_null_term(socket_path),
+        ggl_buffer_from_null_term(svcuid),
+        fd
+    );
+    // NOLINTEND(concurrency-mt-unsafe)
 }
 
 static GglError handle_application_error(

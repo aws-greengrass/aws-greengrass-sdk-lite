@@ -6,6 +6,7 @@
 #define GGL_IPC_CLIENT_H
 
 #include <ggl/arena.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/object.h>
@@ -13,6 +14,15 @@
 #include <stdint.h>
 
 struct timespec;
+
+/// Connect to the Greengrass Nucleus from a component.
+/// Not thread-safe due to use of getenv.
+GglError ggipc_connect(int *fd) NONNULL(1);
+
+/// Connect to a GG-IPC socket with a given SVCUID token.
+GglError ggipc_connect_with_token(
+    GglBuffer socket_path, GglBuffer auth_token, int *fd
+) NONNULL(3);
 
 GglError ggipc_get_config_str(
     int conn, GglBufList key_path, GglBuffer *component_name, GglBuffer *value
