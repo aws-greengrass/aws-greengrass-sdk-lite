@@ -9,13 +9,13 @@
 #include <ggl/error.h>
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
+#include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/error.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <ggl/vector.h>
-#include <limits.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -111,7 +111,7 @@ GglError ggipc_get_config(
         *value = GGL_OBJ_NULL;
     }
 
-    static uint8_t resp_mem[sizeof(GglKV) + sizeof("value") + PATH_MAX];
+    uint8_t resp_mem[GGL_IPC_MAX_MSG_LEN];
     GglArena resp_alloc = ggl_arena_init(GGL_BUF(resp_mem));
     GglObject *resp_value;
     GglError ret = ggipc_get_config_common(
@@ -140,7 +140,7 @@ GglError ggipc_get_config_str(
         *value = GGL_STR("");
     }
 
-    static uint8_t resp_mem[sizeof(GglKV) + sizeof("value") + PATH_MAX];
+    uint8_t resp_mem[sizeof(GglKV) + sizeof("value") + 2048];
     GglArena resp_alloc = ggl_arena_init(GGL_BUF(resp_mem));
     GglObject *resp_value;
     GglError ret = ggipc_get_config_common(
