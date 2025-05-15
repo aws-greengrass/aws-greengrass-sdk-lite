@@ -27,7 +27,7 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 // IPC calls
 
 /// Publish a message to a local topic in JSON format
-GglError ggipc_publish_to_topic_obj(GglBuffer topic, GglObject payload);
+GglError ggipc_publish_to_topic_json(GglBuffer topic, GglObject payload);
 
 /// Publish a message to a local topic in binary format
 /// Uses an allocator to base64-encode a binary message.
@@ -55,7 +55,7 @@ GglError ggipc_subscribe_to_iot_core(
 ) NONNULL(3);
 
 /// Get a configuration value for a component on the core device
-GglError ggipc_get_config_obj(
+GglError ggipc_get_config(
     GglBufList key_path,
     const GglBuffer *component_name,
     GglArena *alloc,
@@ -63,7 +63,7 @@ GglError ggipc_get_config_obj(
 );
 
 /// Get a string-typed configuration value for a component on the core device
-/// Alternative API to ggipc_get_config_obj for string type values.
+/// Alternative API to ggipc_get_config for string type values.
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 );

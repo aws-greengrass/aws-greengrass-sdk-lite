@@ -49,6 +49,14 @@ static GglError publish_to_topic_common(
     return ret;
 }
 
+GglError ggipc_publish_to_topic_json(GglBuffer topic, GglObject payload) {
+    GglMap json_message = GGL_MAP(ggl_kv(GGL_STR("message"), payload));
+    GglMap publish_message
+        = GGL_MAP(ggl_kv(GGL_STR("jsonMessage"), ggl_obj_map(json_message)));
+
+    return publish_to_topic_common(topic, publish_message);
+}
+
 GglError ggipc_publish_to_topic_binary(
     GglBuffer topic, GglBuffer payload, GglArena alloc
 ) {
@@ -62,14 +70,6 @@ GglError ggipc_publish_to_topic_binary(
     GglMap publish_message
         = GGL_MAP(ggl_kv(GGL_STR("binaryMessage"), ggl_obj_map(binary_message))
         );
-
-    return publish_to_topic_common(topic, publish_message);
-}
-
-GglError ggipc_publish_to_topic_obj(GglBuffer topic, GglObject payload) {
-    GglMap json_message = GGL_MAP(ggl_kv(GGL_STR("message"), payload));
-    GglMap publish_message
-        = GGL_MAP(ggl_kv(GGL_STR("jsonMessage"), ggl_obj_map(json_message)));
 
     return publish_to_topic_common(topic, publish_message);
 }
