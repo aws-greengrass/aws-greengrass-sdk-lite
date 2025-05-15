@@ -49,8 +49,9 @@ static GglError publish_to_topic_common(
     return ret;
 }
 
-GglError ggipc_publish_to_topic_json(GglBuffer topic, GglObject payload) {
-    GglMap json_message = GGL_MAP(ggl_kv(GGL_STR("message"), payload));
+GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload) {
+    GglMap json_message
+        = GGL_MAP(ggl_kv(GGL_STR("message"), ggl_obj_map(payload)));
     GglMap publish_message
         = GGL_MAP(ggl_kv(GGL_STR("jsonMessage"), ggl_obj_map(json_message)));
 

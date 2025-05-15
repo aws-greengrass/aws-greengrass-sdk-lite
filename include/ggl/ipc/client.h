@@ -27,7 +27,7 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 // IPC calls
 
 /// Publish a message to a local topic in JSON format
-GglError ggipc_publish_to_topic_json(GglBuffer topic, GglObject payload);
+GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload);
 
 /// Publish a message to a local topic in binary format
 /// Uses an allocator to base64-encode a binary message.
