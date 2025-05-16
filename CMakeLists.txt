@@ -181,6 +181,10 @@ if(PROJECT_IS_TOP_LEVEL)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
     foreach(sample_dir ${SAMPLE_DIRS})
       get_filename_component(sample_name ${sample_dir} NAME_WLE)
+      set_property(
+        SOURCE ${sample_dir}/main.c
+        APPEND_STRING
+        PROPERTY COMPILE_FLAGS "-frandom-seed=${sample_dir}/main.c")
       add_executable(sample_${sample_name} ${sample_dir}/main.c)
       target_link_libraries(sample_${sample_name} PRIVATE ggl-sdk)
       install(TARGETS sample_${sample_name})
