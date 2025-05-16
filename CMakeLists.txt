@@ -80,8 +80,6 @@ if(PROJECT_IS_TOP_LEVEL)
 
   add_cflags($<$<CONFIG:Debug,RelWithDebInfo>:-ggdb3>)
 
-  add_cflags($<$<NOT:$<CONFIG:Debug>>:-fPIE>)
-
   # These flags are required
   add_cflags(-pthread -fno-strict-aliasing)
 
@@ -131,8 +129,6 @@ if(PROJECT_IS_TOP_LEVEL)
 
   add_cflags(-Werror=format-security -Werror=implicit
              -Werror=incompatible-pointer-types -Werror=int-conversion)
-
-  add_link_options($<$<NOT:$<CONFIG:Debug>>:-pie>)
 
   add_link_options(
     LINKER:-z,relro,-z,now,-z,noexecstack,-z,nodlopen LINKER:--as-needed
