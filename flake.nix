@@ -63,6 +63,8 @@
             nativeBuildInputs = [ pkg-config cmake ninja ];
             cmakeBuildType = "MinSizeRel";
             cmakeFlags = [ "-DENABLE_WERROR=1" ];
+            hardeningDisable = [ "all" ];
+            dontStrip = true;
             meta = defaultMeta;
           };
 
