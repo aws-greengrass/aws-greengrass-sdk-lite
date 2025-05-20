@@ -127,6 +127,16 @@
 #endif
 
 #ifdef __has_attribute
+#if __has_attribute(pure)
+#define PURE __attribute__((pure))
+#endif
+#endif
+
+#ifndef PURE
+#define PURE
+#endif
+
+#ifdef __has_attribute
 #if __has_attribute(flag_enum)
 #define FLAG_ENUM __attribute__((flag_enum))
 #endif

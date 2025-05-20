@@ -36,6 +36,6 @@ void ggl_ipc_err_info(
     GglBuffer *service_model_type
 ) ACCESS(write_only, 2) ACCESS(write_only, 3);
 
-GglIpcErrorCode get_ipc_err_info(GglBuffer error_code);
+GglIpcErrorCode get_ipc_err_info(GglBuffer error_code) PURE;
 
 #endif

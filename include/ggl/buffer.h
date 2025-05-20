@@ -62,14 +62,14 @@ typedef struct {
 // NOLINTEND(bugprone-macro-parentheses)
 
 /// Convert null-terminated string to buffer
-GglBuffer ggl_buffer_from_null_term(char *str) NONNULL(1)
+GglBuffer ggl_buffer_from_null_term(char *str) PURE NONNULL(1)
     NULL_TERMINATED_STRING_ARG(1);
 
 /// Returns whether two buffers have identical content.
-bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2);
+bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2) PURE;
 
 /// Returns whether the buffer has the given prefix.
-bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix);
+bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix) PURE;
 
 /// Removes a prefix. Returns whether the prefix was removed.
 bool ggl_buffer_remove_prefix(GglBuffer *buf, GglBuffer prefix) NONNULL(1)
