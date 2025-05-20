@@ -28,7 +28,7 @@ GglError ggipc_call(
     GglArena *alloc,
     GglObject *result,
     GglIpcError *remote_err
-);
+) ACCESS(read_write, 4) ACCESS(write_only, 5) ACCESS(write_only, 6);
 
 typedef GglError (*GgIpcSubscribeCallback)(
     void *ctx, GglBuffer service_model_type, GglMap data
@@ -43,6 +43,6 @@ GglError ggipc_subscribe(
     GglArena *alloc,
     GglObject *result,
     GglIpcError *remote_err
-) NONNULL(4);
+) NONNULL(4) ACCESS(read_write, 6) ACCESS(write_only, 7) ACCESS(write_only, 8);
 
 #endif

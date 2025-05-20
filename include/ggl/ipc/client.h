@@ -48,7 +48,7 @@ typedef struct {
 /// expected.
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *handlers
-) NONNULL(2);
+) NONNULL(2) ACCESS(read_only, 2);
 
 /// Publish an MQTT message to AWS IoT Core on a topic
 /// Uses an allocator to base64-encode a binary message.
@@ -73,19 +73,19 @@ GglError ggipc_get_config(
     const GglBuffer *component_name,
     GglArena *alloc,
     GglObject *value
-);
+) ACCESS(read_only, 2) ACCESS(read_write, 3) ACCESS(write_only, 4);
 
 /// Get a string-typed configuration value for a component on the core device
 /// Alternative API to ggipc_get_config for string type values.
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
-);
+) ACCESS(read_only, 2) ACCESS(read_write, 3);
 
 /// Update a configuration value for this component on the core device
 GglError ggipc_update_config(
     GglBufList key_path,
     const struct timespec *timestamp,
     GglObject value_to_merge
-);
+) ACCESS(read_only, 2);
 
 #endif

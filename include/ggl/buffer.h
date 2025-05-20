@@ -72,17 +72,20 @@ bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2);
 bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix);
 
 /// Removes a prefix. Returns whether the prefix was removed.
-bool ggl_buffer_remove_prefix(GglBuffer *buf, GglBuffer prefix) NONNULL(1);
+bool ggl_buffer_remove_prefix(GglBuffer *buf, GglBuffer prefix) NONNULL(1)
+    ACCESS(read_write, 1);
 
 /// Returns whether the buffer has the given suffix.
 bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix);
 
 /// Removes a suffix. Returns whether the suffix was removed.
-bool ggl_buffer_remove_suffix(GglBuffer *buf, GglBuffer suffix) NONNULL(1);
+bool ggl_buffer_remove_suffix(GglBuffer *buf, GglBuffer suffix) NONNULL(1)
+    ACCESS(read_write, 1);
 
 /// Returns whether the buffer contains the given substring.
 /// Outputs start index if non-null.
-bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start);
+bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start)
+    ACCESS(write_only, 3);
 
 /// Returns substring of buffer from start to end.
 /// The result is the overlap between the start to end range and the input
@@ -90,6 +93,6 @@ bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start);
 GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CONST;
 
 /// Parse an integer from a string
-GglError ggl_str_to_int64(GglBuffer str, int64_t *value);
+GglError ggl_str_to_int64(GglBuffer str, int64_t *value) ACCESS(write_only, 2);
 
 #endif
