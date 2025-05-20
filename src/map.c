@@ -82,7 +82,7 @@ bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result) {
 
 GglError ggl_map_validate(GglMap map, GglMapSchema schema) {
     for (size_t i = 0; i < schema.entry_count; i++) {
-        GglMapSchemaEntry *entry = &schema.entries[i];
+        const GglMapSchemaEntry *entry = &schema.entries[i];
         GglObject *value;
         bool found = ggl_map_get(map, entry->key, &value);
         if (!found) {

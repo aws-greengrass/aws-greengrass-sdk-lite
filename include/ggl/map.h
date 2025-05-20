@@ -47,13 +47,13 @@ typedef struct {
 } GglMapSchemaEntry;
 
 typedef struct {
-    GglMapSchemaEntry *entries;
+    const GglMapSchemaEntry *entries;
     size_t entry_count;
 } GglMapSchema;
 
 #define GGL_MAP_SCHEMA(...) \
     (GglMapSchema) { \
-        .entries = (GglMapSchemaEntry[]) { __VA_ARGS__ }, \
+        .entries = (const GglMapSchemaEntry[]) { __VA_ARGS__ }, \
         .entry_count = (sizeof((GglMapSchemaEntry[]) { __VA_ARGS__ })) \
             / (sizeof(GglMapSchemaEntry)) \
     }
