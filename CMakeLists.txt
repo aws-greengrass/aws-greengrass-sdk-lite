@@ -87,6 +87,9 @@ if(PROJECT_IS_TOP_LEVEL)
   add_cflags(-std=gnu11 -fvisibility=hidden -fno-semantic-interposition
              -fno-common)
 
+  # This stops GCC from generating unstrippable inline DWARF debug info
+  add_cflags(-fno-unwind-tables -fno-asynchronous-unwind-tables)
+
   try_add_cflag(strict-flex-arrays -fstrict-flex-arrays=3)
 
   try_add_cflag(macro-prefix-map
