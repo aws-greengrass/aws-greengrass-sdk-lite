@@ -30,7 +30,7 @@ To build the examples, clone the repo. The following commands assume you are in
 the project root directory. Run the following to build:
 
 ```sh
-cmake -B build -D CMAKE_BUILD_TYPE=MinSizeRel
+cmake -B build -D CMAKE_BUILD_TYPE=MinSizeRel -D BUILD_SAMPLES=ON
 make -C build -j$(nproc)
 ```
 
