@@ -106,6 +106,7 @@ if(PROJECT_IS_TOP_LEVEL)
   add_cflags(
     -Wall
     -Wextra
+    -Wwrite-strings
     -Wno-missing-braces
     -Wvla
     -Wshadow

@@ -23,7 +23,7 @@ void ggl_log(
 ) {
     int errno_old = errno;
 
-    char *level_str;
+    const char *level_str;
     switch (level) {
     case GGL_LOG_ERROR:
         level_str = "\033[1;31mE";
