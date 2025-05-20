@@ -47,6 +47,6 @@ typedef enum NODISCARD GglError {
     GGL_ERR_TIMEOUT,
 } GglError;
 
-const char *ggl_strerror(GglError err);
+const char *ggl_strerror(GglError err) CONST;
 
 #endif

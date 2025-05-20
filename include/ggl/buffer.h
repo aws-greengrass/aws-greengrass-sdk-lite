@@ -87,7 +87,7 @@ bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start);
 /// Returns substring of buffer from start to end.
 /// The result is the overlap between the start to end range and the input
 /// bounds.
-GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end);
+GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CONST;
 
 /// Parse an integer from a string
 GglError ggl_str_to_int64(GglBuffer str, int64_t *value);

@@ -37,7 +37,7 @@ GglBuffer ggl_kv_key(GglKV kv) CONST;
 void ggl_kv_set_key(GglKV *kv, GglBuffer key);
 
 /// Get a GglKV's value
-GglObject *ggl_kv_val(GglKV *kv);
+GglObject *ggl_kv_val(GglKV *kv) CONST;
 
 typedef struct {
     GglBuffer key;
