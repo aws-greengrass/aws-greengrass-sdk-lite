@@ -164,7 +164,8 @@ foreach(src ${SRCS})
 endforeach()
 
 add_library(ggl-sdk STATIC ${SRCS})
-target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11)
+target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
+                                       -Wno-missing-braces)
 target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)
 target_include_directories(ggl-sdk PRIVATE include priv_include)
 target_include_directories(ggl-sdk SYSTEM INTERFACE include)
