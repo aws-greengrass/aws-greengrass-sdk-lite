@@ -1,0 +1,20 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "aws-greengrass-sdk-lite.samples.config"
+ComponentVersion: "1.0.0"
+ComponentType: "aws.greengrass.generic"
+ComponentDescription:
+  Example component using aws-greengrass-sdk-lite to read/write component config
+ComponentPublisher: AWS
+ComponentConfiguration:
+  DefaultConfiguration:
+    test_str: "hi"
+Manifests:
+  - Platform:
+      os: linux
+      runtime: "*"
+    Lifecycle:
+      run:
+        Script: "{artifacts:path}/sample_config"
+    Artifacts:
+      - URI: s3://EXAMPLE_BUCKET/sample_config
