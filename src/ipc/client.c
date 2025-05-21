@@ -18,7 +18,6 @@
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
-#include <ggl/ipc/error.h>
 #include <ggl/ipc/limits.h>
 #include <ggl/json_decode.h>
 #include <ggl/log.h>
@@ -39,10 +38,13 @@ static pthread_mutex_t call_state_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 static uint8_t payload_array[GGL_IPC_MAX_MSG_LEN];
 
+/// Only used from callbacks on response thread
+static uint8_t response_decode_mem[GGL_IPC_PAYLOAD_MAX_SUBOBJECTS];
+
 static int conn_fd = -1;
 
 typedef struct {
-    GgIpcSubscribeCallback fn;
+    GgIpcSubscribeCallback *fn;
     void *ctx;
 } CallerSubHandler;
 
@@ -217,14 +219,13 @@ GglError ggipc_connect(void) {
 }
 
 static GglError handle_application_error(
-    GglBuffer payload, GglArena *alloc, GglIpcError *remote_err
+    GglBuffer payload, GgIpcErrorCallback *error_callback, void *response_ctx
 ) {
-    if (remote_err == NULL) {
+    if (error_callback == NULL) {
         return GGL_ERR_REMOTE;
     }
 
-    GglArena error_alloc
-        = ggl_arena_init(GGL_BUF((uint8_t[sizeof(GglObject) * 4]) { 0 }));
+    GglArena error_alloc = ggl_arena_init(GGL_BUF(response_decode_mem));
 
     GglObject err_result;
     GglError ret
@@ -257,19 +258,14 @@ static GglError handle_application_error(
     }
     GglBuffer error_code = ggl_obj_into_buf(*error_code_obj);
 
-    remote_err->error_code = get_ipc_err_info(error_code);
-    remote_err->message = GGL_STR("");
-
+    GglBuffer message = GGL_STR("");
     if (message_obj != NULL) {
-        GglBuffer err_msg = ggl_obj_into_buf(*message_obj);
+        message = ggl_obj_into_buf(*message_obj);
+    }
 
-        ret = ggl_arena_claim_buf(&err_msg, alloc);
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGW("Insufficient memory provided for IPC error message.");
-            // TODO: truncate error message to what fits
-        } else {
-            remote_err->message = err_msg;
-        }
+    ret = error_callback(response_ctx, error_code, message);
+    if (ret != GGL_ERR_OK) {
+        return ret;
     }
 
     return GGL_ERR_REMOTE;
@@ -278,9 +274,9 @@ static GglError handle_application_error(
 static GglError decode_response(
     EventStreamCommonHeaders common_headers,
     EventStreamMessage msg,
-    GglArena *alloc,
-    GglObject *result,
-    GglIpcError *remote_err
+    GgIpcResultCallback *result_callback,
+    GgIpcErrorCallback *error_callback,
+    void *response_ctx
 ) {
     if (common_headers.message_type == EVENTSTREAM_APPLICATION_ERROR) {
         GGL_LOGE(
@@ -288,7 +284,9 @@ static GglError decode_response(
             common_headers.stream_id
         );
 
-        return handle_application_error(msg.payload, alloc, remote_err);
+        return handle_application_error(
+            msg.payload, error_callback, response_ctx
+        );
     }
 
     if (common_headers.message_type != EVENTSTREAM_APPLICATION_MESSAGE) {
@@ -298,21 +296,20 @@ static GglError decode_response(
         return GGL_ERR_FAILURE;
     }
 
-    if (result != NULL) {
-        GglError ret = ggl_json_decode_destructive(msg.payload, alloc, result);
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGE("Failed to decode IPC response payload.");
-            return ret;
-        }
-
-        ret = ggl_arena_claim_obj(result, alloc);
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGE("Insufficient memory provided for IPC response payload.");
-            return ret;
-        }
+    if (result_callback == NULL) {
+        return GGL_ERR_OK;
     }
 
-    return GGL_ERR_OK;
+    GglArena alloc = ggl_arena_init(GGL_BUF(response_decode_mem));
+    GglObject result = GGL_OBJ_NULL;
+
+    GglError ret = ggl_json_decode_destructive(msg.payload, &alloc, &result);
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Failed to decode IPC response payload.");
+        return ret;
+    }
+
+    return result_callback(response_ctx, result);
 }
 
 typedef struct {
@@ -320,9 +317,9 @@ typedef struct {
     pthread_cond_t *cond;
     bool ready;
     GglError ret;
-    GglArena *alloc;
-    GglObject *result;
-    GglIpcError *remote_err;
+    GgIpcResultCallback *result_callback;
+    GgIpcErrorCallback *error_callback;
+    void *response_ctx;
 } CallCallbackCtx;
 
 static GglError call_stream_handler(
@@ -337,9 +334,9 @@ static GglError call_stream_handler(
     call_ctx->ret = decode_response(
         common_headers,
         msg,
-        call_ctx->alloc,
-        call_ctx->result,
-        call_ctx->remote_err
+        call_ctx->result_callback,
+        call_ctx->error_callback,
+        call_ctx->response_ctx
     );
 
     call_ctx->ready = true;
@@ -356,17 +353,10 @@ GglError ggipc_call(
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
-    GglArena *alloc,
-    GglObject *result,
-    GglIpcError *remote_err
+    GgIpcResultCallback *result_callback,
+    GgIpcErrorCallback *error_callback,
+    void *response_ctx
 ) {
-    if (result != NULL) {
-        *result = GGL_OBJ_NULL;
-    }
-    if (remote_err != NULL) {
-        *remote_err = GGL_IPC_ERROR_DEFAULT;
-    }
-
     if (!connected()) {
         return GGL_ERR_NOCONN;
     }
@@ -391,19 +381,19 @@ GglError ggipc_call(
     GGL_CLEANUP(cleanup_pthread_cond, &notify_cond);
     pthread_mutex_t notify_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-    CallCallbackCtx ctx = {
+    CallCallbackCtx stream_handler_ctx = {
         .mtx = &notify_mtx,
         .cond = &notify_cond,
         .ready = false,
         .ret = GGL_ERR_TIMEOUT,
-        .alloc = alloc,
-        .result = result,
-        .remote_err = remote_err,
+        .result_callback = result_callback,
+        .error_callback = error_callback,
+        .response_ctx = response_ctx,
     };
 
     GGL_MTX_SCOPE_GUARD(&call_state_mtx);
 
-    ggipc_set_stream_handler_at(1, &call_stream_handler, &ctx);
+    ggipc_set_stream_handler_at(1, &call_stream_handler, &stream_handler_ctx);
 
     GglError ret = ggipc_send_message(
         conn_fd, headers, headers_len, &params, GGL_BUF(payload_array)
@@ -421,7 +411,7 @@ GglError ggipc_call(
     {
         GGL_MTX_SCOPE_GUARD(&notify_mtx);
 
-        while (!ctx.ready) {
+        while (!stream_handler_ctx.ready) {
             int cond_ret
                 = pthread_cond_timedwait(&notify_cond, &notify_mtx, &timeout);
             if ((cond_ret != 0) && (cond_ret != EINTR)) {
@@ -440,7 +430,7 @@ GglError ggipc_call(
     // At this point we know handler has either run or will not run. Context
     // data must live to this point.
 
-    return ctx.ret;
+    return stream_handler_ctx.ret;
 }
 
 typedef struct {
@@ -448,10 +438,10 @@ typedef struct {
     pthread_cond_t *cond;
     bool ready;
     GglError ret;
-    GglArena *alloc;
-    GglObject *result;
-    GglIpcError *remote_err;
-    GgIpcSubscribeCallback sub_callback;
+    GgIpcResultCallback *result_callback;
+    GgIpcErrorCallback *error_callback;
+    void *response_ctx;
+    GgIpcSubscribeCallback *sub_callback;
     void *sub_callback_ctx;
 } SubscribeCallbackCtx;
 
@@ -535,9 +525,9 @@ static GglError subscribe_stream_handler(
     call_ctx->ret = decode_response(
         common_headers,
         msg,
-        call_ctx->alloc,
-        call_ctx->result,
-        call_ctx->remote_err
+        call_ctx->result_callback,
+        call_ctx->error_callback,
+        call_ctx->response_ctx
     );
 
     if (call_ctx->ret != GGL_ERR_OK) {
@@ -563,19 +553,12 @@ GglError ggipc_subscribe(
     GglBuffer operation,
     GglBuffer service_model_type,
     GglMap params,
-    GgIpcSubscribeCallback on_response,
-    void *ctx,
-    GglArena *alloc,
-    GglObject *result,
-    GglIpcError *remote_err
+    GgIpcResultCallback *result_callback,
+    GgIpcErrorCallback *error_callback,
+    void *response_callback_ctx,
+    GgIpcSubscribeCallback *sub_callback,
+    void *sub_callback_ctx
 ) {
-    if (result != NULL) {
-        *result = GGL_OBJ_NULL;
-    }
-    if (remote_err != NULL) {
-        *remote_err = GGL_IPC_ERROR_DEFAULT;
-    }
-
     if (!connected()) {
         return GGL_ERR_NOCONN;
     }
@@ -589,21 +572,21 @@ GglError ggipc_subscribe(
     GGL_CLEANUP(cleanup_pthread_cond, &notify_cond);
     pthread_mutex_t notify_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-    SubscribeCallbackCtx resp_ctx = {
+    SubscribeCallbackCtx stream_resp_ctx = {
         .mtx = &notify_mtx,
         .cond = &notify_cond,
         .ready = false,
         .ret = GGL_ERR_TIMEOUT,
-        .alloc = alloc,
-        .result = result,
-        .remote_err = remote_err,
-        .sub_callback = on_response,
-        .sub_callback_ctx = ctx,
+        .result_callback = result_callback,
+        .error_callback = error_callback,
+        .response_ctx = response_callback_ctx,
+        .sub_callback = sub_callback,
+        .sub_callback_ctx = sub_callback_ctx,
     };
 
     int32_t stream_id;
     GglError ret = ggipc_set_stream_handler(
-        &subscribe_stream_handler, &resp_ctx, &stream_id
+        &subscribe_stream_handler, &stream_resp_ctx, &stream_id
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("GG-IPC subscribe call failed to get available stream id.");
@@ -639,7 +622,7 @@ GglError ggipc_subscribe(
     {
         GGL_MTX_SCOPE_GUARD(&notify_mtx);
 
-        while (!resp_ctx.ready) {
+        while (!stream_resp_ctx.ready) {
             int cond_ret
                 = pthread_cond_timedwait(&notify_cond, &notify_mtx, &timeout);
             if ((cond_ret != 0) && (cond_ret != EINTR)) {
@@ -655,11 +638,11 @@ GglError ggipc_subscribe(
     // in case of error or else the handler for follow-up responses).
 
     ggipc_clear_stream_handler_if_eq(
-        stream_id, &subscribe_stream_handler, &resp_ctx
+        stream_id, &subscribe_stream_handler, &stream_resp_ctx
     );
 
     // At this point we know first handler has run or will not run. Stream may
     // be set to call the subscription response handler.
 
-    return resp_ctx.ret;
+    return stream_resp_ctx.ret;
 }

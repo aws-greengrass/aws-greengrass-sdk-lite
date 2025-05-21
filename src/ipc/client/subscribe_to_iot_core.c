@@ -2,14 +2,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/arena.h>
 #include <ggl/base64.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_raw.h>
-#include <ggl/ipc/error.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
@@ -19,7 +17,7 @@
 static GglError subscribe_to_iot_core_resp_handler(
     void *ctx, GglBuffer service_model_type, GglMap data
 ) {
-    GgIpcSubscribeToIotCoreCallback callback = ctx;
+    GgIpcSubscribeToIotCoreCallback *callback = ctx;
 
     if (!ggl_buffer_eq(
             service_model_type, GGL_STR("aws.greengrass#IoTCoreMessage")
@@ -66,8 +64,29 @@ static GglError subscribe_to_iot_core_resp_handler(
     return GGL_ERR_OK;
 }
 
+static GglError error_handler(
+    void *ctx, GglBuffer error_code, GglBuffer message
+) {
+    (void) ctx;
+
+    GGL_LOGE(
+        "Received SubscribeToIoTCore error %.*s: %.*s.",
+        (int) error_code.len,
+        error_code.data,
+        (int) message.len,
+        message.data
+    );
+
+    if (ggl_buffer_eq(error_code, GGL_STR("UnauthorizedError"))) {
+        return GGL_ERR_UNSUPPORTED;
+    }
+    return GGL_ERR_FAILURE;
+}
+
 GglError ggipc_subscribe_to_iot_core(
-    GglBuffer topic_filter, uint8_t qos, GgIpcSubscribeToIotCoreCallback handler
+    GglBuffer topic_filter,
+    uint8_t qos,
+    GgIpcSubscribeToIotCoreCallback *callback
 ) {
     if (qos > 2) {
         GGL_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
@@ -79,30 +98,14 @@ GglError ggipc_subscribe_to_iot_core(
         ggl_kv(GGL_STR("qos"), ggl_obj_buf(qos_buffer))
     );
 
-    GglArena error_alloc = ggl_arena_init(GGL_BUF((uint8_t[128]) { 0 }));
-    GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
-    GglError ret = ggipc_subscribe(
+    return ggipc_subscribe(
         GGL_STR("aws.greengrass#SubscribeToIoTCore"),
         GGL_STR("aws.greengrass#SubscribeToIoTCoreRequest"),
         args,
-        &subscribe_to_iot_core_resp_handler,
-        handler,
-        &error_alloc,
         NULL,
-        &remote_error
+        &error_handler,
+        NULL,
+        &subscribe_to_iot_core_resp_handler,
+        callback
     );
-    if (ret == GGL_ERR_REMOTE) {
-        if (remote_error.error_code == GGL_IPC_ERR_UNAUTHORIZED_ERROR) {
-            GGL_LOGE(
-                "Component unauthorized: %.*s",
-                (int) remote_error.message.len,
-                remote_error.message.data
-            );
-            return GGL_ERR_UNSUPPORTED;
-        }
-        GGL_LOGE("Server error.");
-        return GGL_ERR_FAILURE;
-    }
-
-    return ret;
 }

@@ -8,12 +8,30 @@
 #include <ggl/error.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_raw.h>
-#include <ggl/ipc/error.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <inttypes.h>
 #include <string.h>
+
+static GglError error_handler(
+    void *ctx, GglBuffer error_code, GglBuffer message
+) {
+    (void) ctx;
+
+    GGL_LOGE(
+        "Received PublishToIoTCore error %.*s: %.*s.",
+        (int) error_code.len,
+        error_code.data,
+        (int) message.len,
+        message.data
+    );
+
+    if (ggl_buffer_eq(error_code, GGL_STR("UnauthorizedError"))) {
+        return GGL_ERR_UNSUPPORTED;
+    }
+    return GGL_ERR_FAILURE;
+}
 
 // TODO: use GglByteVec for payload to allow in-place base64 encoding.
 GglError ggipc_publish_to_iot_core(
@@ -36,28 +54,12 @@ GglError ggipc_publish_to_iot_core(
         ggl_kv(GGL_STR("qos"), ggl_obj_buf(qos_buffer))
     );
 
-    GglArena error_alloc = ggl_arena_init(GGL_BUF((uint8_t[128]) { 0 }));
-    GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
-    ret = ggipc_call(
+    return ggipc_call(
         GGL_STR("aws.greengrass#PublishToIoTCore"),
         GGL_STR("aws.greengrass#PublishToIoTCoreRequest"),
         args,
-        &error_alloc,
         NULL,
-        &remote_error
+        &error_handler,
+        NULL
     );
-    if (ret == GGL_ERR_REMOTE) {
-        if (remote_error.error_code == GGL_IPC_ERR_UNAUTHORIZED_ERROR) {
-            GGL_LOGE(
-                "Component unauthorized: %.*s",
-                (int) remote_error.message.len,
-                remote_error.message.data
-            );
-            return GGL_ERR_UNSUPPORTED;
-        }
-        GGL_LOGE("Server error.");
-        return GGL_ERR_FAILURE;
-    }
-
-    return ret;
 }

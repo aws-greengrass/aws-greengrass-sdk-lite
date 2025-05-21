@@ -5,6 +5,8 @@
 #ifndef GGL_IPC_ERROR_H
 #define GGL_IPC_ERROR_H
 
+// TODO: Move this into Lite Nucleus repo
+
 #include <ggl/attr.h>
 #include <ggl/buffer.h>
 
@@ -35,7 +37,5 @@ void ggl_ipc_err_info(
     GglBuffer *err_str,
     GglBuffer *service_model_type
 ) ACCESS(write_only, 2) ACCESS(write_only, 3);
-
-GglIpcErrorCode get_ipc_err_info(GglBuffer error_code) PURE;
 
 #endif

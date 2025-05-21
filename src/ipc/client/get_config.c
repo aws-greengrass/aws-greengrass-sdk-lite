@@ -9,30 +9,50 @@
 #include <ggl/error.h>
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
-#include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
-#include <ggl/ipc/error.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <ggl/vector.h>
 #include <string.h>
-#include <stdint.h>
+
+static GglError error_handler(
+    void *ctx, GglBuffer error_code, GglBuffer message
+) {
+    (void) ctx;
+
+    if (ggl_buffer_eq(error_code, GGL_STR("ResourceNotFoundError"))) {
+        GGL_LOGW(
+            "Requested configuration could not be found: %.*s",
+            (int) message.len,
+            message.data
+        );
+        return GGL_ERR_NOENTRY;
+    }
+
+    GGL_LOGE(
+        "Received PublishToTopic error %.*s: %.*s.",
+        (int) error_code.len,
+        error_code.data,
+        (int) message.len,
+        message.data
+    );
+
+    return GGL_ERR_FAILURE;
+}
 
 static GglError ggipc_get_config_common(
     GglBufList key_path,
     const GglBuffer *component_name,
-    GglArena *alloc,
-    GglObject **resp_value,
-    GglObjectType expected_type
-) NONNULL(4);
+    GgIpcResultCallback *result_callback,
+    void *result_ctx
+) NONNULL(3);
 
 static GglError ggipc_get_config_common(
     GglBufList key_path,
     const GglBuffer *component_name,
-    GglArena *alloc,
-    GglObject **resp_value,
-    GglObjectType expected_type
+    GgIpcResultCallback *result_callback,
+    void *result_ctx
 ) {
     GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
     GglError ret = GGL_ERR_OK;
@@ -55,47 +75,56 @@ static GglError ggipc_get_config_common(
         );
     }
 
-    GglObject resp = { 0 };
-    GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
-    ret = ggipc_call(
+    return ggipc_call(
         GGL_STR("aws.greengrass#GetConfiguration"),
         GGL_STR("aws.greengrass#GetConfigurationRequest"),
         args.map,
-        alloc,
-        &resp,
-        &remote_error
+        result_callback,
+        &error_handler,
+        result_ctx
     );
-    if (ret == GGL_ERR_REMOTE) {
-        if (remote_error.error_code == GGL_IPC_ERR_RESOURCE_NOT_FOUND) {
-            GGL_LOGE(
-                "Requested configuration could not be found: %.*s",
-                (int) remote_error.message.len,
-                remote_error.message.data
-            );
-            return GGL_ERR_NOENTRY;
-        }
+}
 
-        GGL_LOGE("Server error.");
-        return GGL_ERR_FAILURE;
-    }
-    if (ret != GGL_ERR_OK) {
-        return ret;
-    }
-
+static GglError get_resp_value(GglObject resp, GglObject **value) {
     if (ggl_obj_type(resp) != GGL_TYPE_MAP) {
-        GGL_LOGE("Config value is not a map.");
+        GGL_LOGE("Config response is not a map.");
         return GGL_ERR_FAILURE;
     }
 
-    ret = ggl_map_validate(
+    GglError ret = ggl_map_validate(
         ggl_obj_into_map(resp),
-        GGL_MAP_SCHEMA(
-            { GGL_STR("value"), GGL_REQUIRED, expected_type, resp_value }
-        )
+        GGL_MAP_SCHEMA({ GGL_STR("value"), GGL_REQUIRED, GGL_TYPE_NULL, value })
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed validating server response.");
         return GGL_ERR_INVALID;
+    }
+
+    return GGL_ERR_OK;
+}
+
+typedef struct {
+    GglObject *value;
+    GglArena *alloc;
+} CopyObjectCtx;
+
+static GglError copy_config_obj(void *ctx, GglObject result) {
+    CopyObjectCtx *copy_ctx = ctx;
+
+    GglObject *value;
+    GglError ret = get_resp_value(result, &value);
+    if (ret != GGL_ERR_OK) {
+        return GGL_ERR_INVALID;
+    }
+
+    if (copy_ctx->value != NULL) {
+        ret = ggl_arena_claim_obj(value, copy_ctx->alloc);
+        if (ret != GGL_ERR_OK) {
+            GGL_LOGE("Insufficent memory provided for response.");
+            return ret;
+        }
+
+        *copy_ctx->value = *value;
     }
 
     return GGL_ERR_OK;
@@ -111,55 +140,50 @@ GglError ggipc_get_config(
         *value = GGL_OBJ_NULL;
     }
 
-    uint8_t resp_mem[GGL_IPC_MAX_MSG_LEN];
-    GglArena resp_alloc = ggl_arena_init(GGL_BUF(resp_mem));
-    GglObject *resp_value;
-    GglError ret = ggipc_get_config_common(
-        key_path, component_name, &resp_alloc, &resp_value, GGL_TYPE_NULL
+    CopyObjectCtx response_ctx = { .value = value, .alloc = alloc };
+    return ggipc_get_config_common(
+        key_path, component_name, &copy_config_obj, &response_ctx
     );
+}
+
+static GglError copy_config_buf(void *ctx, GglObject result) {
+    GglBuffer *resp_buf = ctx;
+
+    GglObject *value;
+    GglError ret = get_resp_value(result, &value);
     if (ret != GGL_ERR_OK) {
-        return ret;
+        return GGL_ERR_INVALID;
     }
 
-    if (value != NULL) {
-        ret = ggl_arena_claim_obj(resp_value, alloc);
+    if (ggl_obj_type(*value) != GGL_TYPE_BUF) {
+        GGL_LOGE("Config value is not a string");
+        return GGL_ERR_FAILURE;
+    }
+
+    if (resp_buf != NULL) {
+        GglBuffer value_buf = ggl_obj_into_buf(*value);
+
+        GglArena alloc = ggl_arena_init(*resp_buf);
+        ret = ggl_arena_claim_buf(&value_buf, &alloc);
         if (ret != GGL_ERR_OK) {
             GGL_LOGE("Insufficent memory provided for response.");
             return ret;
         }
 
-        *value = *resp_value;
+        *resp_buf = value_buf;
     }
+
     return GGL_ERR_OK;
 }
 
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 ) {
-    uint8_t resp_mem[sizeof(GglKV) + sizeof("value") + 2048];
-    GglArena resp_alloc = ggl_arena_init(GGL_BUF(resp_mem));
-    GglObject *resp_value;
     GglError ret = ggipc_get_config_common(
-        key_path, component_name, &resp_alloc, &resp_value, GGL_TYPE_BUF
+        key_path, component_name, &copy_config_buf, value
     );
-    if (ret != GGL_ERR_OK) {
-        if (value != NULL) {
-            *value = GGL_STR("");
-        }
-        return ret;
+    if ((ret != GGL_ERR_OK) && (value != NULL)) {
+        *value = GGL_STR("");
     }
-    GglBuffer resp_buf = ggl_obj_into_buf(*resp_value);
-
-    if (value != NULL) {
-        GglArena ret_alloc = ggl_arena_init(*value);
-        ret = ggl_arena_claim_buf(&resp_buf, &ret_alloc);
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGE("Insufficent memory provided for response.");
-            *value = GGL_STR("");
-            return ret;
-        }
-
-        *value = resp_buf;
-    }
-    return GGL_ERR_OK;
+    return ret;
 }

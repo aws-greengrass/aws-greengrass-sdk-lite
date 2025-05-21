@@ -47,7 +47,7 @@ typedef struct {
 /// `json_handler` or `binary_handler` may be NULL if that payload type is not
 /// expected.
 GglError ggipc_subscribe_to_topic(
-    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *handlers
+    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *callbacks
 ) NONNULL(2) ACCESS(read_only, 2);
 
 /// Publish an MQTT message to AWS IoT Core on a topic
@@ -58,13 +58,15 @@ GglError ggipc_publish_to_iot_core(
     GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
 );
 
-typedef void (*GgIpcSubscribeToIotCoreCallback)(
+typedef void GgIpcSubscribeToIotCoreCallback(
     GglBuffer topic, GglBuffer payload
 );
 
 /// Subscribe to MQTT messages from AWS IoT Core on a topic or topic filter
 GglError ggipc_subscribe_to_iot_core(
-    GglBuffer topic_filter, uint8_t qos, GgIpcSubscribeToIotCoreCallback handler
+    GglBuffer topic_filter,
+    uint8_t qos,
+    GgIpcSubscribeToIotCoreCallback *callback
 ) NONNULL(3);
 
 /// Get a configuration value for a component on the core device

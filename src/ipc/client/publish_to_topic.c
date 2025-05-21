@@ -8,12 +8,29 @@
 #include <ggl/error.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_raw.h>
-#include <ggl/ipc/error.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <string.h>
-#include <stdint.h>
+
+static GglError error_handler(
+    void *ctx, GglBuffer error_code, GglBuffer message
+) {
+    (void) ctx;
+
+    GGL_LOGE(
+        "Received PublishToTopic error %.*s: %.*s.",
+        (int) error_code.len,
+        error_code.data,
+        (int) message.len,
+        message.data
+    );
+
+    if (ggl_buffer_eq(error_code, GGL_STR("UnauthorizedError"))) {
+        return GGL_ERR_UNSUPPORTED;
+    }
+    return GGL_ERR_FAILURE;
+}
 
 static GglError publish_to_topic_common(
     GglBuffer topic, GglMap publish_message
@@ -23,30 +40,14 @@ static GglError publish_to_topic_common(
         ggl_kv(GGL_STR("publishMessage"), ggl_obj_map(publish_message))
     );
 
-    GglArena error_alloc = ggl_arena_init(GGL_BUF((uint8_t[128]) { 0 }));
-    GglIpcError remote_error = GGL_IPC_ERROR_DEFAULT;
-    GglError ret = ggipc_call(
+    return ggipc_call(
         GGL_STR("aws.greengrass#PublishToTopic"),
         GGL_STR("aws.greengrass#PublishToTopicRequest"),
         args,
-        &error_alloc,
         NULL,
-        &remote_error
+        &error_handler,
+        NULL
     );
-    if (ret == GGL_ERR_REMOTE) {
-        if (remote_error.error_code == GGL_IPC_ERR_UNAUTHORIZED_ERROR) {
-            GGL_LOGE(
-                "Component unauthorized: %.*s",
-                (int) remote_error.message.len,
-                remote_error.message.data
-            );
-            return GGL_ERR_UNSUPPORTED;
-        }
-        GGL_LOGE("Server error.");
-        return GGL_ERR_FAILURE;
-    }
-
-    return ret;
 }
 
 GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload) {

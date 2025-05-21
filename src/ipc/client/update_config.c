@@ -16,6 +16,22 @@
 
 struct timespec;
 
+static GglError error_handler(
+    void *ctx, GglBuffer error_code, GglBuffer message
+) {
+    (void) ctx;
+
+    GGL_LOGE(
+        "Received UpdateConfig error %.*s: %.*s.",
+        (int) error_code.len,
+        error_code.data,
+        (int) message.len,
+        message.data
+    );
+
+    return GGL_ERR_FAILURE;
+}
+
 GglError ggipc_update_config(
     GglBufList key_path,
     const struct timespec *timestamp,
@@ -49,18 +65,12 @@ GglError ggipc_update_config(
         ggl_kv(GGL_STR("valueToMerge"), value_to_merge)
     );
 
-    ret = ggipc_call(
+    return ggipc_call(
         GGL_STR("aws.greengrass#UpdateConfiguration"),
         GGL_STR("aws.greengrass#UpdateConfigurationRequest"),
         args,
         NULL,
-        NULL,
+        &error_handler,
         NULL
     );
-    if (ret == GGL_ERR_REMOTE) {
-        GGL_LOGE("Server error.");
-        return GGL_ERR_FAILURE;
-    }
-
-    return ret;
 }
