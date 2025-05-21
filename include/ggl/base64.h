@@ -8,17 +8,22 @@
 //! Base64 utilities
 
 #include <ggl/arena.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <stdbool.h>
 
 /// Convert a base64 buffer to its decoded data.
-bool ggl_base64_decode(GglBuffer base64, GglBuffer *target);
+/// Target must be large enough to hold decoded value.
+bool ggl_base64_decode(GglBuffer base64, GglBuffer *target) NONNULL(2)
+    ACCESS(read_write, 2);
 
 /// Convert a base64 buffer to its decoded data in place.
-bool ggl_base64_decode_in_place(GglBuffer *target);
+bool ggl_base64_decode_in_place(GglBuffer *target) NONNULL(1)
+    ACCESS(read_write, 1);
 
 /// Encode a buffer into base64.
-GglError ggl_base64_encode(GglBuffer buf, GglArena *alloc, GglBuffer *result);
+GglError ggl_base64_encode(GglBuffer buf, GglArena *alloc, GglBuffer *result)
+    NONNULL(3) ACCESS(read_write, 2) ACCESS(write_only, 3);
 
 #endif
