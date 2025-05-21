@@ -33,24 +33,13 @@ static GglError error_handler(
     return GGL_ERR_FAILURE;
 }
 
-// TODO: use GglByteVec for payload to allow in-place base64 encoding.
-GglError ggipc_publish_to_iot_core(
-    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
+GglError ggipc_publish_to_iot_core_b64(
+    GglBuffer topic_name, GglBuffer b64_payload, uint8_t qos
 ) {
-    if (qos > 2) {
-        GGL_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
-        return GGL_ERR_INVALID;
-    }
-    GGL_LOGT("Topic name len: %zu", topic_name.len);
     GglBuffer qos_buffer = GGL_BUF((uint8_t[1]) { qos + (uint8_t) '0' });
-    GglBuffer encoded_payload;
-    GglError ret = ggl_base64_encode(payload, &alloc, &encoded_payload);
-    if (ret != GGL_ERR_OK) {
-        return ret;
-    }
     GglMap args = GGL_MAP(
         ggl_kv(GGL_STR("topicName"), ggl_obj_buf(topic_name)),
-        ggl_kv(GGL_STR("payload"), ggl_obj_buf(encoded_payload)),
+        ggl_kv(GGL_STR("payload"), ggl_obj_buf(b64_payload)),
         ggl_kv(GGL_STR("qos"), ggl_obj_buf(qos_buffer))
     );
 
@@ -62,4 +51,22 @@ GglError ggipc_publish_to_iot_core(
         &error_handler,
         NULL
     );
+}
+
+GglError ggipc_publish_to_iot_core(
+    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
+) {
+    GglBuffer b64_payload;
+    GglError ret = ggl_base64_encode(payload, &alloc, &b64_payload);
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE(
+            "Insufficient memory provided to base64 encode "
+            "PublishToIoTCore payload (required %zu, provided %" PRIu32 ").",
+            ((payload.len + 2) / 3) * 4,
+            alloc.capacity - alloc.index
+        );
+        return ret;
+    }
+
+    return ggipc_publish_to_iot_core_b64(topic_name, b64_payload, qos);
 }

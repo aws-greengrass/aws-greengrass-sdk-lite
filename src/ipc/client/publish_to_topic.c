@@ -11,6 +11,7 @@
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
+#include <inttypes.h>
 #include <string.h>
 
 static GglError error_handler(
@@ -59,19 +60,32 @@ GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload) {
     return publish_to_topic_common(topic, publish_message);
 }
 
-GglError ggipc_publish_to_topic_binary(
-    GglBuffer topic, GglBuffer payload, GglArena alloc
+GglError ggipc_publish_to_topic_binary_b64(
+    GglBuffer topic, GglBuffer b64_payload
 ) {
-    GglBuffer encoded_payload;
-    GglError ret = ggl_base64_encode(payload, &alloc, &encoded_payload);
-    if (ret != GGL_ERR_OK) {
-        return ret;
-    }
     GglMap binary_message
-        = GGL_MAP(ggl_kv(GGL_STR("message"), ggl_obj_buf(encoded_payload)));
+        = GGL_MAP(ggl_kv(GGL_STR("message"), ggl_obj_buf(b64_payload)));
     GglMap publish_message
         = GGL_MAP(ggl_kv(GGL_STR("binaryMessage"), ggl_obj_map(binary_message))
         );
 
     return publish_to_topic_common(topic, publish_message);
+}
+
+GglError ggipc_publish_to_topic_binary(
+    GglBuffer topic, GglBuffer payload, GglArena alloc
+) {
+    GglBuffer b64_payload;
+    GglError ret = ggl_base64_encode(payload, &alloc, &b64_payload);
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE(
+            "Insufficient memory provided to base64 encode PublishToTopic "
+            "payload (required %zu, provided %" PRIu32 ").",
+            ((payload.len + 2) / 3) * 4,
+            alloc.capacity - alloc.index
+        );
+        return ret;
+    }
+
+    return ggipc_publish_to_topic_binary_b64(topic, b64_payload);
 }

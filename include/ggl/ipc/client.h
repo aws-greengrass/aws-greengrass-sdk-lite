@@ -30,11 +30,16 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload);
 
 /// Publish a message to a local topic in binary format
-/// Uses an allocator to base64-encode a binary message.
-/// base64 encoding will allocate 4 bytes for every 3 payload bytes.
-/// Additionally, up to 128 bytes may be allocated for an error message.
+/// Uses an arena to base64-encode a binary message.
+/// base64 encoding will require 4 bytes for every 3 payload bytes.
 GglError ggipc_publish_to_topic_binary(
     GglBuffer topic, GglBuffer payload, GglArena alloc
+);
+
+/// Publish a message to a local topic in binary format
+/// Payload must be already base64 encoded.
+GglError ggipc_publish_to_topic_binary_b64(
+    GglBuffer topic, GglBuffer b64_payload
 );
 
 typedef struct {
@@ -51,11 +56,16 @@ GglError ggipc_subscribe_to_topic(
 ) NONNULL(2) ACCESS(read_only, 2);
 
 /// Publish an MQTT message to AWS IoT Core on a topic
-/// Uses an allocator to base64-encode a binary message.
-/// base64 encoding will allocate 4 bytes for every 3 payload bytes.
-/// Additionally, up to 128 bytes may be allocated for an error message.
+/// Uses an arena to base64-encode a binary message.
+/// base64 encoding will require 4 bytes for every 3 payload bytes.
 GglError ggipc_publish_to_iot_core(
     GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
+);
+
+/// Publish an MQTT message to AWS IoT Core on a topic
+/// Payload must be already base64 encoded.
+GglError ggipc_publish_to_iot_core_b64(
+    GglBuffer topic_name, GglBuffer b64_payload, uint8_t qos
 );
 
 typedef void GgIpcSubscribeToIotCoreCallback(
@@ -78,6 +88,8 @@ GglError ggipc_get_config(
 ) ACCESS(read_only, 2) ACCESS(read_write, 3) ACCESS(write_only, 4);
 
 /// Get a string-typed configuration value for a component on the core device
+/// `value` must point to a buffer large enough to hold the result, and will be
+/// updated to the result string.
 /// Alternative API to ggipc_get_config for string type values.
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
