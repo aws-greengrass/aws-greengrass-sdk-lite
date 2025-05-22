@@ -146,4 +146,14 @@
 #define FLAG_ENUM
 #endif
 
+#ifdef __has_attribute
+#if __has_attribute(enum_extensibility)
+#define ENUM_EXTENSIBILITY(type) __attribute__((enum_extensibility(type)))
+#endif
+#endif
+
+#ifndef ENUM_EXTENSIBILITY
+#define ENUM_EXTENSIBILITY(type)
+#endif
+
 #endif

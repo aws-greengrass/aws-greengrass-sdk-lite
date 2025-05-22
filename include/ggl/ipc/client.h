@@ -102,4 +102,13 @@ GglError ggipc_update_config(
     GglObject value_to_merge
 ) ACCESS(read_only, 2);
 
+/// Component state values for UpdateState
+typedef enum ENUM_EXTENSIBILITY(closed) {
+    GGL_COMPONENT_STATE_RUNNING,
+    GGL_COMPONENT_STATE_ERRORED
+} GglComponentState;
+
+/// Update the state of this component
+GglError ggipc_update_state(GglComponentState state);
+
 #endif
