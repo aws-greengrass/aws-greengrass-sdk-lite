@@ -1,0 +1,17 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "aws-greengrass-sdk-lite.samples.update_state"
+ComponentVersion: "1.0.0"
+ComponentType: "aws.greengrass.generic"
+ComponentDescription:
+  Example component using aws-greengrass-sdk-lite to update component state
+ComponentPublisher: AWS
+Manifests:
+  - Platform:
+      os: linux
+      runtime: "*"
+    Lifecycle:
+      startup:
+        Script: "{artifacts:path}/sample_update_state"
+    Artifacts:
+      - URI: s3://EXAMPLE_BUCKET/sample_update_state
