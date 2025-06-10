@@ -8,6 +8,7 @@
 #include <ggl/log.h>
 #include <ggl/socket_epoll.h>
 #include <sys/epoll.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -44,6 +45,10 @@ GglError ggl_socket_epoll_run(
     assert(epoll_fd >= 0);
     assert(fd_ready != NULL);
 
+    int32_t tid = gettid();
+
+    GGL_LOGD("Entering epoll loop on thread %d.", tid);
+
     struct epoll_event events[10] = { 0 };
 
     while (true) {
@@ -53,14 +58,15 @@ GglError ggl_socket_epoll_run(
 
         if (ready == -1) {
             if (errno == EINTR) {
-                GGL_LOGT("epoll_wait interrupted.");
+                GGL_LOGT("epoll_wait interrupted on thread %d.", tid);
                 continue;
             }
-            GGL_LOGE("Failed to wait on epoll: %d.", errno);
+            GGL_LOGE("Failed to wait on epoll on thread %d: %d.", tid, errno);
             return GGL_ERR_FAILURE;
         }
 
         for (int i = 0; i < ready; i++) {
+            GGL_LOGD("Calling epoll callback on thread %d.", tid);
             GglError ret = fd_ready(ctx, events[i].data.u64);
             if (ret != GGL_ERR_OK) {
                 return ret;
