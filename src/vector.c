@@ -4,6 +4,7 @@
 
 #include <ggl/buffer.h>
 #include <ggl/error.h>
+#include <ggl/io.h>
 #include <ggl/list.h>
 #include <ggl/log.h>
 #include <ggl/object.h>
@@ -118,6 +119,15 @@ void ggl_byte_vec_chain_append(
 GglBuffer ggl_byte_vec_remaining_capacity(GglByteVec vector) {
     return (GglBuffer) { .data = &vector.buf.data[vector.buf.len],
                          .len = vector.capacity - vector.buf.len };
+}
+
+static GglError byte_vec_write(void *ctx, GglBuffer buf) {
+    GglByteVec *target = ctx;
+    return ggl_byte_vec_append(target, buf);
+}
+
+GglWriter ggl_byte_vec_writer(GglByteVec *byte_vec) {
+    return (GglWriter) { .ctx = byte_vec, .write = &byte_vec_write };
 }
 
 GglError ggl_buf_vec_push(GglBufVec *vector, GglBuffer buf) {

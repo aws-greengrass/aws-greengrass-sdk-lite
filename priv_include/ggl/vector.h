@@ -9,6 +9,7 @@
 
 #include <ggl/buffer.h>
 #include <ggl/error.h>
+#include <ggl/io.h>
 #include <ggl/object.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -87,6 +88,9 @@ void ggl_byte_vec_chain_append(
     GglError *err, GglByteVec *vector, GglBuffer buf
 );
 GglBuffer ggl_byte_vec_remaining_capacity(GglByteVec vector);
+
+/// Returns a writer that writes into a GglByteVec
+GglWriter ggl_byte_vec_writer(GglByteVec *byte_vec);
 
 typedef struct {
     GglBufList buf_list;
