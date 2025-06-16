@@ -11,6 +11,7 @@
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
+#include <ggl/vector.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -222,7 +223,14 @@ static GglError obj_read(void *ctx, GglBuffer *buf) {
         return GGL_ERR_INVALID;
     }
 
-    return ggl_json_encode(*obj, ggl_buf_writer(buf));
+    GglByteVec vec = ggl_byte_vec_init(*buf);
+    GglError ret = ggl_json_encode(*obj, ggl_byte_vec_writer(&vec));
+    if (ret != GGL_ERR_OK) {
+        return ret;
+    }
+
+    *buf = vec.buf;
+    return GGL_ERR_OK;
 }
 
 GglReader ggl_json_reader(GglObject *obj) {
