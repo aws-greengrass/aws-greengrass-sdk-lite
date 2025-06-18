@@ -55,6 +55,7 @@ void ggl_log(
         va_end(args);
 
         fprintf(stderr, "\033[0m\n");
+        fflush(stderr);
     }
 
     errno = errno_old;
