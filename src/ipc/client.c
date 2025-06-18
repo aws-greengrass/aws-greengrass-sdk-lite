@@ -279,7 +279,7 @@ static GglError decode_response(
     void *response_ctx
 ) {
     if (common_headers.message_type == EVENTSTREAM_APPLICATION_ERROR) {
-        GGL_LOGE(
+        GGL_LOGD(
             "Received an IPC error on stream %" PRId32 ".",
             common_headers.stream_id
         );
