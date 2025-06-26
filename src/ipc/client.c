@@ -32,7 +32,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-/// Protects payload array and use of stream 1
+/// Protects payload array
 /// Serializes requests to IPC server
 static pthread_mutex_t call_state_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -48,7 +48,7 @@ typedef struct {
     void *ctx;
 } CallerSubHandler;
 
-static CallerSubHandler sub_callbacks[GGL_IPC_MAX_STREAMS - 2];
+static CallerSubHandler sub_callbacks[GGL_IPC_MAX_STREAMS - 1];
 
 static bool connected(void) {
     return conn_fd >= 0;
@@ -325,8 +325,6 @@ typedef struct {
 static GglError call_stream_handler(
     void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
 ) {
-    assert(common_headers.stream_id == 1);
-
     CallCallbackCtx *call_ctx = ctx;
 
     GGL_MTX_SCOPE_GUARD(call_ctx->mtx);
@@ -361,17 +359,6 @@ GglError ggipc_call(
         return GGL_ERR_NOCONN;
     }
 
-    EventStreamHeader headers[] = {
-        { GGL_STR(":message-type"),
-          { EVENTSTREAM_INT32, .int32 = EVENTSTREAM_APPLICATION_MESSAGE } },
-        { GGL_STR(":message-flags"), { EVENTSTREAM_INT32, .int32 = 0 } },
-        { GGL_STR(":stream-id"), { EVENTSTREAM_INT32, .int32 = 1 } },
-        { GGL_STR("operation"), { EVENTSTREAM_STRING, .string = operation } },
-        { GGL_STR("service-model-type"),
-          { EVENTSTREAM_STRING, .string = service_model_type } },
-    };
-    size_t headers_len = sizeof(headers) / sizeof(headers[0]);
-
     pthread_condattr_t notify_condattr;
     pthread_condattr_init(&notify_condattr);
     pthread_condattr_setclock(&notify_condattr, CLOCK_MONOTONIC);
@@ -391,16 +378,34 @@ GglError ggipc_call(
         .response_ctx = response_ctx,
     };
 
+    int32_t stream_id;
+    GglError ret = ggipc_set_stream_handler(
+        &call_stream_handler, &stream_handler_ctx, &stream_id
+    );
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("GG-IPC subscribe call failed to get available stream id.");
+        return ret;
+    }
+
+    EventStreamHeader headers[] = {
+        { GGL_STR(":message-type"),
+          { EVENTSTREAM_INT32, .int32 = EVENTSTREAM_APPLICATION_MESSAGE } },
+        { GGL_STR(":message-flags"), { EVENTSTREAM_INT32, .int32 = 0 } },
+        { GGL_STR(":stream-id"), { EVENTSTREAM_INT32, .int32 = stream_id } },
+        { GGL_STR("operation"), { EVENTSTREAM_STRING, .string = operation } },
+        { GGL_STR("service-model-type"),
+          { EVENTSTREAM_STRING, .string = service_model_type } },
+    };
+    size_t headers_len = sizeof(headers) / sizeof(headers[0]);
+
     GGL_MTX_SCOPE_GUARD(&call_state_mtx);
 
-    ggipc_set_stream_handler_at(1, &call_stream_handler, &stream_handler_ctx);
-
-    GglError ret = ggipc_send_message(
+    ret = ggipc_send_message(
         conn_fd, headers, headers_len, &params, GGL_BUF(payload_array)
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to send message %d", ret);
-        ggipc_set_stream_handler_at(1, NULL, NULL);
+        ggipc_set_stream_handler_at(stream_id, NULL, NULL);
         return ret;
     }
 
@@ -425,7 +430,9 @@ GglError ggipc_call(
     // Even if we timed out, handler could still run. Clearing the stream
     // handler takes a mutex held when running handlers.
 
-    ggipc_set_stream_handler_at(1, NULL, NULL);
+    ggipc_clear_stream_handler_if_eq(
+        stream_id, &call_stream_handler, &stream_handler_ctx
+    );
 
     // At this point we know handler has either run or will not run. Context
     // data must live to this point.
@@ -516,8 +523,6 @@ static GglError call_sub_callback(
 static GglError subscribe_stream_handler(
     void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
 ) {
-    assert(common_headers.stream_id >= 2);
-
     SubscribeCallbackCtx *call_ctx = ctx;
 
     GGL_MTX_SCOPE_GUARD(call_ctx->mtx);
@@ -533,8 +538,10 @@ static GglError subscribe_stream_handler(
     if (call_ctx->ret != GGL_ERR_OK) {
         ggipc_set_stream_handler_at(common_headers.stream_id, NULL, NULL);
     } else {
-        CallerSubHandler *caller_handler
-            = &sub_callbacks[common_headers.stream_id - 2];
+        size_t index = 0;
+        (void) ggipc_get_stream_index(common_headers.stream_id, &index);
+        assert(index > 0);
+        CallerSubHandler *caller_handler = &sub_callbacks[index - 1];
         caller_handler->fn = call_ctx->sub_callback;
         caller_handler->ctx = call_ctx->sub_callback_ctx;
 

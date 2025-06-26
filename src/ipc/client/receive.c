@@ -20,6 +20,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
@@ -37,6 +38,7 @@ static int epoll_fd = -1;
 // one is NULL, two are serialized so can grab ctx from global, and last can get
 // its ctx using stream id)
 static GglIpcStreamHandler stream_handler[GGL_IPC_MAX_STREAMS] = { 0 };
+static int32_t stream_handler_id[GGL_IPC_MAX_STREAMS] = { 0 };
 static void *stream_handler_ctx[GGL_IPC_MAX_STREAMS];
 
 static pthread_mutex_t stream_state_mtx;
@@ -71,30 +73,48 @@ static GglError init_ipc_recv_thread(void) {
     return GGL_ERR_OK;
 }
 
+bool ggipc_get_stream_index(int32_t stream, size_t *index) {
+    for (size_t i = 0; i < GGL_IPC_MAX_STREAMS; i++) {
+        if (stream_handler_id[i] == stream) {
+            *index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 void ggipc_set_stream_handler_at(
     int32_t stream, GglIpcStreamHandler handler, void *ctx
 ) {
-    assert(stream > 0);
-    assert(stream < GGL_IPC_MAX_STREAMS);
-
     GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
 
-    stream_handler_ctx[stream] = ctx;
-    stream_handler[stream] = handler;
+    size_t index;
+    bool found = ggipc_get_stream_index(stream, &index);
+    if (!found) {
+        assert(false);
+        return;
+    }
+
+    stream_handler_ctx[index] = ctx;
+    stream_handler[index] = handler;
 }
 
 void ggipc_clear_stream_handler_if_eq(
     int32_t stream, GglIpcStreamHandler handler, void *ctx
 ) {
-    assert(stream > 0);
-    assert(stream < GGL_IPC_MAX_STREAMS);
-
     GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
 
-    if ((stream_handler_ctx[stream] == ctx)
-        && (stream_handler[stream] == handler)) {
-        stream_handler_ctx[stream] = NULL;
-        stream_handler[stream] = NULL;
+    size_t index;
+    bool found = ggipc_get_stream_index(stream, &index);
+    if (!found) {
+        return;
+    }
+
+    if ((stream_handler_ctx[index] == ctx)
+        && (stream_handler[index] == handler)) {
+        stream_handler_ctx[index] = NULL;
+        stream_handler[index] = NULL;
+        stream_handler_id[index] = -1;
     }
 }
 
@@ -103,11 +123,14 @@ GglError ggipc_set_stream_handler(
 ) {
     GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
 
-    for (int32_t i = 2; i < GGL_IPC_MAX_STREAMS; i++) {
-        if (stream_handler[i] == NULL) {
+    static int32_t stream_id = 1;
+
+    for (int32_t i = 1; i < GGL_IPC_MAX_STREAMS; i++) {
+        if (stream_handler_id[i] <= 0) {
+            *stream = stream_id++;
+            stream_handler_id[i] = *stream;
             stream_handler_ctx[i] = ctx;
             stream_handler[i] = handler;
-            *stream = i;
             return GGL_ERR_OK;
         }
     }
@@ -140,14 +163,17 @@ static GglError forward_incoming_packet(int conn) {
 
     int32_t stream_id = common_headers.stream_id;
 
-    if ((stream_id < 0) || (stream_id >= GGL_IPC_MAX_STREAMS)) {
-        GGL_LOGE("Eventstream packet has out-of-range stream id.");
+    if (stream_id < 0) {
+        GGL_LOGE("Eventstream packet has negative stream id.");
         return GGL_ERR_FAILURE;
     }
 
     GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
 
-    if (stream_handler[stream_id] == NULL) {
+    size_t index;
+    bool found = ggipc_get_stream_index(stream_id, &index);
+
+    if (!found) {
         GGL_LOGE(
             "Unhandled eventstream packed with stream id %" PRId32 " dropped.",
             stream_id
@@ -155,8 +181,8 @@ static GglError forward_incoming_packet(int conn) {
         return GGL_ERR_OK;
     }
 
-    return stream_handler[stream_id](
-        stream_handler_ctx[stream_id], common_headers, msg
+    return stream_handler[index](
+        stream_handler_ctx[index], common_headers, msg
     );
 
     // TODO: Terminate stream if flag set

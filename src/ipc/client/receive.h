@@ -9,6 +9,8 @@
 #include <ggl/error.h>
 #include <ggl/eventstream/decode.h>
 #include <ggl/eventstream/rpc.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef GglError (*GglIpcStreamHandler)(
@@ -16,6 +18,8 @@ typedef GglError (*GglIpcStreamHandler)(
 );
 
 GglError ggipc_register_ipc_socket(int conn);
+
+bool ggipc_get_stream_index(int32_t stream, size_t *index);
 
 GglError ggipc_set_stream_handler(
     GglIpcStreamHandler handler, void *ctx, int32_t *stream
