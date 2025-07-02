@@ -85,3 +85,12 @@ static GglError socket_reader_fn(void *ctx, GglBuffer *buf) {
 GglReader ggl_socket_reader(int *fd) {
     return (GglReader) { .read = socket_reader_fn, .ctx = fd };
 }
+
+static GglError socket_writer_fn(void *ctx, GglBuffer buf) {
+    int *fd = ctx;
+    return ggl_socket_write(*fd, buf);
+}
+
+GglWriter ggl_socket_writer(int *fd) {
+    return (GglWriter) { .write = socket_writer_fn, .ctx = fd };
+}

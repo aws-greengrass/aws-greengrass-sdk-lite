@@ -10,7 +10,6 @@
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/object.h>
-#include <time.h> // IWYU pragma: keep
 #include <stdint.h>
 
 struct timespec;
@@ -19,12 +18,6 @@ struct timespec;
 /// Can be configured with `-D GGL_IPC_MAX_STREAMS=<N>`.
 #ifndef GGL_IPC_MAX_STREAMS
 #define GGL_IPC_MAX_STREAMS 16
-#endif
-
-/// Maximum size of eventstream packet.
-/// Can be configured with `-D GGL_IPC_MAX_MSG_LEN=<N>`.
-#ifndef GGL_IPC_MAX_MSG_LEN
-#define GGL_IPC_MAX_MSG_LEN 10000
 #endif
 
 /// Maximum time IPC functions will wait for server response

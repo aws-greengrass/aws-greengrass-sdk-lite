@@ -24,4 +24,7 @@ GglError ggl_connect(GglBuffer path, int *fd);
 /// Data may be remaining if buffer is filled.
 GglReader ggl_socket_reader(int *fd);
 
+/// Writer that writes to a stream socket.
+GglWriter ggl_socket_writer(int *fd);
+
 #endif

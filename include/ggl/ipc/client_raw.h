@@ -33,7 +33,7 @@ GglError ggipc_subscribe(
     GglMap params,
     GgIpcResultCallback *result_callback,
     GgIpcErrorCallback *error_callback,
-    void *response_callback_ctx,
+    void *response_ctx,
     GgIpcSubscribeCallback *sub_callback,
     void *sub_callback_ctx
 );

@@ -16,6 +16,6 @@ GglError ggl_json_encode(GglObject obj, GglWriter writer);
 
 /// Reader from which a JSON-serialized object can be read.
 /// Errors if buffer is not large enough for entire object.
-GglReader ggl_json_reader(GglObject *obj);
+GglReader ggl_json_reader(const GglObject *obj);
 
 #endif

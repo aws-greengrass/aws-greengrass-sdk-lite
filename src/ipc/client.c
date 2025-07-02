@@ -2,54 +2,151 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "client/eventstream_io.h"
-#include "client/receive.h"
 #include <assert.h>
 #include <errno.h>
 #include <ggl/arena.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/cleanup.h>
 #include <ggl/error.h>
 #include <ggl/eventstream/decode.h>
+#include <ggl/eventstream/encode.h>
 #include <ggl/eventstream/rpc.h>
 #include <ggl/eventstream/types.h>
 #include <ggl/file.h> // IWYU pragma: keep (TODO: remove after file.h refactor)
 #include <ggl/flags.h>
+#include <ggl/init.h>
+#include <ggl/io.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/limits.h>
 #include <ggl/json_decode.h>
+#include <ggl/json_encode.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <ggl/socket.h>
+#include <ggl/socket_epoll.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <time.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdnoreturn.h>
 
-/// Protects payload array
-/// Serializes requests to IPC server
-static pthread_mutex_t call_state_mtx = PTHREAD_MUTEX_INITIALIZER;
+static int ipc_conn_fd = -1;
 
-static uint8_t payload_array[GGL_IPC_MAX_MSG_LEN];
+// Used while connecting or by receiving thread which are mutually exclusive.
+static uint8_t ipc_recv_mem[GGL_IPC_MAX_MSG_LEN];
+static uint8_t
+    ipc_recv_decode_mem[sizeof(GglObject[GGL_IPC_PAYLOAD_MAX_SUBOBJECTS])];
 
-/// Only used from callbacks on response thread
-static uint8_t response_decode_mem[GGL_IPC_PAYLOAD_MAX_SUBOBJECTS];
-
-static int conn_fd = -1;
+static int epoll_fd = -1;
 
 typedef struct {
-    GgIpcSubscribeCallback *fn;
+    void (*fn)(void);
     void *ctx;
-} CallerSubHandler;
+} StreamHandler;
 
-static CallerSubHandler sub_callbacks[GGL_IPC_MAX_STREAMS - 1];
+static int32_t stream_state_id[GGL_IPC_MAX_STREAMS] = { 0 };
+static StreamHandler stream_state_handler[GGL_IPC_MAX_STREAMS] = { 0 };
+
+static pthread_mutex_t stream_state_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+static GglError init_ipc_recv_thread(void);
+noreturn static void *recv_thread(void *args) ACCESS(none, 1);
+
+__attribute__((constructor)) static void register_init_ipc_recv_thread(void) {
+    static GglInitEntry entry = { .fn = &init_ipc_recv_thread };
+    ggl_register_init_fn(&entry);
+}
+
+static GglError init_ipc_recv_thread(void) {
+    GglError ret = ggl_socket_epoll_create(&epoll_fd);
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Failed to create epoll for GG-IPC sockets.");
+        return ret;
+    }
+
+    pthread_t recv_thread_handle;
+    int sys_ret = pthread_create(&recv_thread_handle, NULL, &recv_thread, NULL);
+    if (sys_ret != 0) {
+        GGL_LOGE("Failed to create GG-IPC receive thread: %d.", sys_ret);
+        return GGL_ERR_FATAL;
+    }
+    pthread_detach(recv_thread_handle);
+    return GGL_ERR_OK;
+}
+
+// Requires holding stream_state_mtx
+static bool get_stream_index_from_id(int32_t stream_id, size_t *index) {
+    if (stream_id == 0) {
+        return false;
+    }
+    for (size_t i = 0; i < GGL_IPC_MAX_STREAMS; i++) {
+        if (stream_state_id[i] == stream_id) {
+            *index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Requires holding stream_state_mtx
+static bool claim_stream_index(size_t *index) {
+    for (size_t i = 0; i < GGL_IPC_MAX_STREAMS; i++) {
+        if (stream_state_id[i] == 0) {
+            stream_state_id[i] = -1;
+            *index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Requires holding stream_state_mtx
+static void set_stream_index(
+    size_t index, int32_t stream_id, StreamHandler handler
+) {
+    stream_state_id[index] = stream_id;
+    stream_state_handler[index] = handler;
+}
+
+// Requires holding stream_state_mtx
+static void clear_stream_index(size_t index, int32_t stream_id) {
+    if (stream_state_id[index] == stream_id) {
+        stream_state_id[index] = 0;
+        stream_state_handler[index] = (StreamHandler) { 0 };
+    }
+}
+
+// After connected, requires holding stream_state_mtx
+static GglError ipc_send_packet(
+    int conn,
+    const EventStreamHeader *headers,
+    size_t headers_len,
+    GglReader payload
+) {
+    static uint8_t ipc_send_mem[GGL_IPC_MAX_MSG_LEN];
+    GglBuffer es_packet = GGL_BUF(ipc_send_mem);
+
+    GglError ret
+        = eventstream_encode(&es_packet, headers, headers_len, payload);
+    if (ret != GGL_ERR_OK) {
+        return ret;
+    }
+
+    return ggl_socket_write(conn, es_packet);
+}
 
 static bool connected(void) {
-    return conn_fd >= 0;
+    return ipc_conn_fd >= 0;
+}
+
+static GglError register_ipc_socket(int conn) {
+    assert(epoll_fd >= 0);
+    return ggl_socket_epoll_add(epoll_fd, conn, (uint64_t) conn);
 }
 
 GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
@@ -84,14 +181,12 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
     };
     size_t headers_len = sizeof(headers) / sizeof(headers[0]);
 
-    GGL_MTX_SCOPE_GUARD(&call_state_mtx);
+    GglObject payload = ggl_obj_map(
+        GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token)))
+    );
 
-    ret = ggipc_send_message(
-        conn,
-        headers,
-        headers_len,
-        &GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token))),
-        GGL_BUF(payload_array)
+    ret = ipc_send_packet(
+        conn, headers, headers_len, ggl_json_reader(&payload)
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to send GG-IPC connect packet on fd %d.", conn);
@@ -99,7 +194,9 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
     }
 
     EventStreamMessage msg = { 0 };
-    ret = ggipc_get_message(conn, &msg, GGL_BUF(payload_array));
+    ret = eventsteam_get_packet(
+        ggl_socket_reader(&conn), &msg, GGL_BUF(ipc_recv_mem)
+    );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to receive GG-IPC connect ack on fd %d.", conn);
         return ret;
@@ -131,14 +228,14 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
         );
     }
 
-    ret = ggipc_register_ipc_socket(conn);
+    ret = register_ipc_socket(conn);
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to register GG-IPC fd %d for receiving.", conn);
         return ret;
     }
 
     conn_cleanup = -1;
-    conn_fd = conn;
+    ipc_conn_fd = conn;
 
     return GGL_ERR_OK;
 }
@@ -163,6 +260,10 @@ GglError ggipc_connect(void) {
     // NOLINTEND(concurrency-mt-unsafe)
 }
 
+static void cleanup_pthread_cond(pthread_cond_t **cond) {
+    pthread_cond_destroy(*cond);
+}
+
 static GglError handle_application_error(
     GglBuffer payload, GgIpcErrorCallback *error_callback, void *response_ctx
 ) {
@@ -170,7 +271,7 @@ static GglError handle_application_error(
         return GGL_ERR_REMOTE;
     }
 
-    GglArena error_alloc = ggl_arena_init(GGL_BUF(response_decode_mem));
+    GglArena error_alloc = ggl_arena_init(GGL_BUF(ipc_recv_decode_mem));
 
     GglObject err_result;
     GglError ret
@@ -216,7 +317,7 @@ static GglError handle_application_error(
     return GGL_ERR_REMOTE;
 }
 
-static GglError decode_response(
+static GglError response_handler_inner(
     EventStreamCommonHeaders common_headers,
     EventStreamMessage msg,
     GgIpcResultCallback *result_callback,
@@ -236,7 +337,9 @@ static GglError decode_response(
 
     if (common_headers.message_type != EVENTSTREAM_APPLICATION_MESSAGE) {
         GGL_LOGE(
-            "Unexpected message type %" PRId32 ".", common_headers.message_type
+            "Unexpected message type %" PRId32 " on stream %" PRId32 ".",
+            common_headers.message_type,
+            common_headers.stream_id
         );
         return GGL_ERR_FAILURE;
     }
@@ -245,7 +348,7 @@ static GglError decode_response(
         return GGL_ERR_OK;
     }
 
-    GglArena alloc = ggl_arena_init(GGL_BUF(response_decode_mem));
+    GglArena alloc = ggl_arena_init(GGL_BUF(ipc_recv_decode_mem));
     GglObject result = GGL_OBJ_NULL;
 
     GglError ret = ggl_json_decode_destructive(msg.payload, &alloc, &result);
@@ -263,23 +366,26 @@ static GglError decode_response(
 }
 
 typedef struct {
-    pthread_mutex_t *mtx;
     pthread_cond_t *cond;
     bool ready;
     GglError ret;
     GgIpcResultCallback *result_callback;
     GgIpcErrorCallback *error_callback;
     void *response_ctx;
-} CallCallbackCtx;
+    GgIpcSubscribeCallback *sub_callback;
+    void *sub_callback_ctx;
+} ResponseHandlerCtx;
 
-static GglError call_stream_handler(
-    void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
+// Must hold stream_state_mtx
+static GglError response_handler(
+    size_t index,
+    void *ctx,
+    EventStreamCommonHeaders common_headers,
+    EventStreamMessage msg
 ) {
-    CallCallbackCtx *call_ctx = ctx;
+    ResponseHandlerCtx *call_ctx = ctx;
 
-    GGL_MTX_SCOPE_GUARD(call_ctx->mtx);
-
-    call_ctx->ret = decode_response(
+    call_ctx->ret = response_handler_inner(
         common_headers,
         msg,
         call_ctx->result_callback,
@@ -287,14 +393,23 @@ static GglError call_stream_handler(
         call_ctx->response_ctx
     );
 
+    if ((call_ctx->sub_callback == NULL) || (call_ctx->ret != GGL_ERR_OK)) {
+        clear_stream_index(index, common_headers.stream_id);
+    } else {
+        set_stream_index(
+            index,
+            common_headers.stream_id,
+            (StreamHandler) {
+                .fn = (void (*)(void)) call_ctx->sub_callback,
+                .ctx = call_ctx->sub_callback_ctx,
+            }
+        );
+    }
+
     call_ctx->ready = true;
     pthread_cond_signal(call_ctx->cond);
 
     return GGL_ERR_OK;
-}
-
-static void cleanup_pthread_cond(pthread_cond_t **cond) {
-    pthread_cond_destroy(*cond);
 }
 
 GglError ggipc_call(
@@ -304,6 +419,28 @@ GglError ggipc_call(
     GgIpcResultCallback *result_callback,
     GgIpcErrorCallback *error_callback,
     void *response_ctx
+) {
+    return ggipc_subscribe(
+        operation,
+        service_model_type,
+        params,
+        result_callback,
+        error_callback,
+        response_ctx,
+        NULL,
+        NULL
+    );
+}
+
+GglError ggipc_subscribe(
+    GglBuffer operation,
+    GglBuffer service_model_type,
+    GglMap params,
+    GgIpcResultCallback *result_callback,
+    GgIpcErrorCallback *error_callback,
+    void *response_ctx,
+    GgIpcSubscribeCallback *sub_callback,
+    void *sub_callback_ctx
 ) {
     if (!connected()) {
         return GGL_ERR_NOCONN;
@@ -316,26 +453,41 @@ GglError ggipc_call(
     pthread_cond_init(&notify_cond, &notify_condattr);
     pthread_condattr_destroy(&notify_condattr);
     GGL_CLEANUP(cleanup_pthread_cond, &notify_cond);
-    pthread_mutex_t notify_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-    CallCallbackCtx stream_handler_ctx = {
-        .mtx = &notify_mtx,
+    ResponseHandlerCtx response_handler_ctx = {
         .cond = &notify_cond,
         .ready = false,
         .ret = GGL_ERR_TIMEOUT,
         .result_callback = result_callback,
         .error_callback = error_callback,
         .response_ctx = response_ctx,
+        .sub_callback = sub_callback,
+        .sub_callback_ctx = sub_callback_ctx,
     };
 
-    int32_t stream_id;
-    GglError ret = ggipc_set_stream_handler(
-        &call_stream_handler, &stream_handler_ctx, &stream_id
-    );
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("GG-IPC subscribe call failed to get available stream id.");
-        return ret;
+    size_t stream_index;
+    int32_t stream_id = -1;
+
+    GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
+
+    bool index_available = claim_stream_index(&stream_index);
+    if (!index_available) {
+        GGL_LOGE("GG-IPC request failed to get available stream slot.");
+        return GGL_ERR_NOMEM;
     }
+
+    static int32_t next_stream_id = 1;
+
+    stream_id = next_stream_id++;
+
+    set_stream_index(
+        stream_index,
+        stream_id,
+        (StreamHandler) {
+            .fn = (void (*)(void)) response_handler,
+            .ctx = &response_handler_ctx,
+        }
+    );
 
     EventStreamHeader headers[] = {
         { GGL_STR(":message-type"),
@@ -348,14 +500,14 @@ GglError ggipc_call(
     };
     size_t headers_len = sizeof(headers) / sizeof(headers[0]);
 
-    GGL_MTX_SCOPE_GUARD(&call_state_mtx);
-
-    ret = ggipc_send_message(
-        conn_fd, headers, headers_len, &params, GGL_BUF(payload_array)
+    GglObject params_obj = ggl_obj_map(params);
+    GglError ret = ipc_send_packet(
+        ipc_conn_fd, headers, headers_len, ggl_json_reader(&params_obj)
     );
+
     if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Failed to send message %d", ret);
-        ggipc_set_stream_handler_at(stream_id, NULL, NULL);
+        GGL_LOGE("Failed to send EventStream packet.");
+        clear_stream_index(stream_index, stream_id);
         return ret;
     }
 
@@ -363,52 +515,29 @@ GglError ggipc_call(
     clock_gettime(CLOCK_MONOTONIC, &timeout);
     timeout.tv_sec += GGL_IPC_RESPONSE_TIMEOUT;
 
-    {
-        GGL_MTX_SCOPE_GUARD(&notify_mtx);
-
-        while (!stream_handler_ctx.ready) {
-            int cond_ret
-                = pthread_cond_timedwait(&notify_cond, &notify_mtx, &timeout);
-            if ((cond_ret != 0) && (cond_ret != EINTR)) {
-                assert(cond_ret == ETIMEDOUT);
-                GGL_LOGW("Timed out waiting for a response.");
-                break;
-            }
+    while (!response_handler_ctx.ready) {
+        int cond_ret
+            = pthread_cond_timedwait(&notify_cond, &stream_state_mtx, &timeout);
+        if ((cond_ret != 0) && (cond_ret != EINTR)) {
+            assert(cond_ret == ETIMEDOUT);
+            GGL_LOGW("Timed out waiting for a response.");
+            clear_stream_index(stream_index, stream_id);
+            return GGL_ERR_TIMEOUT;
         }
     }
 
-    // Even if we timed out, handler could still run. Clearing the stream
-    // handler takes a mutex held when running handlers.
-
-    ggipc_clear_stream_handler_if_eq(
-        stream_id, &call_stream_handler, &stream_handler_ctx
-    );
-
-    // At this point we know handler has either run or will not run. Context
-    // data must live to this point.
-
-    return stream_handler_ctx.ret;
+    return response_handler_ctx.ret;
 }
 
-typedef struct {
-    pthread_mutex_t *mtx;
-    pthread_cond_t *cond;
-    bool ready;
-    GglError ret;
-    GgIpcResultCallback *result_callback;
-    GgIpcErrorCallback *error_callback;
-    void *response_ctx;
-    GgIpcSubscribeCallback *sub_callback;
-    void *sub_callback_ctx;
-} SubscribeCallbackCtx;
-
 static GglError call_sub_callback(
-    void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
+    GgIpcSubscribeCallback *sub_callback,
+    void *sub_callback_ctx,
+    EventStreamCommonHeaders common_headers,
+    EventStreamMessage msg
 ) {
-    CallerSubHandler *sub_callback = ctx;
     if (common_headers.message_type != EVENTSTREAM_APPLICATION_MESSAGE) {
         GGL_LOGE(
-            "Unexpected message type %" PRId32 " on stream %d.",
+            "Unexpected message type %" PRId32 " on stream %" PRId32 ".",
             common_headers.message_type,
             common_headers.stream_id
         );
@@ -441,165 +570,130 @@ static GglError call_sub_callback(
 
     if (!ggl_buffer_eq(content_type, GGL_STR("application/json"))) {
         GGL_LOGE(
-            "Subscription response on stream %d does not declare a JSON "
-            "payload.",
+            "Subscription response on stream %" PRId32
+            " does not declare a JSON payload.",
             common_headers.stream_id
         );
         return GGL_ERR_INVALID;
     }
 
-    static uint8_t
-        decode_mem[sizeof(GglObject) * GGL_IPC_PAYLOAD_MAX_SUBOBJECTS];
-    GglArena decode_arena = ggl_arena_init(GGL_BUF(decode_mem));
+    GglArena arena = ggl_arena_init(GGL_BUF(ipc_recv_decode_mem));
     GglObject response;
 
-    GglError ret
-        = ggl_json_decode_destructive(msg.payload, &decode_arena, &response);
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Failed to decode IPC response payload. Skipping.");
+    GglError ret = ggl_json_decode_destructive(msg.payload, &arena, &response);
+    if (ret == GGL_ERR_NOMEM) {
+        GGL_LOGE(
+            "IPC response payload too large on stream %" PRId32 ". Skipping.",
+            common_headers.stream_id
+        );
         return GGL_ERR_OK;
+    }
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE(
+            "Failed to decode IPC response payload on stream %" PRId32 ".",
+            common_headers.stream_id
+        );
+        return ret;
     }
 
     if (ggl_obj_type(response) != GGL_TYPE_MAP) {
         GGL_LOGE("IPC response payload JSON is not an object.");
-        return GGL_ERR_OK;
+        return GGL_ERR_INVALID;
     }
 
-    return sub_callback->fn(
-        sub_callback->ctx, service_model_type, ggl_obj_into_map(response)
+    return sub_callback(
+        sub_callback_ctx, service_model_type, ggl_obj_into_map(response)
     );
 }
 
-static GglError subscribe_stream_handler(
-    void *ctx, EventStreamCommonHeaders common_headers, EventStreamMessage msg
-) {
-    SubscribeCallbackCtx *call_ctx = ctx;
-
-    GGL_MTX_SCOPE_GUARD(call_ctx->mtx);
-
-    call_ctx->ret = decode_response(
-        common_headers,
-        msg,
-        call_ctx->result_callback,
-        call_ctx->error_callback,
-        call_ctx->response_ctx
-    );
-
-    if (call_ctx->ret != GGL_ERR_OK) {
-        ggipc_set_stream_handler_at(common_headers.stream_id, NULL, NULL);
-    } else {
-        size_t index = 0;
-        (void) ggipc_get_stream_index(common_headers.stream_id, &index);
-        assert(index > 0);
-        CallerSubHandler *caller_handler = &sub_callbacks[index - 1];
-        caller_handler->fn = call_ctx->sub_callback;
-        caller_handler->ctx = call_ctx->sub_callback_ctx;
-
-        ggipc_set_stream_handler_at(
-            common_headers.stream_id, &call_sub_callback, caller_handler
-        );
-    }
-
-    call_ctx->ready = true;
-    pthread_cond_signal(call_ctx->cond);
-
-    return GGL_ERR_OK;
-}
-
-GglError ggipc_subscribe(
-    GglBuffer operation,
-    GglBuffer service_model_type,
-    GglMap params,
-    GgIpcResultCallback *result_callback,
-    GgIpcErrorCallback *error_callback,
-    void *response_callback_ctx,
-    GgIpcSubscribeCallback *sub_callback,
-    void *sub_callback_ctx
-) {
-    if (!connected()) {
-        return GGL_ERR_NOCONN;
-    }
-
-    pthread_condattr_t notify_condattr;
-    pthread_condattr_init(&notify_condattr);
-    pthread_condattr_setclock(&notify_condattr, CLOCK_MONOTONIC);
-    pthread_cond_t notify_cond;
-    pthread_cond_init(&notify_cond, &notify_condattr);
-    pthread_condattr_destroy(&notify_condattr);
-    GGL_CLEANUP(cleanup_pthread_cond, &notify_cond);
-    pthread_mutex_t notify_mtx = PTHREAD_MUTEX_INITIALIZER;
-
-    SubscribeCallbackCtx stream_resp_ctx = {
-        .mtx = &notify_mtx,
-        .cond = &notify_cond,
-        .ready = false,
-        .ret = GGL_ERR_TIMEOUT,
-        .result_callback = result_callback,
-        .error_callback = error_callback,
-        .response_ctx = response_callback_ctx,
-        .sub_callback = sub_callback,
-        .sub_callback_ctx = sub_callback_ctx,
-    };
-
-    int32_t stream_id;
-    GglError ret = ggipc_set_stream_handler(
-        &subscribe_stream_handler, &stream_resp_ctx, &stream_id
+static GglError dispatch_incoming_packet(int conn) {
+    EventStreamMessage msg;
+    GglError ret = eventsteam_get_packet(
+        ggl_socket_reader(&conn), &msg, GGL_BUF(ipc_recv_mem)
     );
     if (ret != GGL_ERR_OK) {
-        GGL_LOGE("GG-IPC subscribe call failed to get available stream id.");
+        GGL_LOGE("Failed to read eventstream packet.");
         return ret;
     }
 
-    EventStreamHeader headers[] = {
-        { GGL_STR(":message-type"),
-          { EVENTSTREAM_INT32, .int32 = EVENTSTREAM_APPLICATION_MESSAGE } },
-        { GGL_STR(":message-flags"), { EVENTSTREAM_INT32, .int32 = 0 } },
-        { GGL_STR(":stream-id"), { EVENTSTREAM_INT32, .int32 = stream_id } },
-        { GGL_STR("operation"), { EVENTSTREAM_STRING, .string = operation } },
-        { GGL_STR("service-model-type"),
-          { EVENTSTREAM_STRING, .string = service_model_type } },
-    };
-    size_t headers_len = sizeof(headers) / sizeof(headers[0]);
-
-    GGL_MTX_SCOPE_GUARD(&call_state_mtx);
-
-    ret = ggipc_send_message(
-        conn_fd, headers, headers_len, &params, GGL_BUF(payload_array)
-    );
+    EventStreamCommonHeaders common_headers;
+    ret = eventstream_get_common_headers(&msg, &common_headers);
     if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Failed to send message %d", ret);
-        ggipc_set_stream_handler_at(stream_id, NULL, NULL);
+        GGL_LOGE("Eventstream packet missing required headers.");
         return ret;
     }
 
-    struct timespec timeout;
-    clock_gettime(CLOCK_MONOTONIC, &timeout);
-    timeout.tv_sec += GGL_IPC_RESPONSE_TIMEOUT;
+    int32_t stream_id = common_headers.stream_id;
+
+    if (stream_id < 0) {
+        GGL_LOGE("Eventstream packet has negative stream id.");
+        return GGL_ERR_FAILURE;
+    }
+
+    size_t index;
 
     {
-        GGL_MTX_SCOPE_GUARD(&notify_mtx);
+        GGL_MTX_SCOPE_GUARD(&stream_state_mtx);
 
-        while (!stream_resp_ctx.ready) {
-            int cond_ret
-                = pthread_cond_timedwait(&notify_cond, &notify_mtx, &timeout);
-            if ((cond_ret != 0) && (cond_ret != EINTR)) {
-                assert(cond_ret == ETIMEDOUT);
-                GGL_LOGW("Timed out waiting for a response.");
-                break;
-            }
+        bool found = get_stream_index_from_id(stream_id, &index);
+
+        if (!found) {
+            GGL_LOGE(
+                "Unhandled eventstream packet with stream id %" PRId32
+                " dropped.",
+                stream_id
+            );
+            return GGL_ERR_OK;
+        }
+
+        assert(stream_state_handler[index].fn != NULL);
+
+        if (stream_state_handler[index].fn
+            == (void (*)(void)) response_handler) {
+            // Must hold stream_state_mtx through handler call.
+            return response_handler(
+                index, stream_state_handler[index].ctx, common_headers, msg
+            );
         }
     }
 
-    // Even if we timed out, handler could still run. We only want to clear the
-    // handler if the handler has not already changed it itself (either cleared
-    // in case of error or else the handler for follow-up responses).
-
-    ggipc_clear_stream_handler_if_eq(
-        stream_id, &subscribe_stream_handler, &stream_resp_ctx
+    return call_sub_callback(
+        (GgIpcSubscribeCallback *) stream_state_handler[index].fn,
+        stream_state_handler[index].ctx,
+        common_headers,
+        msg
     );
 
-    // At this point we know first handler has run or will not run. Stream may
-    // be set to call the subscription response handler.
+    // TODO: Terminate stream if flag set
+}
 
-    return stream_resp_ctx.ret;
+static GglError data_ready_callback(void *ctx, uint64_t data) ACCESS(none, 1);
+
+static GglError data_ready_callback(void *ctx, uint64_t data) {
+    (void) ctx;
+    (void) data;
+
+    GglError ret = dispatch_incoming_packet(ipc_conn_fd);
+
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE(
+            "Error receiving from GG-IPC connection on fd %d. Closing "
+            "connection.",
+            ipc_conn_fd
+        );
+        (void) ggl_close(ipc_conn_fd);
+    }
+
+    return ret;
+}
+
+noreturn static void *recv_thread(void *args) {
+    (void) args;
+
+    GGL_LOGI("Starting GG-IPC receive thread.");
+
+    (void) ggl_socket_epoll_run(epoll_fd, &data_ready_callback, NULL);
+
+    GGL_LOGE("GG-IPC receive thread failed. Exiting.");
+    _Exit(1);
 }

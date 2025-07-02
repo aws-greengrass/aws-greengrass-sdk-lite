@@ -217,7 +217,7 @@ GglError ggl_json_encode(GglObject obj, GglWriter writer) {
 static GglError obj_read(void *ctx, GglBuffer *buf) {
     assert(buf != NULL);
 
-    GglObject *obj = ctx;
+    const GglObject *obj = ctx;
 
     if ((obj == NULL) || (buf == NULL)) {
         return GGL_ERR_INVALID;
@@ -233,7 +233,7 @@ static GglError obj_read(void *ctx, GglBuffer *buf) {
     return GGL_ERR_OK;
 }
 
-GglReader ggl_json_reader(GglObject *obj) {
+GglReader ggl_json_reader(const GglObject *obj) {
     assert(obj != NULL);
-    return (GglReader) { .read = obj_read, .ctx = obj };
+    return (GglReader) { .read = obj_read, .ctx = (void *) obj };
 }

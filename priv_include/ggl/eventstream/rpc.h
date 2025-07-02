@@ -8,8 +8,10 @@
 //! AWS EventStream message data types.
 
 #include <ggl/attr.h>
+#include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/eventstream/decode.h>
+#include <ggl/io.h>
 #include <stdint.h>
 
 /// `:message-type` header values
@@ -33,6 +35,11 @@ typedef struct {
     int32_t message_type;
     int32_t message_flags;
 } EventStreamCommonHeaders;
+
+/// Get an EventStream packet from an input source
+GglError eventsteam_get_packet(
+    GglReader input, EventStreamMessage *msg, GglBuffer buffer
+) NONNULL(2);
 
 /// Decode common EventStream headers
 GglError eventstream_get_common_headers(
