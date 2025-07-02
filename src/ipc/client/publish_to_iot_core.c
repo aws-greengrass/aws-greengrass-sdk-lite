@@ -2,8 +2,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/arena.h>
-#include <ggl/base64.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/ipc/client.h>
@@ -11,8 +9,8 @@
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
-#include <inttypes.h>
 #include <string.h>
+#include <stdint.h>
 
 static GglError error_handler(
     void *ctx, GglBuffer error_code, GglBuffer message
@@ -51,22 +49,4 @@ GglError ggipc_publish_to_iot_core_b64(
         &error_handler,
         NULL
     );
-}
-
-GglError ggipc_publish_to_iot_core(
-    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
-) {
-    GglBuffer b64_payload;
-    GglError ret = ggl_base64_encode(payload, &alloc, &b64_payload);
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE(
-            "Insufficient memory provided to base64 encode "
-            "PublishToIoTCore payload (required %zu, provided %" PRIu32 ").",
-            ((payload.len + 2) / 3) * 4,
-            alloc.capacity - alloc.index
-        );
-        return ret;
-    }
-
-    return ggipc_publish_to_iot_core_b64(topic_name, b64_payload, qos);
 }

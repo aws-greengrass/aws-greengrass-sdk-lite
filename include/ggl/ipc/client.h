@@ -40,11 +40,8 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload);
 
 /// Publish a message to a local topic in binary format
-/// Uses an arena to base64-encode a binary message.
-/// base64 encoding will require 4 bytes for every 3 payload bytes.
-GglError ggipc_publish_to_topic_binary(
-    GglBuffer topic, GglBuffer payload, GglArena alloc
-);
+/// Usage may incur memory overhead over using `ggipc_publish_to_topic_b64`
+GglError ggipc_publish_to_topic_binary(GglBuffer topic, GglBuffer payload);
 
 /// Publish a message to a local topic in binary format
 /// Payload must be already base64 encoded.
@@ -66,10 +63,9 @@ GglError ggipc_subscribe_to_topic(
 ) NONNULL(2) ACCESS(read_only, 2);
 
 /// Publish an MQTT message to AWS IoT Core on a topic
-/// Uses an arena to base64-encode a binary message.
-/// base64 encoding will require 4 bytes for every 3 payload bytes.
+/// Usage may incur memory overhead over using `ggipc_publish_to_iot_core_b64`
 GglError ggipc_publish_to_iot_core(
-    GglBuffer topic_name, GglBuffer payload, uint8_t qos, GglArena alloc
+    GglBuffer topic_name, GglBuffer payload, uint8_t qos
 );
 
 /// Publish an MQTT message to AWS IoT Core on a topic

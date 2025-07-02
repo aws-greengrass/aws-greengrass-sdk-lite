@@ -2,8 +2,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/arena.h>
-#include <ggl/base64.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/ipc/client.h>
@@ -11,7 +9,6 @@
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
-#include <inttypes.h>
 #include <string.h>
 
 static GglError error_handler(
@@ -70,22 +67,4 @@ GglError ggipc_publish_to_topic_binary_b64(
         );
 
     return publish_to_topic_common(topic, publish_message);
-}
-
-GglError ggipc_publish_to_topic_binary(
-    GglBuffer topic, GglBuffer payload, GglArena alloc
-) {
-    GglBuffer b64_payload;
-    GglError ret = ggl_base64_encode(payload, &alloc, &b64_payload);
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE(
-            "Insufficient memory provided to base64 encode PublishToTopic "
-            "payload (required %zu, provided %" PRIu32 ").",
-            ((payload.len + 2) / 3) * 4,
-            alloc.capacity - alloc.index
-        );
-        return ret;
-    }
-
-    return ggipc_publish_to_topic_binary_b64(topic, b64_payload);
 }
