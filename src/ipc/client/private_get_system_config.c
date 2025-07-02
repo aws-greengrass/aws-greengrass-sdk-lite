@@ -5,6 +5,7 @@
 #include <ggl/arena.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
+#include <ggl/flags.h>
 #include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
 #include <ggl/log.h>
@@ -31,22 +32,38 @@ static GglError error_handler(
 static GglError copy_config_buf(void *ctx, GglObject result) {
     GglBuffer *resp_buf = ctx;
 
-    if (ggl_obj_type(result) != GGL_TYPE_BUF) {
+    if (ggl_obj_type(result) != GGL_TYPE_MAP) {
+        GGL_LOGE("Config response is not a map.");
+        return GGL_ERR_FAILURE;
+    }
+
+    GglObject *value;
+    GglError ret = ggl_map_validate(
+        ggl_obj_into_map(result),
+        GGL_MAP_SCHEMA({ GGL_STR("value"), GGL_REQUIRED, GGL_TYPE_NULL, &value }
+        )
+    );
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Failed validating server response.");
+        return GGL_ERR_INVALID;
+    }
+
+    if (ggl_obj_type(*value) != GGL_TYPE_BUF) {
         GGL_LOGE("Config value is not a string.");
         return GGL_ERR_FAILURE;
     }
 
     if (resp_buf != NULL) {
-        GglBuffer value = ggl_obj_into_buf(result);
+        GglBuffer val_buf = ggl_obj_into_buf(*value);
 
         GglArena alloc = ggl_arena_init(*resp_buf);
-        GglError ret = ggl_arena_claim_buf(&value, &alloc);
+        ret = ggl_arena_claim_buf(&val_buf, &alloc);
         if (ret != GGL_ERR_OK) {
             GGL_LOGE("Insufficent memory provided for response.");
             return ret;
         }
 
-        *resp_buf = value;
+        *resp_buf = val_buf;
     }
 
     return GGL_ERR_OK;
