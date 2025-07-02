@@ -13,8 +13,7 @@
 #include <ggl/eventstream/rpc.h>
 #include <ggl/file.h>
 #include <ggl/init.h>
-#include <ggl/ipc/client_priv.h>
-#include <ggl/ipc/client_raw.h>
+#include <ggl/ipc/client.h>
 #include <ggl/log.h>
 #include <ggl/socket_epoll.h>
 #include <inttypes.h>

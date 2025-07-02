@@ -16,7 +16,6 @@
 #include <ggl/file.h> // IWYU pragma: keep (TODO: remove after file.h refactor)
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
-#include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/limits.h>
 #include <ggl/json_decode.h>
@@ -26,7 +25,6 @@
 #include <ggl/socket.h>
 #include <inttypes.h>
 #include <pthread.h>
-#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 #include <stdbool.h>
@@ -54,9 +52,7 @@ static bool connected(void) {
     return conn_fd >= 0;
 }
 
-static GglError ggipc_connect_with_payload(
-    GglBuffer socket_path, GglMap payload, GglBuffer *svcuid
-) {
+GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
     assert(!connected());
 
     int conn = -1;
@@ -91,7 +87,11 @@ static GglError ggipc_connect_with_payload(
     GGL_MTX_SCOPE_GUARD(&call_state_mtx);
 
     ret = ggipc_send_message(
-        conn, headers, headers_len, &payload, GGL_BUF(payload_array)
+        conn,
+        headers,
+        headers_len,
+        &GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token))),
+        GGL_BUF(payload_array)
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to send GG-IPC connect packet on fd %d.", conn);
@@ -137,65 +137,10 @@ static GglError ggipc_connect_with_payload(
         return ret;
     }
 
-    if (svcuid == NULL) {
-        conn_cleanup = -1;
-        conn_fd = conn;
+    conn_cleanup = -1;
+    conn_fd = conn;
 
-        return GGL_ERR_OK;
-    }
-
-    if (svcuid->len < GGL_IPC_SVCUID_STR_LEN) {
-        GGL_LOGE("Insufficient buffer space provided for svcuid.");
-        return GGL_ERR_NOMEM;
-    }
-
-    EventStreamHeaderIter iter = msg.headers;
-    EventStreamHeader header;
-
-    while (eventstream_header_next(&iter, &header) == GGL_ERR_OK) {
-        if (ggl_buffer_eq(header.name, GGL_STR("svcuid"))) {
-            if (header.value.type != EVENTSTREAM_STRING) {
-                GGL_LOGE("Response svcuid header not string.");
-                return GGL_ERR_INVALID;
-            }
-
-            if (svcuid->len < header.value.string.len) {
-                GGL_LOGE("Response svcuid too long.");
-                return GGL_ERR_NOMEM;
-            }
-
-            memcpy(
-                svcuid->data, header.value.string.data, header.value.string.len
-            );
-            svcuid->len = header.value.string.len;
-
-            conn_cleanup = -1;
-            conn_fd = conn;
-
-            return GGL_ERR_OK;
-        }
-    }
-
-    GGL_LOGE("Response missing svcuid header.");
-    return GGL_ERR_FAILURE;
-}
-
-GglError ggipc_connect_with_name(
-    GglBuffer socket_path, GglBuffer component_name, GglBuffer *svcuid
-) {
-    return ggipc_connect_with_payload(
-        socket_path,
-        GGL_MAP(ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))),
-        svcuid
-    );
-}
-
-GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
-    return ggipc_connect_with_payload(
-        socket_path,
-        GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token))),
-        NULL
-    );
+    return GGL_ERR_OK;
 }
 
 GglError ggipc_connect(void) {

@@ -15,6 +15,23 @@
 
 struct timespec;
 
+/// Maximum number of eventstream streams. Limits active calls/subscriptions.
+/// Can be configured with `-D GGL_IPC_MAX_STREAMS=<N>`.
+#ifndef GGL_IPC_MAX_STREAMS
+#define GGL_IPC_MAX_STREAMS 16
+#endif
+
+/// Maximum size of eventstream packet.
+/// Can be configured with `-D GGL_IPC_MAX_MSG_LEN=<N>`.
+#ifndef GGL_IPC_MAX_MSG_LEN
+#define GGL_IPC_MAX_MSG_LEN 10000
+#endif
+
+/// Maximum time IPC functions will wait for server response
+#ifndef GGL_IPC_RESPONSE_TIMEOUT
+#define GGL_IPC_RESPONSE_TIMEOUT 10
+#endif
+
 // Connection APIs
 
 /// Connect to the Greengrass Nucleus from a component.
