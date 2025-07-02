@@ -309,7 +309,12 @@ static GglError decode_response(
         return ret;
     }
 
-    return result_callback(response_ctx, result);
+    if (ggl_obj_type(result) != GGL_TYPE_MAP) {
+        GGL_LOGE("IPC response payload is not a JSON object.");
+        return ret;
+    }
+
+    return result_callback(response_ctx, ggl_obj_into_map(result));
 }
 
 typedef struct {

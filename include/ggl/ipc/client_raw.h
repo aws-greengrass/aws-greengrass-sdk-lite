@@ -16,7 +16,7 @@
 #define GGL_IPC_MAX_STREAMS 16
 #endif
 
-typedef GglError GgIpcResultCallback(void *ctx, GglObject result);
+typedef GglError GgIpcResultCallback(void *ctx, GglMap result);
 typedef GglError GgIpcErrorCallback(
     void *ctx, GglBuffer error_code, GglBuffer message
 );

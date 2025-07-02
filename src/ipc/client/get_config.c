@@ -85,14 +85,9 @@ static GglError ggipc_get_config_common(
     );
 }
 
-static GglError get_resp_value(GglObject resp, GglObject **value) {
-    if (ggl_obj_type(resp) != GGL_TYPE_MAP) {
-        GGL_LOGE("Config response is not a map.");
-        return GGL_ERR_FAILURE;
-    }
-
+static GglError get_resp_value(GglMap resp, GglObject **value) {
     GglError ret = ggl_map_validate(
-        ggl_obj_into_map(resp),
+        resp,
         GGL_MAP_SCHEMA({ GGL_STR("value"), GGL_REQUIRED, GGL_TYPE_NULL, value })
     );
     if (ret != GGL_ERR_OK) {
@@ -108,7 +103,7 @@ typedef struct {
     GglArena *alloc;
 } CopyObjectCtx;
 
-static GglError copy_config_obj(void *ctx, GglObject result) {
+static GglError copy_config_obj(void *ctx, GglMap result) {
     CopyObjectCtx *copy_ctx = ctx;
 
     GglObject *value;
@@ -146,7 +141,7 @@ GglError ggipc_get_config(
     );
 }
 
-static GglError copy_config_buf(void *ctx, GglObject result) {
+static GglError copy_config_buf(void *ctx, GglMap result) {
     GglBuffer *resp_buf = ctx;
 
     GglObject *value;

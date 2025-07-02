@@ -29,17 +29,12 @@ static GglError error_handler(
     return GGL_ERR_FAILURE;
 }
 
-static GglError copy_config_buf(void *ctx, GglObject result) {
+static GglError copy_config_buf(void *ctx, GglMap result) {
     GglBuffer *resp_buf = ctx;
-
-    if (ggl_obj_type(result) != GGL_TYPE_MAP) {
-        GGL_LOGE("Config response is not a map.");
-        return GGL_ERR_FAILURE;
-    }
 
     GglObject *value;
     GglError ret = ggl_map_validate(
-        ggl_obj_into_map(result),
+        result,
         GGL_MAP_SCHEMA({ GGL_STR("value"), GGL_REQUIRED, GGL_TYPE_NULL, &value }
         )
     );
