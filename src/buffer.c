@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-GglBuffer ggl_buffer_from_null_term(char *str) {
+GglBuffer ggl_buffer_from_null_term(char str[static 1]) {
     assert(str != NULL);
     return (GglBuffer) { .data = (uint8_t *) str, .len = strlen(str) };
 }
@@ -33,7 +33,7 @@ bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix) {
     return false;
 }
 
-bool ggl_buffer_remove_prefix(GglBuffer *buf, GglBuffer prefix) {
+bool ggl_buffer_remove_prefix(GglBuffer buf[static 1], GglBuffer prefix) {
     assert(buf != NULL);
     if (ggl_buffer_has_prefix(*buf, prefix)) {
         *buf = ggl_buffer_substr(*buf, prefix.len, SIZE_MAX);
@@ -50,7 +50,7 @@ bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix) {
     return false;
 }
 
-bool ggl_buffer_remove_suffix(GglBuffer *buf, GglBuffer suffix) {
+bool ggl_buffer_remove_suffix(GglBuffer buf[static 1], GglBuffer suffix) {
     assert(buf != NULL);
     if (ggl_buffer_has_suffix(*buf, suffix)) {
         *buf = ggl_buffer_substr(*buf, 0, buf->len - suffix.len);

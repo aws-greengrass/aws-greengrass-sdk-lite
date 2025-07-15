@@ -94,7 +94,7 @@ static GglError header_encode(GglWriter out, EventStreamHeader header) {
 }
 
 GglError eventstream_encode(
-    GglBuffer *buf,
+    GglBuffer buf[static 1],
     const EventStreamHeader *headers,
     size_t header_count,
     GglReader payload

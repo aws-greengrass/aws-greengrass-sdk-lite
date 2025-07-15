@@ -5,7 +5,6 @@
 #ifndef GGL_INIT_H
 #define GGL_INIT_H
 
-#include <ggl/attr.h>
 #include <ggl/error.h>
 
 typedef struct GglInitEntry {
@@ -16,6 +15,6 @@ typedef struct GglInitEntry {
 /// Initializes the sdk, including starting necessary threads.
 /// Unused portions of sdk may not be initialized.
 /// Not thread-safe
-void ggl_register_init_fn(GglInitEntry *entry) NONNULL(1);
+void ggl_register_init_fn(GglInitEntry entry[static 1]);
 
 #endif

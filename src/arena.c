@@ -57,7 +57,7 @@ void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment) {
 }
 
 GglError ggl_arena_resize_last(
-    GglArena *arena, const void *ptr, size_t old_size, size_t size
+    GglArena arena[static 1], const void *ptr, size_t old_size, size_t size
 ) {
     assert(arena != NULL);
     assert(ptr != NULL);
@@ -119,7 +119,7 @@ GglBuffer ggl_arena_alloc_rest(GglArena *arena) {
     return (GglBuffer) { .data = data, .len = remaining };
 }
 
-GglError ggl_arena_claim_buf(GglBuffer *buf, GglArena *arena) {
+GglError ggl_arena_claim_buf(GglBuffer buf[static 1], GglArena *arena) {
     assert(buf != NULL);
 
     if (ggl_arena_owns(arena, buf->data)) {
@@ -204,7 +204,7 @@ static GglError claim_map(GglMap *map, GglArena *arena) {
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
-GglError ggl_arena_claim_obj(GglObject *obj, GglArena *arena) {
+GglError ggl_arena_claim_obj(GglObject obj[static 1], GglArena *arena) {
     assert(obj != NULL);
 
     switch (ggl_obj_type(*obj)) {
@@ -268,7 +268,7 @@ static GglError claim_map_bufs(GglMap map, GglArena *arena) {
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
-GglError ggl_arena_claim_obj_bufs(GglObject *obj, GglArena *arena) {
+GglError ggl_arena_claim_obj_bufs(GglObject obj[static 1], GglArena *arena) {
     assert(obj != NULL);
 
     switch (ggl_obj_type(*obj)) {

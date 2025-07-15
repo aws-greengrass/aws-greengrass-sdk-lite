@@ -120,7 +120,7 @@ static GglError error_handler(
 }
 
 GglError ggipc_subscribe_to_topic(
-    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *callbacks
+    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks callbacks[static 1]
 ) {
     GglMap args = GGL_MAP(ggl_kv(GGL_STR("topic"), ggl_obj_buf(topic)), );
 

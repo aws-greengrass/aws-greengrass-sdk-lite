@@ -62,7 +62,7 @@ typedef struct {
 // NOLINTEND(bugprone-macro-parentheses)
 
 /// Convert null-terminated string to buffer
-GglBuffer ggl_buffer_from_null_term(char *str) PURE NONNULL(1)
+GglBuffer ggl_buffer_from_null_term(char str[static 1]) PURE
     NULL_TERMINATED_STRING_ARG(1);
 
 /// Returns whether two buffers have identical content.
@@ -72,14 +72,14 @@ bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2) PURE;
 bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix) PURE;
 
 /// Removes a prefix. Returns whether the prefix was removed.
-bool ggl_buffer_remove_prefix(GglBuffer *buf, GglBuffer prefix) NONNULL(1)
+bool ggl_buffer_remove_prefix(GglBuffer buf[static 1], GglBuffer prefix)
     ACCESS(read_write, 1);
 
 /// Returns whether the buffer has the given suffix.
 bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix);
 
 /// Removes a suffix. Returns whether the suffix was removed.
-bool ggl_buffer_remove_suffix(GglBuffer *buf, GglBuffer suffix) NONNULL(1)
+bool ggl_buffer_remove_suffix(GglBuffer buf[static 1], GglBuffer suffix)
     ACCESS(read_write, 1);
 
 /// Returns whether the buffer contains the given substring.

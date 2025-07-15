@@ -15,15 +15,16 @@
 
 /// Convert a base64 buffer to its decoded data.
 /// Target must be large enough to hold decoded value.
-bool ggl_base64_decode(GglBuffer base64, GglBuffer *target) NONNULL(2)
+bool ggl_base64_decode(GglBuffer base64, GglBuffer target[static 1])
     ACCESS(read_write, 2);
 
 /// Convert a base64 buffer to its decoded data in place.
-bool ggl_base64_decode_in_place(GglBuffer *target) NONNULL(1)
+bool ggl_base64_decode_in_place(GglBuffer target[static 1])
     ACCESS(read_write, 1);
 
 /// Encode a buffer into base64.
-GglError ggl_base64_encode(GglBuffer buf, GglArena *alloc, GglBuffer *result)
-    NONNULL(3) ACCESS(read_write, 2) ACCESS(write_only, 3);
+GglError ggl_base64_encode(
+    GglBuffer buf, GglArena *alloc, GglBuffer result[static 1]
+) ACCESS(read_write, 2) ACCESS(write_only, 3);
 
 #endif

@@ -17,10 +17,10 @@
 /// Encode an EventStream packet into a buffer.
 /// Payload must fail if it does not fit in provided buffer.
 GglError eventstream_encode(
-    GglBuffer *buf,
+    GglBuffer buf[static 1],
     const EventStreamHeader *headers,
     size_t header_count,
     GglReader payload
-) NONNULL(1) NONNULL_IF_NONZERO(2, 3);
+) NONNULL_IF_NONZERO(2, 3);
 
 #endif

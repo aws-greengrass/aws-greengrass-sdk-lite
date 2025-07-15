@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 GglError eventsteam_get_packet(
-    GglReader input, EventStreamMessage *msg, GglBuffer buffer
+    GglReader input, EventStreamMessage msg[static 1], GglBuffer buffer
 ) {
     GglBuffer prelude_buf = ggl_buffer_substr(buffer, 0, 12);
     assert(prelude_buf.len == 12);

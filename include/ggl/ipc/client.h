@@ -59,8 +59,8 @@ typedef struct {
 /// `json_handler` or `binary_handler` may be NULL if that payload type is not
 /// expected.
 GglError ggipc_subscribe_to_topic(
-    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *callbacks
-) NONNULL(2) ACCESS(read_only, 2);
+    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks callbacks[static 1]
+) ACCESS(read_only, 2);
 
 /// Publish an MQTT message to AWS IoT Core on a topic
 /// Usage may incur memory overhead over using `ggipc_publish_to_iot_core_b64`

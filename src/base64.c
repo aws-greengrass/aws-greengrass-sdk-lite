@@ -96,7 +96,7 @@ static bool base64_decode_segment(
     return true;
 }
 
-bool ggl_base64_decode(GglBuffer base64, GglBuffer *target) {
+bool ggl_base64_decode(GglBuffer base64, GglBuffer target[static 1]) {
     if ((base64.len % 4) != 0) {
         return false;
     }
@@ -119,14 +119,16 @@ bool ggl_base64_decode(GglBuffer base64, GglBuffer *target) {
     return true;
 }
 
-bool ggl_base64_decode_in_place(GglBuffer *target) {
+bool ggl_base64_decode_in_place(GglBuffer target[static 1]) {
     return ggl_base64_decode(*target, target);
 }
 
 static const uint8_t BASE64_TABLE[]
     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-GglError ggl_base64_encode(GglBuffer buf, GglArena *alloc, GglBuffer *result) {
+GglError ggl_base64_encode(
+    GglBuffer buf, GglArena *alloc, GglBuffer result[static 1]
+) {
     size_t base64_len = ((buf.len + 2) / 3) * 4;
     uint8_t *mem = GGL_ARENA_ALLOCN(alloc, uint8_t, base64_len);
     if (mem == NULL) {

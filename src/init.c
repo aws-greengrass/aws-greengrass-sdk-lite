@@ -10,7 +10,7 @@
 
 static GglInitEntry *init_list = NULL;
 
-void ggl_register_init_fn(GglInitEntry *entry) {
+void ggl_register_init_fn(GglInitEntry entry[static 1]) {
     entry->next = init_list;
     init_list = entry;
 }

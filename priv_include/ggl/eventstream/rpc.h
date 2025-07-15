@@ -38,8 +38,8 @@ typedef struct {
 
 /// Get an EventStream packet from an input source
 GglError eventsteam_get_packet(
-    GglReader input, EventStreamMessage *msg, GglBuffer buffer
-) NONNULL(2);
+    GglReader input, EventStreamMessage msg[static 1], GglBuffer buffer
+);
 
 /// Decode common EventStream headers
 GglError eventstream_get_common_headers(
