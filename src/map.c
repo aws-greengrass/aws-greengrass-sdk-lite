@@ -66,7 +66,7 @@ GglObject *ggl_kv_val(GglKV *kv) {
 }
 
 bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result) {
-    GGL_MAP_FOREACH(pair, map) {
+    GGL_MAP_FOREACH (pair, map) {
         if (ggl_buffer_eq(key, ggl_kv_key(*pair))) {
             if (result != NULL) {
                 *result = ggl_kv_val(pair);

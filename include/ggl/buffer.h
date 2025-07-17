@@ -63,7 +63,7 @@ typedef struct {
 
 /// Convert null-terminated string to buffer
 GglBuffer ggl_buffer_from_null_term(char str[static 1]) PURE
-    NULL_TERMINATED_STRING_ARG(1);
+NULL_TERMINATED_STRING_ARG(1);
 
 /// Returns whether two buffers have identical content.
 bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2) PURE;

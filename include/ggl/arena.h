@@ -52,7 +52,7 @@ GglError ggl_arena_resize_last(
 
 /// Returns true if arena's mem contains ptr.
 bool ggl_arena_owns(const GglArena *arena, const void *ptr) PURE
-    ACCESS(read_only, 1) ACCESS(none, 2);
+ACCESS(read_only, 1) ACCESS(none, 2);
 
 /// Allocates remaining space into a buffer.
 GglBuffer ggl_arena_alloc_rest(GglArena *arena) ACCESS(read_write, 1);

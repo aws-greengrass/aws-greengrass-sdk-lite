@@ -14,7 +14,7 @@
 /// Allocator vtable.
 typedef struct {
     void *(*const ALLOC)(void *ctx, size_t size, size_t alignment) ALLOC_SIZE(2)
-        ALLOC_ALIGN(3);
+    ALLOC_ALIGN(3);
     void (*const FREE)(void *ctx, void *ptr);
 } DESIGNATED_INIT GglAllocVtable;
 
@@ -34,7 +34,7 @@ typedef struct {
 /// Allocate memory from an allocator.
 /// Prefer `GGL_ALLOC` or `GGL_ALLOCN`.
 void *ggl_alloc(GglAlloc alloc, size_t size, size_t alignment) ALLOC_SIZE(2)
-    ALLOC_ALIGN(3);
+ALLOC_ALIGN(3);
 
 /// Free memory allocated from an allocator.
 void ggl_free(GglAlloc alloc, void *ptr);

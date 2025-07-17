@@ -159,7 +159,7 @@ static GglError claim_list(GglList *list, GglArena *arena) {
         list->items = new_mem;
     }
 
-    GGL_LIST_FOREACH(elem, *list) {
+    GGL_LIST_FOREACH (elem, *list) {
         GglError ret = ggl_arena_claim_obj(elem, arena);
         if (ret != GGL_ERR_OK) {
             return ret;
@@ -186,7 +186,7 @@ static GglError claim_map(GglMap *map, GglArena *arena) {
         map->pairs = new_mem;
     }
 
-    GGL_MAP_FOREACH(kv, *map) {
+    GGL_MAP_FOREACH (kv, *map) {
         GglBuffer key = ggl_kv_key(*kv);
         GglError ret = ggl_arena_claim_buf(&key, arena);
         if (ret != GGL_ERR_OK) {
@@ -239,7 +239,7 @@ GglError ggl_arena_claim_obj(GglObject obj[static 1], GglArena *arena) {
 
 // NOLINTNEXTLINE(misc-no-recursion)
 static GglError claim_list_bufs(GglList list, GglArena *arena) {
-    GGL_LIST_FOREACH(elem, list) {
+    GGL_LIST_FOREACH (elem, list) {
         GglError ret = ggl_arena_claim_obj_bufs(elem, arena);
         if (ret != GGL_ERR_OK) {
             return ret;
@@ -250,7 +250,7 @@ static GglError claim_list_bufs(GglList list, GglArena *arena) {
 
 // NOLINTNEXTLINE(misc-no-recursion)
 static GglError claim_map_bufs(GglMap map, GglArena *arena) {
-    GGL_MAP_FOREACH(kv, map) {
+    GGL_MAP_FOREACH (kv, map) {
         GglBuffer key = ggl_kv_key(*kv);
         GglError ret = ggl_arena_claim_buf(&key, arena);
         if (ret != GGL_ERR_OK) {
