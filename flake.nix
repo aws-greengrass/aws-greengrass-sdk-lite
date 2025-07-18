@@ -29,7 +29,23 @@
         inherit inputs;
 
         devShell = pkgs: {
-          packages = with pkgs; [ clang-tools clangd-tidy git cmake ];
+          packages = with pkgs; [
+            clang-tools
+            clangd-tidy
+            git
+            cmake
+            (cbmc.overrideAttrs {
+              version = "6.7.1";
+              src = fetchFromGitHub {
+                owner = "diffblue";
+                repo = "cbmc";
+                # Includes commits after 6.7.1 needed for harness generation
+                # Use tag when 6.7.2 is released
+                rev = "062962c1da7149be418338b1f2220d51960e06f8";
+                hash = "sha256-qcCiKv+AUoiIZdiCK955Bl5GBK+JHv0mDflQ4aAj4IQ=";
+              };
+            })
+          ];
           env.NIX_HARDENING_ENABLE = "";
           shellHook = ''
             export MAKEFLAGS=-j
