@@ -24,8 +24,7 @@ static void empty_sig_handler(int sig) {
     (void) sig;
 }
 
-// Lowest allowed priority in order to run before threads are created.
-__attribute__((constructor(101))) static void ignore_sigpipe(void) {
+__attribute__((constructor)) static void ignore_sigpipe(void) {
     // If SIGPIPE is not blocked, writing to a socket that the server has closed
     // will result in this process being killed.
     // SIG_IGN should not be set as it is inherited across exec.
