@@ -45,3 +45,5 @@ ForEachMacros:
   - GGL_LIST_FOREACH
   - GGL_MAP_FOREACH
   - GGL_BUF_LIST_FOREACH
+Macros:
+  - CBMC_CONTRACT(x)=[[cbmc::contract(x)]]
