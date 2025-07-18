@@ -1,6 +1,7 @@
 ALLOCN
 cbmc
 coverity
+dfcc
 EPOLLIN
 ggipc
 iwyu

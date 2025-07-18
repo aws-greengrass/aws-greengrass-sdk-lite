@@ -31,6 +31,8 @@ jobs:
             check: formatting
           - name: clang-tidy
             check: clang-tidy
+          - name: cbmc-contracts
+            check: cbmc-contracts
           - name: header includes
             check: iwyu
           - name: editorconfig

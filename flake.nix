@@ -34,17 +34,7 @@
             clangd-tidy
             git
             cmake
-            (cbmc.overrideAttrs {
-              version = "6.7.1";
-              src = fetchFromGitHub {
-                owner = "diffblue";
-                repo = "cbmc";
-                # Includes commits after 6.7.1 needed for harness generation
-                # Use tag when 6.7.2 is released
-                rev = "062962c1da7149be418338b1f2220d51960e06f8";
-                hash = "sha256-qcCiKv+AUoiIZdiCK955Bl5GBK+JHv0mDflQ4aAj4IQ=";
-              };
-            })
+            cbmc
           ];
           env.NIX_HARDENING_ENABLE = "";
           shellHook = ''
@@ -57,7 +47,7 @@
           stdenv = lib.mkForce (llvmStdenv pkgs);
         };
 
-        formatters = { llvmPackages, cmake-format, nodePackages, ... }:
+        formatters = { llvmPackages, cmake-format, nodePackages, yapf, ... }:
           let
             fmt-c = "${llvmPackages.clang-unwrapped}/bin/clang-format -i";
             fmt-cmake = "${cmake-format}/bin/cmake-format -i";
@@ -69,6 +59,7 @@
             "*.h" = fmt-c;
             "CMakeLists.txt" = fmt-cmake;
             ".clang*" = fmt-yaml;
+            "*.py" = "${yapf}/bin/yapf -i";
           };
 
         pname = "ggl-sdk";
@@ -120,6 +111,24 @@
                 $(fd . src -e c -e h)
             '';
 
+            cbmc-contracts = { stdenv, pkg-config, cmake, cbmc, python3, ... }:
+              stdenv.mkDerivation {
+                name = "check-cbmc-contracts";
+                src = filteredSrc;
+                nativeBuildInputs = [ pkg-config cbmc python3 ];
+                buildPhase = ''
+                  ${cmake}/bin/cmake -B build -D CMAKE_BUILD_TYPE=Debug \
+                    -D GGL_LOG_LEVEL=TRACE
+                  python ${./misc/check_contracts.py} src
+                  touch $out
+                '';
+                dontPatch = true;
+                dontConfigure = true;
+                dontInstall = true;
+                dontFixup = true;
+                allowSubstitutes = false;
+              };
+
             iwyu = pkgs: ''
               set -eo pipefail
               PATH=${lib.makeBinPath
@@ -167,6 +176,17 @@
                 ];
               })
             { };
+          cbmc = prev.cbmc.overrideAttrs {
+            version = "6.7.1";
+            src = final.fetchFromGitHub {
+              owner = "diffblue";
+              repo = "cbmc";
+              # Includes commits after 6.7.1 needed for harness generation
+              # Use tag when 6.7.2 is released
+              rev = "062962c1da7149be418338b1f2220d51960e06f8";
+              hash = "sha256-qcCiKv+AUoiIZdiCK955Bl5GBK+JHv0mDflQ4aAj4IQ=";
+            };
+          };
         };
       });
 }
