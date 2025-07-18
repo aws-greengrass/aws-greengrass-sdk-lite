@@ -97,7 +97,7 @@ static bool add_overflow_int64(int64_t a, int64_t b) {
     return b > 0 ? (a > INT64_MAX - b) : (a < INT64_MIN - b);
 }
 
-GglError ggl_str_to_int64(GglBuffer str, int64_t *value) {
+GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
     int64_t ret = 0;
     int64_t sign = 1;
     size_t i = 0;
@@ -133,9 +133,7 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t *value) {
         ret += sign * (c - '0');
     }
 
-    if (value != NULL) {
-        *value = ret;
-    }
+    *value = ret;
     return GGL_ERR_OK;
 }
 

@@ -93,6 +93,7 @@ bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start)
 GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CONST;
 
 /// Parse an integer from a string
-GglError ggl_str_to_int64(GglBuffer str, int64_t *value) ACCESS(write_only, 2);
+GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1])
+    ACCESS(write_only, 2);
 
 #endif
