@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __COVERITY__
+#if defined __COVERITY__ || defined __CPROVER__
 #define GGL_DISABLE_MACRO_TYPE_CHECKING
 #endif
 
