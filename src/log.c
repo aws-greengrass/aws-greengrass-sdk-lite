@@ -10,8 +10,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 void ggl_log(
     uint32_t level,
     const char *file,
@@ -20,6 +18,8 @@ void ggl_log(
     const char *format,
     ...
 ) {
+    static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
     const char *level_str;
     switch (level) {
     case GGL_LOG_ERROR:

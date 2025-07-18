@@ -8,6 +8,7 @@
 //! Logging interface
 
 #include <ggl/attr.h>
+#include <ggl/cbmc.h>
 #include <stdint.h>
 
 /// Logging interface implementation.
@@ -20,7 +21,7 @@ void ggl_log(
     const char *tag,
     const char *format,
     ...
-) FORMAT(printf, 5, 6);
+) FORMAT(printf, 5, 6) CBMC_CONTRACT(requires(cbmc_restrict(format)));
 
 /// No-op logging fn for enabling type checking disabled logging macros.
 FORMAT(printf, 1, 2) __attribute__((always_inline)) static inline void
