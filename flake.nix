@@ -78,8 +78,8 @@
                 nativeBuildInputs = [ pkg-config clang-tools ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
-                    -D CMAKE_BUILD_TYPE=Debug \
-                    rm $out/CMakeFiles/CMakeConfigureLog.yaml
+                    -D CMAKE_BUILD_TYPE=Debug
+                  rm $out/CMakeFiles/CMakeConfigureLog.yaml
                 '';
                 dontUnpack = true;
                 dontPatch = true;
