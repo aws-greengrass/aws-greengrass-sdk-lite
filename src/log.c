@@ -2,7 +2,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <errno.h>
 #include <ggl/cleanup.h>
 #include <ggl/log.h>
 #include <pthread.h>
@@ -21,8 +20,6 @@ void ggl_log(
     const char *format,
     ...
 ) {
-    int errno_old = errno;
-
     const char *level_str;
     switch (level) {
     case GGL_LOG_ERROR:
@@ -57,6 +54,4 @@ void ggl_log(
         fprintf(stderr, "\033[0m\n");
         fflush(stderr);
     }
-
-    errno = errno_old;
 }
