@@ -97,11 +97,11 @@
 
             clang-tidy = pkgs: ''
               set -eo pipefail
+              cd ${filteredSrc}
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
               clangd-tidy -j$(nproc) -p ${clangBuildDir pkgs} --color=always \
-                $(fd . ${filteredSrc}/src -e c -e h) |\
-                sed 's|\.\.${filteredSrc}/||'
+                $(fd . src -e c -e h)
             '';
 
             iwyu = pkgs: ''
@@ -137,11 +137,11 @@
             ({ python3Packages }:
               python3Packages.buildPythonPackage rec {
                 pname = "clangd_tidy";
-                version = "1.1.0.post1";
+                version = "1.1.0.post2";
                 format = "pyproject";
                 src = final.fetchPypi {
                   inherit pname version;
-                  hash = "sha256-wqwrdD+8kd2N0Ra82qHkA0T2LjlDdj4LbUuMkTfpBww=";
+                  hash = "sha256-NyghLY+BeY9LAOstKEFcPLdA7l1jCdHLuyPms4bOyYE=";
                 };
                 buildInputs = with python3Packages; [ setuptools-scm ];
                 propagatedBuildInputs = with python3Packages; [
