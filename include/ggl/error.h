@@ -6,6 +6,7 @@
 #define GGL_ERROR_H
 
 #include <ggl/attr.h>
+#include <ggl/cbmc.h>
 
 //! GGL error codes
 
@@ -47,6 +48,8 @@ typedef enum NODISCARD GglError {
     GGL_ERR_TIMEOUT,
 } GglError;
 
-const char *ggl_strerror(GglError err) CONST;
+const char *ggl_strerror(GglError err) CONST CBMC_CONTRACT(
+    requires(cbmc_enum_valid(err)), ensures(cbmc_restrict(cbmc_return))
+);
 
 #endif
