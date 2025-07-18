@@ -26,6 +26,7 @@ SpaceAfterCStyleCast: true
 PenaltyReturnTypeOnItsOwnLine: 240
 AttributeMacros:
   - NODISCARD
+  - FORMAT
   - UNUSED
   - COUNTED_BY
   - DESIGNATED_INIT
