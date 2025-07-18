@@ -8,6 +8,7 @@
 //! Buffer utilities.
 
 #include <ggl/attr.h>
+#include <ggl/cbmc.h>
 #include <ggl/error.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -61,6 +62,11 @@ typedef struct {
          name = &name[1])
 // NOLINTEND(bugprone-macro-parentheses)
 
+#ifdef __CPROVER__
+#define cbmc_buffer_restrict(buf) \
+    (((buf).len == 0) || cbmc_restrict((buf).data, (buf).len))
+#endif
+
 /// Convert null-terminated string to buffer
 GglBuffer ggl_buffer_from_null_term(char str[static 1]) PURE
 NULL_TERMINATED_STRING_ARG(1);
@@ -94,6 +100,11 @@ GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CONST;
 
 /// Parse an integer from a string
 GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1])
-    ACCESS(write_only, 2);
+    ACCESS(write_only, 2) CBMC_CONTRACT(
+        requires(cbmc_buffer_restrict(str)),
+        requires(cbmc_restrict(value)),
+        ensures(cbmc_enum_valid(cbmc_return)),
+        assigns(*value)
+    );
 
 #endif
