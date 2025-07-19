@@ -2,7 +2,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <errno.h>
 #include <ggl/cleanup.h>
 #include <ggl/log.h>
 #include <pthread.h>
@@ -10,8 +9,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
-
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void ggl_log(
     uint32_t level,
@@ -21,7 +18,7 @@ void ggl_log(
     const char *format,
     ...
 ) {
-    int errno_old = errno;
+    static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
     const char *level_str;
     switch (level) {
@@ -57,6 +54,4 @@ void ggl_log(
         fprintf(stderr, "\033[0m\n");
         fflush(stderr);
     }
-
-    errno = errno_old;
 }

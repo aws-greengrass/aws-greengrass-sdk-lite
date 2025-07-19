@@ -17,9 +17,14 @@
 #define GGL_CLEANUP(fn, exp) \
     GGL_CLEANUP_ID(GGL_MACRO_PASTE(cleanup_, __LINE__), fn, exp)
 
+// CBMC errors if another function in the compilation object calls free
+#ifndef __CPROVER__
+
 static inline void cleanup_free(void *p) {
     free(*(void **) p);
 }
+
+#endif
 
 static inline void cleanup_pthread_mtx_unlock(pthread_mutex_t **mtx) {
     if (*mtx != NULL) {

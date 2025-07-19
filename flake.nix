@@ -29,7 +29,13 @@
         inherit inputs;
 
         devShell = pkgs: {
-          packages = with pkgs; [ clang-tools clangd-tidy git cmake ];
+          packages = with pkgs; [
+            clang-tools
+            clangd-tidy
+            git
+            cmake
+            cbmc
+          ];
           env.NIX_HARDENING_ENABLE = "";
           shellHook = ''
             export MAKEFLAGS=-j
@@ -41,7 +47,7 @@
           stdenv = lib.mkForce (llvmStdenv pkgs);
         };
 
-        formatters = { llvmPackages, cmake-format, nodePackages, ... }:
+        formatters = { llvmPackages, cmake-format, nodePackages, yapf, ... }:
           let
             fmt-c = "${llvmPackages.clang-unwrapped}/bin/clang-format -i";
             fmt-cmake = "${cmake-format}/bin/cmake-format -i";
@@ -53,6 +59,7 @@
             "*.h" = fmt-c;
             "CMakeLists.txt" = fmt-cmake;
             ".clang*" = fmt-yaml;
+            "*.py" = "${yapf}/bin/yapf -i";
           };
 
         pname = "ggl-sdk";
@@ -78,8 +85,8 @@
                 nativeBuildInputs = [ pkg-config clang-tools ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
-                    -D CMAKE_BUILD_TYPE=Debug \
-                    rm $out/CMakeFiles/CMakeConfigureLog.yaml
+                    -D CMAKE_BUILD_TYPE=Debug
+                  rm $out/CMakeFiles/CMakeConfigureLog.yaml
                 '';
                 dontUnpack = true;
                 dontPatch = true;
@@ -97,12 +104,30 @@
 
             clang-tidy = pkgs: ''
               set -eo pipefail
+              cd ${filteredSrc}
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
               clangd-tidy -j$(nproc) -p ${clangBuildDir pkgs} --color=always \
-                $(fd . ${filteredSrc}/src -e c -e h) |\
-                sed 's|\.\.${filteredSrc}/||'
+                $(fd . src -e c -e h)
             '';
+
+            cbmc-contracts = { stdenv, pkg-config, cmake, cbmc, python3, ... }:
+              stdenv.mkDerivation {
+                name = "check-cbmc-contracts";
+                src = filteredSrc;
+                nativeBuildInputs = [ pkg-config cbmc python3 ];
+                buildPhase = ''
+                  ${cmake}/bin/cmake -B build -D CMAKE_BUILD_TYPE=Debug \
+                    -D GGL_LOG_LEVEL=TRACE
+                  python ${./misc/check_contracts.py} src
+                  touch $out
+                '';
+                dontPatch = true;
+                dontConfigure = true;
+                dontInstall = true;
+                dontFixup = true;
+                allowSubstitutes = false;
+              };
 
             iwyu = pkgs: ''
               set -eo pipefail
@@ -137,11 +162,11 @@
             ({ python3Packages }:
               python3Packages.buildPythonPackage rec {
                 pname = "clangd_tidy";
-                version = "1.1.0.post1";
+                version = "1.1.0.post2";
                 format = "pyproject";
                 src = final.fetchPypi {
                   inherit pname version;
-                  hash = "sha256-wqwrdD+8kd2N0Ra82qHkA0T2LjlDdj4LbUuMkTfpBww=";
+                  hash = "sha256-NyghLY+BeY9LAOstKEFcPLdA7l1jCdHLuyPms4bOyYE=";
                 };
                 buildInputs = with python3Packages; [ setuptools-scm ];
                 propagatedBuildInputs = with python3Packages; [
@@ -151,6 +176,17 @@
                 ];
               })
             { };
+          cbmc = prev.cbmc.overrideAttrs {
+            version = "6.7.1";
+            src = final.fetchFromGitHub {
+              owner = "diffblue";
+              repo = "cbmc";
+              # Includes commits after 6.7.1 needed for harness generation
+              # Use tag when 6.7.2 is released
+              rev = "062962c1da7149be418338b1f2220d51960e06f8";
+              hash = "sha256-qcCiKv+AUoiIZdiCK955Bl5GBK+JHv0mDflQ4aAj4IQ=";
+            };
+          };
         };
       });
 }

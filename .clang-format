@@ -26,6 +26,7 @@ SpaceAfterCStyleCast: true
 PenaltyReturnTypeOnItsOwnLine: 240
 AttributeMacros:
   - NODISCARD
+  - FORMAT
   - UNUSED
   - COUNTED_BY
   - DESIGNATED_INIT
@@ -44,3 +45,5 @@ ForEachMacros:
   - GGL_LIST_FOREACH
   - GGL_MAP_FOREACH
   - GGL_BUF_LIST_FOREACH
+Macros:
+  - CBMC_CONTRACT(x)=[[cbmc::contract(x)]]

@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <ggl/buffer.h>
+#include <ggl/cbmc.h>
 #include <ggl/error.h>
 #include <ggl/io.h>
 #include <ggl/log.h>
@@ -97,7 +98,7 @@ static bool add_overflow_int64(int64_t a, int64_t b) {
     return b > 0 ? (a > INT64_MAX - b) : (a < INT64_MIN - b);
 }
 
-GglError ggl_str_to_int64(GglBuffer str, int64_t *value) {
+GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
     int64_t ret = 0;
     int64_t sign = 1;
     size_t i = 0;
@@ -112,30 +113,29 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t *value) {
         return GGL_ERR_INVALID;
     }
 
-    for (; i < str.len; i++) {
-        uint8_t c = str.data[i];
+    for (; i < str.len; i++)
+        CBMC_CONTRACT(assigns(ret, i), decreases(str.len - i)) {
+            uint8_t c = str.data[i];
 
-        if ((c < '0') || (c > '9')) {
-            GGL_LOGE("Invalid character %c when parsing int64.", c);
-            return GGL_ERR_INVALID;
+            if ((c < '0') || (c > '9')) {
+                GGL_LOGE("Invalid character %c when parsing int64.", c);
+                return GGL_ERR_INVALID;
+            }
+
+            if (mult_overflow_int64(ret, 10U)) {
+                GGL_LOGE("Overflow when parsing int64 from buffer.");
+                return GGL_ERR_RANGE;
+            }
+            ret *= 10;
+
+            if (add_overflow_int64(ret, sign * (c - '0'))) {
+                GGL_LOGE("Overflow when parsing int64 from buffer.");
+                return GGL_ERR_RANGE;
+            }
+            ret += sign * (c - '0');
         }
 
-        if (mult_overflow_int64(ret, 10U)) {
-            GGL_LOGE("Overflow when parsing int64 from buffer.");
-            return GGL_ERR_RANGE;
-        }
-        ret *= 10;
-
-        if (add_overflow_int64(ret, sign * (c - '0'))) {
-            GGL_LOGE("Overflow when parsing int64 from buffer.");
-            return GGL_ERR_RANGE;
-        }
-        ret += sign * (c - '0');
-    }
-
-    if (value != NULL) {
-        *value = ret;
-    }
+    *value = ret;
     return GGL_ERR_OK;
 }
 

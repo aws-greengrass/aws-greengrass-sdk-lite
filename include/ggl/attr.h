@@ -15,6 +15,21 @@
 #define NODISCARD
 #endif
 
+#ifdef __CPROVER__
+// Remove when CBMC suports parsing attrs before contracts
+#undef __has_attribute
+#endif
+
+#ifdef __has_attribute
+#if __has_attribute(format)
+#define FORMAT(...) __attribute__((format(__VA_ARGS__)))
+#endif
+#endif
+
+#ifndef FORMAT
+#define FORMAT(...)
+#endif
+
 #ifdef __has_attribute
 #if __has_attribute(unused)
 #define UNUSED __attribute__((unused))
