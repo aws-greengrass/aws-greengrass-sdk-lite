@@ -75,7 +75,13 @@
             meta = defaultMeta;
           };
 
-        packages.ggl-sdk-static = { pkgsStatic }: pkgsStatic.ggl-sdk;
+        packages = {
+          ggl-sdk-static = { pkgsStatic }: pkgsStatic.ggl-sdk;
+          ggl-sdk-static-aarch64 = { pkgsCross }:
+            pkgsCross.aarch64-multiplatform-musl.ggl-sdk-static;
+          ggl-sdk-static-armv7l = { pkgsCross }:
+            pkgsCross.armv7l-hf-multiplatform.ggl-sdk-static;
+        };
 
         checks =
           let
@@ -99,8 +105,6 @@
           {
             build-clang = pkgs: pkgs.ggl-sdk.override
               { stdenv = llvmStdenv pkgs; };
-
-            build-musl-pi = pkgs: pkgs.pkgsCross.muslpi.ggl-sdk;
 
             clang-tidy = pkgs: ''
               set -eo pipefail

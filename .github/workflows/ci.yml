@@ -21,12 +21,14 @@ jobs:
         include:
           - name: build with GCC
             check: packages-default
-          - name: static build
+          - name: build static
             check: packages-ggl-sdk-static
+          - name: cross-build armv7l static
+            check: packages-ggl-sdk-static-armv7l
+          - name: cross-build aarch64 static
+            check: packages-ggl-sdk-static-aarch64
           - name: build with Clang
             check: build-clang
-          - name: cross-build for arm32 Musl
-            check: build-musl-pi
           - name: formatting
             check: formatting
           - name: clang-tidy
