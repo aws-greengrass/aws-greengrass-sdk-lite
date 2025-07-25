@@ -97,7 +97,28 @@ bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start)
 /// Returns substring of buffer from start to end.
 /// The result is the overlap between the start to end range and the input
 /// bounds.
-GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CONST;
+GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end)
+    CONST CBMC_CONTRACT(
+        requires(cbmc_buffer_restrict(&buf)),
+        requires(start < end),
+        ensures(cbmc_implies(
+            (buf.data == NULL),
+            (cbmc_return.data == NULL) && (cbmc_return.len == 0)
+        )),
+        ensures(cbmc_implies(
+            (buf.data != NULL),
+            (cbmc_ptr_in_range(buf.data, cbmc_return.data, buf.data + buf.len)),
+            ((cbmc_return.data - buf.data) <= (buf.len - cbmc_return.len))
+        )),
+        ensures(cbmc_implies(
+            (buf.data != NULL) && (start <= buf.len),
+            (cbmc_return.data == buf.data + start)
+        )),
+        ensures(cbmc_implies(
+            (buf.data != NULL) && (end <= buf.len),
+            (cbmc_return.len == end - start)
+        )),
+    );
 
 /// Parse an integer from a string
 GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1])
