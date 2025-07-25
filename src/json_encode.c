@@ -45,7 +45,7 @@ static GglError json_write_i64(int64_t i64, GglWriter writer) {
 }
 
 static GglError json_write_f64(double f64, GglWriter writer) {
-    char encoded[DBL_DECIMAL_DIG + 4]; // -x.xxxxxxxE-xxxx
+    char encoded[DBL_DECIMAL_DIG + 9]; // -x.<precision>E-xxx\0
     int ret_len
         = snprintf(encoded, sizeof(encoded), "%#.*g", DBL_DECIMAL_DIG, f64);
     if (ret_len < 0) {
