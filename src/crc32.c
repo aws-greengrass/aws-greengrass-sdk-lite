@@ -20,7 +20,7 @@
 #if HAS_BUILTIN_CRC
 
 static uint32_t crc_step(uint32_t crc, uint8_t byte) {
-    return __builtin_rev_crc32_data8(crc, byte, 0x04C11DB7L)
+    return __builtin_rev_crc32_data8(crc, byte, 0x04C11DB7L);
 }
 
 #else
