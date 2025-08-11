@@ -193,6 +193,7 @@ if(BUILD_SHARED_LIBS)
             -fno-unwind-tables
             -fno-asynchronous-unwind-tables
             -fvisibility=default
+            -fno-lto
             -Wno-missing-braces)
   target_link_options(ggl-sdk-shared PRIVATE -fno-lto)
   target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
