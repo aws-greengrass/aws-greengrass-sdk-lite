@@ -174,19 +174,25 @@ add_library(ggl-sdk STATIC ${SRCS})
 # Also build a shared version if requested
 if(BUILD_SHARED_LIBS)
   add_library(ggl-sdk-shared SHARED ${SRCS})
-  set_target_properties(ggl-sdk-shared PROPERTIES
-      OUTPUT_NAME ggl-sdk
-      VERSION 0.2.0
-      SOVERSION 0
-  )
+  set_target_properties(
+    ggl-sdk-shared
+    PROPERTIES OUTPUT_NAME ggl-sdk
+               VERSION 0.2.0
+               SOVERSION 0)
 
-  # Apply same settings to shared library
-  # Note: Override -fvisibility=hidden for shared library to export symbols
-  target_compile_options(ggl-sdk-shared PRIVATE -pthread -fno-strict-aliasing -std=gnu11
-                                         -fno-semantic-interposition -fno-common
-                                         -fno-unwind-tables -fno-asynchronous-unwind-tables
-                                         -fvisibility=default
-                                         -Wno-missing-braces)
+  # Apply same settings to shared library Note: Override -fvisibility=hidden for
+  # shared library to export symbols
+  target_compile_options(
+    ggl-sdk-shared
+    PRIVATE -pthread
+            -fno-strict-aliasing
+            -std=gnu11
+            -fno-semantic-interposition
+            -fno-common
+            -fno-unwind-tables
+            -fno-asynchronous-unwind-tables
+            -fvisibility=default
+            -Wno-missing-braces)
   target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
   target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
   target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
@@ -206,7 +212,8 @@ target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
 # Apply log level to shared library too
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(ggl-sdk-shared PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
+  target_compile_definitions(ggl-sdk-shared
+                             PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
