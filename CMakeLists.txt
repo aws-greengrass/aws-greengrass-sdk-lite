@@ -12,7 +12,7 @@ if(PROJECT_IS_TOP_LEVEL)
   option(ENABLE_WERROR "Compile warnings as errors")
 
   option(BUILD_SAMPLES "Build sample components" ON)
-  
+
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
