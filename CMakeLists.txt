@@ -168,6 +168,27 @@ foreach(src ${SRCS})
 endforeach()
 
 add_library(ggl-sdk STATIC ${SRCS})
+
+# Also build a shared version
+add_library(ggl-sdk-shared SHARED ${SRCS})
+set_target_properties(ggl-sdk-shared PROPERTIES 
+    OUTPUT_NAME ggl-sdk
+    VERSION 0.2.0
+    SOVERSION 0
+)
+
+# Apply same settings to shared library
+# Note: Override -fvisibility=hidden for shared library to export symbols
+target_compile_options(ggl-sdk-shared PRIVATE -pthread -fno-strict-aliasing -std=gnu11
+                                       -fno-semantic-interposition -fno-common
+                                       -fno-unwind-tables -fno-asynchronous-unwind-tables
+                                       -fvisibility=default
+                                       -Wno-missing-braces)
+target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
+target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
+target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
+target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)
 target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)
@@ -179,8 +200,12 @@ string(TOUPPER "${GGL_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
+# Apply log level to shared library too
+target_compile_definitions(ggl-sdk-shared PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
+
 if(PROJECT_IS_TOP_LEVEL)
-  install(TARGETS ggl-sdk)
+  # Install both static and shared libraries
+  install(TARGETS ggl-sdk ggl-sdk-shared)
 
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
