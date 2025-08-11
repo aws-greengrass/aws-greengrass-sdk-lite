@@ -181,7 +181,8 @@ if(BUILD_SHARED_LIBS)
                SOVERSION 0)
 
   # Apply same settings to shared library Note: Override -fvisibility=hidden for
-  # shared library to export symbols
+  # shared library to export symbols. Disable LTO to avoid Clang issues with
+  # alloc_size attribute.
   target_compile_options(
     ggl-sdk-shared
     PRIVATE -pthread
@@ -193,6 +194,7 @@ if(BUILD_SHARED_LIBS)
             -fno-asynchronous-unwind-tables
             -fvisibility=default
             -Wno-missing-braces)
+  target_link_options(ggl-sdk-shared PRIVATE -fno-lto)
   target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
   target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
   target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
