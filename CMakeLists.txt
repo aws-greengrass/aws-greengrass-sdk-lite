@@ -171,7 +171,7 @@ add_library(ggl-sdk STATIC ${SRCS})
 
 # Also build a shared version
 add_library(ggl-sdk-shared SHARED ${SRCS})
-set_target_properties(ggl-sdk-shared PROPERTIES 
+set_target_properties(ggl-sdk-shared PROPERTIES
     OUTPUT_NAME ggl-sdk
     VERSION 0.2.0
     SOVERSION 0
