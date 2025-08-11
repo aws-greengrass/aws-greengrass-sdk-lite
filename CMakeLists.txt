@@ -12,6 +12,8 @@ if(PROJECT_IS_TOP_LEVEL)
   option(ENABLE_WERROR "Compile warnings as errors")
 
   option(BUILD_SAMPLES "Build sample components" ON)
+  
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -169,25 +171,27 @@ endforeach()
 
 add_library(ggl-sdk STATIC ${SRCS})
 
-# Also build a shared version
-add_library(ggl-sdk-shared SHARED ${SRCS})
-set_target_properties(ggl-sdk-shared PROPERTIES
-    OUTPUT_NAME ggl-sdk
-    VERSION 0.2.0
-    SOVERSION 0
-)
+# Also build a shared version if requested
+if(BUILD_SHARED_LIBS)
+  add_library(ggl-sdk-shared SHARED ${SRCS})
+  set_target_properties(ggl-sdk-shared PROPERTIES
+      OUTPUT_NAME ggl-sdk
+      VERSION 0.2.0
+      SOVERSION 0
+  )
 
-# Apply same settings to shared library
-# Note: Override -fvisibility=hidden for shared library to export symbols
-target_compile_options(ggl-sdk-shared PRIVATE -pthread -fno-strict-aliasing -std=gnu11
-                                       -fno-semantic-interposition -fno-common
-                                       -fno-unwind-tables -fno-asynchronous-unwind-tables
-                                       -fvisibility=default
-                                       -Wno-missing-braces)
-target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
-target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
-target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
-target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+  # Apply same settings to shared library
+  # Note: Override -fvisibility=hidden for shared library to export symbols
+  target_compile_options(ggl-sdk-shared PRIVATE -pthread -fno-strict-aliasing -std=gnu11
+                                         -fno-semantic-interposition -fno-common
+                                         -fno-unwind-tables -fno-asynchronous-unwind-tables
+                                         -fvisibility=default
+                                         -Wno-missing-braces)
+  target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
+  target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
+  target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
+  target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+endif()
 
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)
@@ -201,11 +205,17 @@ set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
 # Apply log level to shared library too
-target_compile_definitions(ggl-sdk-shared PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(ggl-sdk-shared PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
+endif()
 
 if(PROJECT_IS_TOP_LEVEL)
   # Install both static and shared libraries
-  install(TARGETS ggl-sdk ggl-sdk-shared)
+  if(BUILD_SHARED_LIBS)
+    install(TARGETS ggl-sdk ggl-sdk-shared)
+  else()
+    install(TARGETS ggl-sdk)
+  endif()
 
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
