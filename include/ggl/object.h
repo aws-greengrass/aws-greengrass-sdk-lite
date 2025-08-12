@@ -38,7 +38,7 @@ typedef struct {
 
 /// A key-value pair used for `GglMap`.
 /// `key` must be an UTF-8 encoded string.
-typedef struct __attribute__((may_alias)) {
+typedef struct {
     // KVs alias with pointers to their value objects
     uint8_t _private[sizeof(void *) + 2 + sizeof(GglObject)];
 } GglKV;
