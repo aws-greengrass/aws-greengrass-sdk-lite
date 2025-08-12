@@ -85,7 +85,7 @@ GGL_EXPORT ACCESS(read_write, 1)
 bool ggl_buffer_remove_prefix(GglBuffer buf[static 1], GglBuffer prefix);
 
 /// Returns whether the buffer has the given suffix.
-GGL_EXPORT
+GGL_EXPORT PURE
 bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix);
 
 /// Removes a suffix. Returns whether the suffix was removed.
