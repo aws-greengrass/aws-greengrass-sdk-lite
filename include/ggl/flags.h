@@ -17,8 +17,17 @@ typedef struct DESIGNATED_INIT {
     } val;
 } GglPresence;
 
-static const GglPresence GGL_REQUIRED UNUSED = { .val = GGL_PRESENCE_REQUIRED };
-static const GglPresence GGL_OPTIONAL UNUSED = { .val = GGL_PRESENCE_OPTIONAL };
-static const GglPresence GGL_MISSING UNUSED = { .val = GGL_PRESENCE_MISSING };
+#define GGL_REQUIRED \
+    (GglPresence) { \
+        .val = GGL_PRESENCE_REQUIRED \
+    }
+#define GGL_OPTIONAL \
+    (GglPresence) { \
+        .val = GGL_PRESENCE_OPTIONAL \
+    }
+#define GGL_MISSING \
+    (GglPresence) { \
+        .val = GGL_PRESENCE_MISSING \
+    }
 
 #endif

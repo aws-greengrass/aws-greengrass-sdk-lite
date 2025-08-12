@@ -83,7 +83,8 @@ double ggl_obj_into_f64(GglObject f64) {
     return result;
 }
 
-COLD static void length_err(const char *type, size_t *len) {
+COLD
+static void length_err(const char *type, size_t *len) {
     GGL_LOGE(
         "%s length longer than can be stored in GglObject (%zu, max %u).",
         type,

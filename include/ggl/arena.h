@@ -42,38 +42,33 @@ static inline GglArena ggl_arena_init(GglBuffer buf) {
     (typeof(type) *) ggl_arena_alloc(arena, (n) * sizeof(type), alignof(type))
 
 /// Allocate `size` bytes with given alignment from an arena.
-GGL_EXPORT
-void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment)
-    ALLOC_ALIGN(3) ACCESS(read_write, 1);
+GGL_EXPORT ALLOC_ALIGN(3) ACCESS(read_write, 1)
+void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment);
 
 /// Resize ptr's allocation (must be the last allocated ptr).
-GGL_EXPORT
+GGL_EXPORT NONNULL(2) ACCESS(read_write, 1) ACCESS(none, 2)
 GglError ggl_arena_resize_last(
     GglArena arena[static 1], const void *ptr, size_t old_size, size_t size
-) NONNULL(2) ACCESS(read_write, 1) ACCESS(none, 2);
+);
 
 /// Returns true if arena's mem contains ptr.
-GGL_EXPORT
-bool ggl_arena_owns(const GglArena *arena, const void *ptr) PURE
-ACCESS(read_only, 1) ACCESS(none, 2);
+GGL_EXPORT PURE ACCESS(read_only, 1) ACCESS(none, 2)
+bool ggl_arena_owns(const GglArena *arena, const void *ptr);
 
 /// Allocates remaining space into a buffer.
-GGL_EXPORT
-GglBuffer ggl_arena_alloc_rest(GglArena *arena) ACCESS(read_write, 1);
+GGL_EXPORT ACCESS(read_write, 1)
+GglBuffer ggl_arena_alloc_rest(GglArena *arena);
 
 /// Modifies all of an object's references to point into a given arena
-GGL_EXPORT
-GglError ggl_arena_claim_obj(GglObject obj[static 1], GglArena *arena)
-    ACCESS(read_write, 1) ACCESS(read_write, 2);
+GGL_EXPORT ACCESS(read_write, 1) ACCESS(read_write, 2)
+GglError ggl_arena_claim_obj(GglObject obj[static 1], GglArena *arena);
 
 /// Modifies an buffer to point into a given arena
-GGL_EXPORT
-GglError ggl_arena_claim_buf(GglBuffer buf[static 1], GglArena *arena)
-    ACCESS(read_write, 1) ACCESS(read_write, 2);
+GGL_EXPORT ACCESS(read_write, 1) ACCESS(read_write, 2)
+GglError ggl_arena_claim_buf(GglBuffer buf[static 1], GglArena *arena);
 
 /// Modifies only the buffers of an object to point into a given arena
-GGL_EXPORT
-GglError ggl_arena_claim_obj_bufs(GglObject obj[static 1], GglArena *arena)
-    ACCESS(read_write, 1) ACCESS(read_write, 2);
+GGL_EXPORT ACCESS(read_write, 1) ACCESS(read_write, 2)
+GglError ggl_arena_claim_obj_bufs(GglObject obj[static 1], GglArena *arena);
 
 #endif

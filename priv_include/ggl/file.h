@@ -8,6 +8,7 @@
 //! File system functionality
 
 #include <dirent.h>
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <sys/types.h>

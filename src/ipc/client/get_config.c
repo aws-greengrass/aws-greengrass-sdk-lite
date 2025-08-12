@@ -41,13 +41,7 @@ static GglError error_handler(
     return GGL_ERR_FAILURE;
 }
 
-static GglError ggipc_get_config_common(
-    GglBufList key_path,
-    const GglBuffer *component_name,
-    GgIpcResultCallback *result_callback,
-    void *result_ctx
-) NONNULL(3);
-
+NONNULL(3)
 static GglError ggipc_get_config_common(
     GglBufList key_path,
     const GglBuffer *component_name,
