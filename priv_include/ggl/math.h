@@ -7,10 +7,12 @@
 
 //! Math utilities
 
+#include <ggl/attr.h>
 #include <stdint.h>
 
 /// Absolute value, avoiding undefined behavior.
 /// i.e. avoiding -INT64_MIN for twos-compliment)
+VISIBILITY(hidden)
 uint64_t ggl_abs(int64_t i64);
 
 #endif

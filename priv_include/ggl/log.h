@@ -14,6 +14,7 @@
 /// Logging interface implementation.
 /// Do not call directly; use one of the macro wrappers.
 /// Default implementation prints to stderr.
+VISIBILITY(hidden)
 void ggl_log(
     uint32_t level,
     const char *file,

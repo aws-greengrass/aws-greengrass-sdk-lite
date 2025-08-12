@@ -16,6 +16,7 @@
 
 /// Encode an EventStream packet into a buffer.
 /// Payload must fail if it does not fit in provided buffer.
+VISIBILITY(hidden)
 GglError eventstream_encode(
     GglBuffer buf[static 1],
     const EventStreamHeader *headers,

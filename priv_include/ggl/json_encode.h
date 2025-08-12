@@ -12,10 +12,12 @@
 #include <ggl/object.h>
 
 /// Serializes a GglObject into a buffer in JSON encoding.
+VISIBILITY(hidden)
 GglError ggl_json_encode(GglObject obj, GglWriter writer);
 
 /// Reader from which a JSON-serialized object can be read.
 /// Errors if buffer is not large enough for entire object.
+VISIBILITY(hidden)
 GglReader ggl_json_reader(const GglObject *obj);
 
 #endif

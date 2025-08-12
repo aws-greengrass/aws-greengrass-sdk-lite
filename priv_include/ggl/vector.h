@@ -7,6 +7,7 @@
 
 //! Generic Object Vector interface
 
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/io.h>
@@ -36,10 +37,15 @@ typedef struct {
 #define GGL_OBJ_VEC GGL_OBJ_VEC_UNCHECKED
 #endif
 
+VISIBILITY(hidden)
 GglError ggl_obj_vec_push(GglObjVec *vector, GglObject object);
+VISIBILITY(hidden)
 void ggl_obj_vec_chain_push(GglError *err, GglObjVec *vector, GglObject object);
+VISIBILITY(hidden)
 GglError ggl_obj_vec_pop(GglObjVec *vector, GglObject *out);
+VISIBILITY(hidden)
 GglError ggl_obj_vec_append(GglObjVec *vector, GglList list);
+VISIBILITY(hidden)
 void ggl_obj_vec_chain_append(GglError *err, GglObjVec *vector, GglList list);
 
 typedef struct {
@@ -58,6 +64,7 @@ typedef struct {
 #define GGL_KV_VEC GGL_KV_VEC_UNCHECKED
 #endif
 
+VISIBILITY(hidden)
 GglError ggl_kv_vec_push(GglKVVec *vector, GglKV kv);
 
 typedef struct {
@@ -80,16 +87,23 @@ typedef struct {
 #define GGL_BYTE_VEC GGL_BYTE_VEC_UNCHECKED
 #endif
 
+VISIBILITY(hidden)
 GglByteVec ggl_byte_vec_init(GglBuffer buf);
+VISIBILITY(hidden)
 GglError ggl_byte_vec_push(GglByteVec *vector, uint8_t byte);
+VISIBILITY(hidden)
 void ggl_byte_vec_chain_push(GglError *err, GglByteVec *vector, uint8_t byte);
+VISIBILITY(hidden)
 GglError ggl_byte_vec_append(GglByteVec *vector, GglBuffer buf);
+VISIBILITY(hidden)
 void ggl_byte_vec_chain_append(
     GglError *err, GglByteVec *vector, GglBuffer buf
 );
+VISIBILITY(hidden)
 GglBuffer ggl_byte_vec_remaining_capacity(GglByteVec vector);
 
 /// Returns a writer that writes into a GglByteVec
+VISIBILITY(hidden)
 GglWriter ggl_byte_vec_writer(GglByteVec *byte_vec);
 
 typedef struct {
@@ -110,9 +124,13 @@ typedef struct {
 #define GGL_BUF_VEC GGL_BUF_VEC_UNCHECKED
 #endif
 
+VISIBILITY(hidden)
 GglError ggl_buf_vec_push(GglBufVec *vector, GglBuffer buf);
+VISIBILITY(hidden)
 void ggl_buf_vec_chain_push(GglError *err, GglBufVec *vector, GglBuffer buf);
+VISIBILITY(hidden)
 GglError ggl_buf_vec_append_list(GglBufVec *vector, GglList list);
+VISIBILITY(hidden)
 void ggl_buf_vec_chain_append_list(
     GglError *err, GglBufVec *vector, GglList list
 );

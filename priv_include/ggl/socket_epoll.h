@@ -7,18 +7,22 @@
 
 //! Epoll wrappers
 
+#include <ggl/attr.h>
 #include <ggl/error.h>
 #include <stdint.h>
 
 /// Create an epoll fd.
 /// Caller is responsible for closing.
+VISIBILITY(hidden)
 GglError ggl_socket_epoll_create(int *epoll_fd);
 
 /// Add an epoll watch.
+VISIBILITY(hidden)
 GglError ggl_socket_epoll_add(int epoll_fd, int target_fd, uint64_t data);
 
 /// Continuously wait on epoll, calling callback when data is ready.
 /// Exits only on error waiting or error from callback.
+VISIBILITY(hidden)
 GglError ggl_socket_epoll_run(
     int epoll_fd, GglError (*fd_ready)(void *ctx, uint64_t data), void *ctx
 );

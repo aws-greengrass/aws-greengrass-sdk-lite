@@ -15,6 +15,7 @@
 /// Reads a JSON doc from a buffer as a GglObject.
 /// Result obj may contain references into buf, and allocations from alloc.
 /// Input buffer will be modified.
+VISIBILITY(hidden)
 GglError ggl_json_decode_destructive(
     GglBuffer buf, GglArena *arena, GglObject *obj
 );
