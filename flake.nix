@@ -25,8 +25,8 @@
             { inherit (pkgs.llvmPackages) bintools; });
       in
       {
-        systems = lib.systems.flakeExposed;
         inherit inputs;
+        systems = [ "x86_64-linux" "aarch64-linux" ];
 
         devShell = pkgs: {
           packages = with pkgs; [
@@ -63,7 +63,7 @@
           };
 
         pname = "ggl-sdk";
-        package = { stdenv, pkg-config, cmake, ninja, defaultMeta }:
+        package = { stdenv, pkg-config, cmake, ninja }:
           stdenv.mkDerivation {
             name = "ggl-sdk";
             src = filteredSrc;
@@ -72,7 +72,6 @@
             cmakeFlags = [ "-DENABLE_WERROR=1" ];
             hardeningDisable = [ "all" ];
             dontStrip = true;
-            meta = defaultMeta;
           };
 
         packages = {
@@ -190,6 +189,34 @@
               rev = "062962c1da7149be418338b1f2220d51960e06f8";
               hash = "sha256-qcCiKv+AUoiIZdiCK955Bl5GBK+JHv0mDflQ4aAj4IQ=";
             };
+          };
+        };
+
+        legacyPackages = pkgs: {
+          _type = "pkgs";
+          cached-paths = pkgs.stdenv.mkDerivation {
+            name = "cached-paths";
+            exportReferencesGraph =
+              let
+                getAttrSet = name: lib.mapAttrs'
+                  (n: lib.nameValuePair ("${name}-" + n))
+                  pkgs.outputs'.${name};
+                cached-outputs = pkgs.linkFarm "cached-outputs" (
+                  (getAttrSet "packages") //
+                  (getAttrSet "devShells") //
+                  (getAttrSet "checks") //
+                  { "formatter" = pkgs.outputs'.formatter; }
+                );
+              in
+              [ "cache-paths" cached-outputs.drvPath ];
+            buildPhase =
+              "grep '^/nix/store/' < cache-paths | sort | uniq > $out";
+            dontUnpack = true;
+            dontPatch = true;
+            dontConfigure = true;
+            dontInstall = true;
+            dontFixup = true;
+            allowSubstitutes = false;
           };
         };
       });
