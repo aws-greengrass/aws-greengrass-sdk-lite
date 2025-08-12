@@ -55,7 +55,8 @@ static StreamHandler stream_state_handler[GGL_IPC_MAX_STREAMS] = { 0 };
 static pthread_mutex_t stream_state_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 static GglError init_ipc_recv_thread(void);
-noreturn static void *recv_thread(void *args) ACCESS(none, 1);
+ACCESS(none, 1)
+noreturn static void *recv_thread(void *args);
 
 __attribute__((constructor)) static void register_init_ipc_recv_thread(void) {
     static GglInitEntry entry = { .fn = &init_ipc_recv_thread };
@@ -667,8 +668,7 @@ static GglError dispatch_incoming_packet(int conn) {
     // TODO: Terminate stream if flag set
 }
 
-static GglError data_ready_callback(void *ctx, uint64_t data) ACCESS(none, 1);
-
+ACCESS(none, 1)
 static GglError data_ready_callback(void *ctx, uint64_t data) {
     (void) ctx;
     (void) data;

@@ -48,8 +48,8 @@ typedef enum NODISCARD GglError {
     GGL_ERR_TIMEOUT,
 } GglError;
 
-GGL_EXPORT
-const char *ggl_strerror(GglError err) CONST CBMC_CONTRACT(
+GGL_EXPORT CONST
+const char *ggl_strerror(GglError err) CBMC_CONTRACT(
     requires(cbmc_enum_valid(err)), ensures(cbmc_restrict(cbmc_return))
 );
 

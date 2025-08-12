@@ -26,25 +26,24 @@
 /// Get the value corresponding with a key.
 /// Returns whether the key was found in the map.
 /// If `result` is not NULL it is set to the found value or NULL.
-GGL_EXPORT
-bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result)
-    ACCESS(write_only, 3);
+GGL_EXPORT ACCESS(write_only, 3)
+bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result);
 
 /// Construct a GglKV
-GGL_EXPORT
-GglKV ggl_kv(GglBuffer key, GglObject val) CONST;
+GGL_EXPORT CONST
+GglKV ggl_kv(GglBuffer key, GglObject val);
 
 /// Get a GglKV's key
-GGL_EXPORT
-GglBuffer ggl_kv_key(GglKV kv) CONST;
+GGL_EXPORT CONST
+GglBuffer ggl_kv_key(GglKV kv);
 
 /// Set a GglKV's key
-GGL_EXPORT
-void ggl_kv_set_key(GglKV *kv, GglBuffer key) ACCESS(write_only, 1);
+GGL_EXPORT ACCESS(write_only, 1)
+void ggl_kv_set_key(GglKV *kv, GglBuffer key);
 
 /// Get a GglKV's value
-GGL_EXPORT
-GglObject *ggl_kv_val(GglKV *kv) CONST ACCESS(none, 1);
+GGL_EXPORT CONST ACCESS(none, 1)
+GglObject *ggl_kv_val(GglKV *kv);
 
 typedef struct {
     GglBuffer key;

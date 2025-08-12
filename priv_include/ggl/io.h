@@ -27,7 +27,7 @@ static inline GglError ggl_writer_call(GglWriter writer, GglBuffer buf) {
 }
 
 /// Writer that 0 bytes can be written to
-static const GglWriter GGL_NULL_WRITER UNUSED = { 0 };
+#define GGL_NULL_WRITER (GglWriter) { 0 }
 
 /// Abstraction for streaming data from
 /// Updates buf to amount read
@@ -60,7 +60,7 @@ static inline GglError ggl_reader_call_exact(GglReader reader, GglBuffer buf) {
 }
 
 /// Reader that 0 bytes can be read from
-static const GglReader GGL_NULL_READER UNUSED = { 0 };
+#define GGL_NULL_READER (GglReader) { 0 }
 
 /// Returns a writer that writes into a buffer, consuming used portion
 VISIBILITY(hidden)

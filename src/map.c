@@ -20,7 +20,8 @@ static_assert(
     "GglKV must be at most the size of two GglObjects."
 );
 
-COLD static void length_err(size_t *len) {
+COLD
+static void length_err(size_t *len) {
     GGL_LOGE(
         "Key length longer than can be stored in GglKV (%zu, max %u).",
         *len,

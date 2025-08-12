@@ -7,6 +7,7 @@
 
 //! JSON encoding
 
+#include <ggl/attr.h>
 #include <ggl/error.h>
 #include <ggl/io.h>
 #include <ggl/object.h>

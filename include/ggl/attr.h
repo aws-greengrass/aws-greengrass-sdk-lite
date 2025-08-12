@@ -15,11 +15,6 @@
 #define NODISCARD
 #endif
 
-#ifdef __CPROVER__
-// Remove when CBMC suports parsing attrs before contracts
-#undef __has_attribute
-#endif
-
 #ifdef __has_attribute
 #if __has_attribute(visibility)
 #define VISIBILITY(v) __attribute__((visibility(#v)))

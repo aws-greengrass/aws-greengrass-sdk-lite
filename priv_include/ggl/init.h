@@ -5,6 +5,7 @@
 #ifndef GGL_INIT_H
 #define GGL_INIT_H
 
+#include <ggl/attr.h>
 #include <ggl/error.h>
 
 typedef struct GglInitEntry {

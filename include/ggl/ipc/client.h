@@ -63,10 +63,10 @@ typedef struct {
 /// `handlers` must have static lifetime.
 /// `json_handler` or `binary_handler` may be NULL if that payload type is not
 /// expected.
-GGL_EXPORT
+GGL_EXPORT ACCESS(read_only, 2)
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic, const GgIpcSubscribeToTopicCallbacks callbacks[static 1]
-) ACCESS(read_only, 2);
+);
 
 /// Publish an MQTT message to AWS IoT Core on a topic
 /// Usage may incur memory overhead over using `ggipc_publish_to_iot_core_b64`
@@ -87,38 +87,38 @@ typedef void GgIpcSubscribeToIotCoreCallback(
 );
 
 /// Subscribe to MQTT messages from AWS IoT Core on a topic or topic filter
-GGL_EXPORT
+GGL_EXPORT NONNULL(3)
 GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
     GgIpcSubscribeToIotCoreCallback *callback
-) NONNULL(3);
+);
 
 /// Get a configuration value for a component on the core device
-GGL_EXPORT
+GGL_EXPORT ACCESS(read_only, 2) ACCESS(read_write, 3) ACCESS(write_only, 4)
 GglError ggipc_get_config(
     GglBufList key_path,
     const GglBuffer *component_name,
     GglArena *alloc,
     GglObject *value
-) ACCESS(read_only, 2) ACCESS(read_write, 3) ACCESS(write_only, 4);
+);
 
 /// Get a string-typed configuration value for a component on the core device
 /// `value` must point to a buffer large enough to hold the result, and will be
 /// updated to the result string.
 /// Alternative API to ggipc_get_config for string type values.
-GGL_EXPORT
+GGL_EXPORT ACCESS(read_only, 2) ACCESS(read_write, 3)
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
-) ACCESS(read_only, 2) ACCESS(read_write, 3);
+);
 
 /// Update a configuration value for this component on the core device
-GGL_EXPORT
+GGL_EXPORT ACCESS(read_only, 2)
 GglError ggipc_update_config(
     GglBufList key_path,
     const struct timespec *timestamp,
     GglObject value_to_merge
-) ACCESS(read_only, 2);
+);
 
 /// Component state values for UpdateState
 typedef enum ENUM_EXTENSIBILITY(closed) {

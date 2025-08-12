@@ -14,7 +14,7 @@
 /// Logging interface implementation.
 /// Do not call directly; use one of the macro wrappers.
 /// Default implementation prints to stderr.
-VISIBILITY(hidden)
+VISIBILITY(hidden) FORMAT(printf, 5, 6)
 void ggl_log(
     uint32_t level,
     const char *file,
@@ -22,11 +22,12 @@ void ggl_log(
     const char *tag,
     const char *format,
     ...
-) FORMAT(printf, 5, 6) CBMC_CONTRACT(requires(cbmc_restrict(format)));
+) CBMC_CONTRACT(requires(cbmc_restrict(format)));
 
 /// No-op logging fn for enabling type checking disabled logging macros.
-FORMAT(printf, 1, 2) __attribute__((always_inline)) static inline void
-ggl_log_disabled(const char *format, ...) {
+__attribute__((always_inline))
+FORMAT(printf, 1, 2)
+static inline void ggl_log_disabled(const char *format, ...) {
     (void) format;
 }
 
