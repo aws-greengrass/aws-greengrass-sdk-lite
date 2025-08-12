@@ -94,7 +94,7 @@ bool ggl_buffer_remove_suffix(GglBuffer buf[static 1], GglBuffer suffix);
 
 /// Returns whether the buffer contains the given substring.
 /// Outputs start index if non-null.
-GGL_EXPORT ACCESS(write_only, 3)
+GGL_EXPORT ACCESS(write_only, 3) REPRODUCIBLE
 bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start);
 
 /// Returns substring of buffer from start to end.

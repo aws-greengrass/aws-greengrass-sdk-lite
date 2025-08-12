@@ -48,5 +48,7 @@ Macros:
   - COLD=[[gnu::cold]]
   - CONST=[[gnu::const]]
   - PURE=[[gnu::pure]]
+  - UNSEQUENCED=[[gnu::unsequenced]]
+  - REPRODUCIBLE=[[gnu::reproducible]]
   - FLAG_ENUM=[[gnu::flag_enum]]
   - ENUM_EXTENSIBILITY(x)=[[gnu::enum_extensibility(x)]]

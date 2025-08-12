@@ -163,6 +163,26 @@
 #endif
 
 #ifdef __has_attribute
+#if __has_attribute(unsequenced)
+#define UNSEQUENCED __attribute__((unsequenced))
+#endif
+#endif
+
+#ifndef UNSEQUENCED
+#define UNSEQUENCED
+#endif
+
+#ifdef __has_attribute
+#if __has_attribute(reproducible)
+#define REPRODUCIBLE __attribute__((reproducible))
+#endif
+#endif
+
+#ifndef REPRODUCIBLE
+#define REPRODUCIBLE
+#endif
+
+#ifdef __has_attribute
 #if __has_attribute(flag_enum)
 #define FLAG_ENUM __attribute__((flag_enum))
 #endif
