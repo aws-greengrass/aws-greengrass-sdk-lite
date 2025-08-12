@@ -63,6 +63,7 @@ static inline GglError ggl_reader_call_exact(GglReader reader, GglBuffer buf) {
 static const GglReader GGL_NULL_READER UNUSED = { 0 };
 
 /// Returns a writer that writes into a buffer, consuming used portion
+VISIBILITY(hidden)
 GglWriter ggl_buf_writer(GglBuffer *buf);
 
 #endif

@@ -5,11 +5,13 @@
 #ifndef GGL_EVENTSTREAM_CRC_H
 #define GGL_EVENTSTREAM_CRC_H
 
+#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <stdint.h>
 
 /// Update a running crc with the given bytes.
 /// Initial value of `crc` should be 0.
+VISIBILITY(hidden)
 uint32_t ggl_update_crc(uint32_t crc, GglBuffer buf);
 
 #endif

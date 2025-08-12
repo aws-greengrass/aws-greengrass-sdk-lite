@@ -32,12 +32,14 @@ typedef struct {
 } EventStreamMessage;
 
 /// Parse an EventStream packet prelude from a buffer.
+VISIBILITY(hidden)
 GglError eventstream_decode_prelude(GglBuffer buf, EventStreamPrelude *prelude);
 
 /// Parse an EventStream packet data section from a buffer.
 /// The buffer should contain the rest of the packet after the prelude.
 /// Parsed struct representation holds references into the buffer.
 /// Validates headers.
+VISIBILITY(hidden)
 GglError eventstream_decode(
     const EventStreamPrelude *prelude,
     GglBuffer data_section,
@@ -47,6 +49,7 @@ GglError eventstream_decode(
 /// Get the next header from an EventStreamHeaderIter.
 /// Mutates the iter to refer to the rest of the headers.
 /// Assumes headers already validated by decode.
+VISIBILITY(hidden)
 GglError eventstream_header_next(
     EventStreamHeaderIter *headers, EventStreamHeader *header
 );

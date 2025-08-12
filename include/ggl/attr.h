@@ -21,6 +21,22 @@
 #endif
 
 #ifdef __has_attribute
+#if __has_attribute(visibility)
+#define VISIBILITY(v) __attribute__((visibility(#v)))
+#endif
+#endif
+
+#ifndef VISIBILITY
+#define VISIBILITY(v)
+#endif
+
+#ifdef GGL_SDK_EXPORT_API
+#define GGL_EXPORT VISIBILITY(protected)
+#else
+#define GGL_EXPORT VISIBILITY(hidden)
+#endif
+
+#ifdef __has_attribute
 #if __has_attribute(format)
 #define FORMAT(...) __attribute__((format(__VA_ARGS__)))
 #endif

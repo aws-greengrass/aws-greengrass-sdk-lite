@@ -20,24 +20,30 @@
 #define GGL_MAP_FOREACH(name, map) \
     for (GglKV *name = (map).pairs; name < &(map).pairs[(map).len]; \
          name = &name[1])
+
 // NOLINTEND(bugprone-macro-parentheses)
 
 /// Get the value corresponding with a key.
 /// Returns whether the key was found in the map.
 /// If `result` is not NULL it is set to the found value or NULL.
+GGL_EXPORT
 bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result)
     ACCESS(write_only, 3);
 
 /// Construct a GglKV
+GGL_EXPORT
 GglKV ggl_kv(GglBuffer key, GglObject val) CONST;
 
 /// Get a GglKV's key
+GGL_EXPORT
 GglBuffer ggl_kv_key(GglKV kv) CONST;
 
 /// Set a GglKV's key
+GGL_EXPORT
 void ggl_kv_set_key(GglKV *kv, GglBuffer key) ACCESS(write_only, 1);
 
 /// Get a GglKV's value
+GGL_EXPORT
 GglObject *ggl_kv_val(GglKV *kv) CONST ACCESS(none, 1);
 
 typedef struct {
@@ -59,6 +65,7 @@ typedef struct {
             / (sizeof(GglMapSchemaEntry)) \
     }
 
+GGL_EXPORT
 GglError ggl_map_validate(GglMap map, GglMapSchema schema);
 
 #endif

@@ -15,6 +15,7 @@ typedef struct GglInitEntry {
 /// Initializes the sdk, including starting necessary threads.
 /// Unused portions of sdk may not be initialized.
 /// Not thread-safe
+VISIBILITY(hidden)
 void ggl_register_init_fn(GglInitEntry entry[static 1]);
 
 #endif

@@ -33,10 +33,12 @@ typedef struct {
 
 /// Allocate memory from an allocator.
 /// Prefer `GGL_ALLOC` or `GGL_ALLOCN`.
+VISIBILITY(hidden)
 void *ggl_alloc(GglAlloc alloc, size_t size, size_t alignment) ALLOC_SIZE(2)
 ALLOC_ALIGN(3);
 
 /// Free memory allocated from an allocator.
+VISIBILITY(hidden)
 void ggl_free(GglAlloc alloc, void *ptr);
 
 #endif

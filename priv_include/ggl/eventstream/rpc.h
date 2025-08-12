@@ -37,11 +37,13 @@ typedef struct {
 } EventStreamCommonHeaders;
 
 /// Get an EventStream packet from an input source
+VISIBILITY(hidden)
 GglError eventsteam_get_packet(
     GglReader input, EventStreamMessage msg[static 1], GglBuffer buffer
 );
 
 /// Decode common EventStream headers
+VISIBILITY(hidden)
 GglError eventstream_get_common_headers(
     EventStreamMessage *msg, EventStreamCommonHeaders *out
 );

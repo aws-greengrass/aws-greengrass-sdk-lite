@@ -64,50 +64,63 @@ typedef struct {
     }
 
 /// Get type of an GglObject
+GGL_EXPORT
 GglObjectType ggl_obj_type(GglObject obj) CONST;
 
 static const GglObject GGL_OBJ_NULL UNUSED = { 0 };
 
 /// Create bool object.
+GGL_EXPORT
 GglObject ggl_obj_bool(bool value) CONST;
 
 /// Get the bool represented by an object.
 /// The GglObject must be of type GGL_TYPE_BOOLEAN.
+GGL_EXPORT
 bool ggl_obj_into_bool(GglObject boolean) CONST;
 
 /// Create signed integer object.
+GGL_EXPORT
 GglObject ggl_obj_i64(int64_t value) CONST;
 
 /// Get the i64 represented by an object.
 /// The GglObject must be of type GGL_TYPE_I64.
+GGL_EXPORT
 int64_t ggl_obj_into_i64(GglObject i64) CONST;
 
 /// Create floating point object.
+GGL_EXPORT
 GglObject ggl_obj_f64(double value) CONST;
 
 /// Get the f64 represented by an object.
 /// The GglObject must be of type GGL_TYPE_F64.
+GGL_EXPORT
 double ggl_obj_into_f64(GglObject f64) CONST;
 
 /// Create buffer object.
+GGL_EXPORT
 GglObject ggl_obj_buf(GglBuffer value) CONST;
 
 /// Get the buffer represented by an object.
 /// The GglObject must be of type GGL_TYPE_BUF.
+GGL_EXPORT
 GglBuffer ggl_obj_into_buf(GglObject buf) CONST;
 
 /// Create map object.
+GGL_EXPORT
 GglObject ggl_obj_map(GglMap value) CONST;
 
 /// Get the map represented by an object.
 /// The GglObject must be of type GGL_TYPE_MAP.
+GGL_EXPORT
 GglMap ggl_obj_into_map(GglObject map) CONST;
 
 /// Create list object.
+GGL_EXPORT
 GglObject ggl_obj_list(GglList value) CONST;
 
 /// Get the list represented by an object.
 /// The GglObject must be of type GGL_TYPE_LIST.
+GGL_EXPORT
 GglList ggl_obj_into_list(GglObject list) CONST;
 
 #endif

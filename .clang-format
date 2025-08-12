@@ -9,6 +9,7 @@ AllowShortIfStatementsOnASingleLine: WithoutElse
 BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBraces: Attach
+BreakAfterAttributes: Always
 ColumnLimit: 80
 IncludeBlocks: Merge
 IncludeCategories:
@@ -47,3 +48,5 @@ ForEachMacros:
   - GGL_BUF_LIST_FOREACH
 Macros:
   - CBMC_CONTRACT(x)=[[cbmc::contract(x)]]
+  - GGL_EXPORT=[[gnu::visibility(protected)]]
+  - VISIBILITY(x)=[[gnu::visibility(x)]]
