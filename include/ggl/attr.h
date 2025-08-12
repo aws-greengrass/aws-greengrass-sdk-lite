@@ -42,6 +42,16 @@
 #endif
 
 #ifdef __has_attribute
+#if __has_attribute(always_inline)
+#define ALWAYS_INLINE __attribute__((always_inline))
+#endif
+#endif
+
+#ifndef ALWAYS_INLINE
+#define ALWAYS_INLINE
+#endif
+
+#ifdef __has_attribute
 #if __has_attribute(unused)
 #define UNUSED __attribute__((unused))
 #endif
