@@ -25,8 +25,7 @@ void ggl_log(
 ) CBMC_CONTRACT(requires(cbmc_restrict(format)));
 
 /// No-op logging fn for enabling type checking disabled logging macros.
-__attribute__((always_inline))
-FORMAT(printf, 1, 2)
+ALWAYS_INLINE FORMAT(printf, 1, 2)
 static inline void ggl_log_disabled(const char *format, ...) {
     (void) format;
 }
