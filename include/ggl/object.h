@@ -67,7 +67,7 @@ typedef struct {
 GGL_EXPORT CONST
 GglObjectType ggl_obj_type(GglObject obj);
 
-#define GGL_OBJ_NULL (GglObject) { 0 };
+#define GGL_OBJ_NULL (GglObject) { 0 }
 
 /// Create bool object.
 GGL_EXPORT CONST
