@@ -40,7 +40,7 @@ static int ipc_conn_fd = -1;
 // Used while connecting or by receiving thread which are mutually exclusive.
 static uint8_t ipc_recv_mem[GGL_IPC_MAX_MSG_LEN];
 static uint8_t
-    ipc_recv_decode_mem[sizeof(GglObject[GGL_IPC_PAYLOAD_MAX_SUBOBJECTS])];
+    ipc_recv_decode_mem[sizeof(GglObject[GGL_MAX_OBJECT_SUBOBJECTS])];
 
 static int epoll_fd = -1;
 

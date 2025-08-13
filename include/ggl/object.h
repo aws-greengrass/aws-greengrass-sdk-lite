@@ -13,6 +13,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/// Maximum depth of an object
+/// i.e. `5` has depth 1, `{"a":5}` is depth 2, and `[{"a":5}]` is 3.
+#define GGL_MAX_OBJECT_DEPTH (15U)
+
+/// Maximum subobject count for an object
+/// Subobject count calculation:
+///   subobject_count(non-list/map object) = 0
+///   subobject_count(list) = len + sum({item: subobject_count(item)})
+///   subobject_count(map) = 2 * len + sum({pair: subobject_count(pair.value))})
+#define GGL_MAX_OBJECT_SUBOBJECTS (50U)
+
 /// A generic object.
 typedef struct {
     // Used only with memcpy so no aliasing with contents

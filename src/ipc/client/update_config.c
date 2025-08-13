@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <ggl/buffer.h>
-#include <ggl/constants.h>
 #include <ggl/error.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_raw.h>
@@ -43,7 +42,8 @@ GglError ggipc_update_config(
         return GGL_ERR_UNSUPPORTED;
     }
 
-    GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
+    GglObjVec path_vec
+        = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH - 1]) { 0 });
     GglError ret = GGL_ERR_OK;
     for (size_t i = 0; i < key_path.len; i++) {
         ggl_obj_vec_chain_push(&ret, &path_vec, ggl_obj_buf(key_path.bufs[i]));
