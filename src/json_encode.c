@@ -9,28 +9,28 @@
 #include <ggl/io.h>
 #include <ggl/json_encode.h>
 #include <ggl/log.h>
-#include <ggl/map.h>
 #include <ggl/object.h>
+#include <ggl/object_visit.h>
 #include <ggl/vector.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 
-static GglError json_write(GglObject obj, GglWriter writer);
-
-static GglError json_write_null(GglWriter writer) {
-    return ggl_writer_call(writer, GGL_STR("null"));
+static GglError json_encode_on_null(void *ctx) {
+    GglWriter *writer = ctx;
+    return ggl_writer_call(*writer, GGL_STR("null"));
 }
 
-static GglError json_write_bool(bool b, GglWriter writer) {
-    return ggl_writer_call(writer, b ? GGL_STR("true") : GGL_STR("false"));
+static GglError json_encode_on_bool(void *ctx, bool val) {
+    GglWriter *writer = ctx;
+    return ggl_writer_call(*writer, val ? GGL_STR("true") : GGL_STR("false"));
 }
 
-static GglError json_write_i64(int64_t i64, GglWriter writer) {
+static GglError json_encode_on_i64(void *ctx, int64_t val) {
+    GglWriter *writer = ctx;
     // (size_t) (  ( CHAR_BITS * sizeof(int64_t) - 1 )  * log10( 2.0 ) ) + 1U
     char encoded[19];
-    int ret_len = snprintf(encoded, sizeof(encoded), "%" PRId64, i64);
+    int ret_len = snprintf(encoded, sizeof(encoded), "%" PRId64, val);
     if (ret_len < 0) {
         GGL_LOGE("Error encoding json.");
         return GGL_ERR_FAILURE;
@@ -40,15 +40,16 @@ static GglError json_write_i64(int64_t i64, GglWriter writer) {
         return GGL_ERR_NOMEM;
     }
     return ggl_writer_call(
-        writer,
+        *writer,
         (GglBuffer) { .data = (uint8_t *) encoded, .len = (size_t) ret_len }
     );
 }
 
-static GglError json_write_f64(double f64, GglWriter writer) {
+static GglError json_encode_on_f64(void *ctx, double val) {
+    GglWriter *writer = ctx;
     char encoded[DBL_DECIMAL_DIG + 9]; // -x.<precision>E-xxx\0
     int ret_len
-        = snprintf(encoded, sizeof(encoded), "%#.*g", DBL_DECIMAL_DIG, f64);
+        = snprintf(encoded, sizeof(encoded), "%#.*g", DBL_DECIMAL_DIG, val);
     if (ret_len < 0) {
         GGL_LOGE("Error encoding json.");
         return GGL_ERR_FAILURE;
@@ -58,7 +59,7 @@ static GglError json_write_f64(double f64, GglWriter writer) {
         return GGL_ERR_NOMEM;
     }
     return ggl_writer_call(
-        writer,
+        *writer,
         (GglBuffer) { .data = (uint8_t *) encoded, .len = (size_t) ret_len }
     );
 }
@@ -104,197 +105,89 @@ static GglError json_write_buf_byte(uint8_t byte, GglWriter writer) {
     return ret;
 }
 
-static GglError json_write_buf(GglBuffer str, GglWriter writer) {
-    GglError ret = ggl_writer_call(writer, GGL_STR("\""));
+static GglError json_encode_on_buf(void *ctx, GglBuffer val, GglObject *obj) {
+    GglWriter *writer = ctx;
+    (void) obj;
+
+    GglError ret = ggl_writer_call(*writer, GGL_STR("\""));
     if (ret != GGL_ERR_OK) {
         return ret;
     }
 
-    for (size_t i = 0; i < str.len; i++) {
-        ret = json_write_buf_byte(str.data[i], writer);
+    for (size_t i = 0; i < val.len; i++) {
+        ret = json_write_buf_byte(val.data[i], *writer);
         if (ret != GGL_ERR_OK) {
             return ret;
         }
     }
 
-    ret = ggl_writer_call(writer, GGL_STR("\""));
+    ret = ggl_writer_call(*writer, GGL_STR("\""));
     if (ret != GGL_ERR_OK) {
         return ret;
     }
     return GGL_ERR_OK;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static GglError json_write(GglObject obj, GglWriter writer) {
-    typedef struct {
-        enum {
-            LEVEL_DEFAULT,
-            LEVEL_LIST_START,
-            LEVEL_LIST,
-            LEVEL_MAP_START,
-            LEVEL_MAP,
-        } level_type;
+static GglError json_encode_on_list(void *ctx, GglList val, GglObject *obj) {
+    GglWriter *writer = ctx;
+    (void) obj;
+    (void) val;
+    return ggl_writer_call(*writer, GGL_STR("["));
+}
 
-        uint8_t remaining;
+static GglError json_encode_cont_list(void *ctx) {
+    GglWriter *writer = ctx;
+    return ggl_writer_call(*writer, GGL_STR(","));
+}
 
-        union {
-            GglObject *obj_next;
-            GglKV *kv_next;
-        };
-    } IterLevel;
+static GglError json_encode_end_list(void *ctx) {
+    GglWriter *writer = ctx;
+    return ggl_writer_call(*writer, GGL_STR("]"));
+}
 
-    IterLevel iter_state[GGL_MAX_OBJECT_DEPTH] = { {
-        .level_type = LEVEL_DEFAULT,
-        .remaining = 1,
-        .obj_next = &obj,
-    } };
-    size_t state_level = 1;
+static GglError json_encode_on_map(void *ctx, GglMap val, GglObject *obj) {
+    GglWriter *writer = ctx;
+    (void) obj;
+    (void) val;
+    return ggl_writer_call(*writer, GGL_STR("{"));
+}
 
-    do {
-        IterLevel *level = &iter_state[state_level - 1];
-        GglError ret;
+static GglError json_encode_on_map_key(void *ctx, GglBuffer key, GglKV *kv) {
+    GglWriter *writer = ctx;
+    (void) kv;
+    GglError ret = json_encode_on_buf(ctx, key, NULL);
+    if (ret != GGL_ERR_OK) {
+        return ret;
+    }
+    return ggl_writer_call(*writer, GGL_STR(":"));
+}
 
-        if (level->remaining == 0) {
-            switch (level->level_type) {
-            case LEVEL_DEFAULT:
-                break;
-            case LEVEL_LIST_START:
-            case LEVEL_LIST:
-                ret = ggl_writer_call(writer, GGL_STR("]"));
-                if (ret != GGL_ERR_OK) {
-                    return ret;
-                }
-                break;
-            case LEVEL_MAP_START:
-            case LEVEL_MAP:
-                ret = ggl_writer_call(writer, GGL_STR("}"));
-                if (ret != GGL_ERR_OK) {
-                    return ret;
-                }
-                break;
-            }
-            state_level -= 1;
-            continue;
-        }
+static GglError json_encode_cont_map(void *ctx) {
+    GglWriter *writer = ctx;
+    return ggl_writer_call(*writer, GGL_STR(","));
+}
 
-        switch (level->level_type) {
-        case LEVEL_LIST:
-        case LEVEL_MAP:
-            ret = ggl_writer_call(writer, GGL_STR(","));
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            break;
-        case LEVEL_LIST_START:
-            level->level_type = LEVEL_LIST;
-            break;
-        case LEVEL_MAP_START:
-            level->level_type = LEVEL_MAP;
-            break;
-        case LEVEL_DEFAULT:;
-        }
-
-        GglObject *cur_obj;
-        if (level->level_type == LEVEL_MAP) {
-            ret = json_write_buf(ggl_kv_key(*level->kv_next), writer);
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            ret = ggl_writer_call(writer, GGL_STR(":"));
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-
-            cur_obj = ggl_kv_val(level->kv_next);
-            level->kv_next = &level->kv_next[1];
-        } else {
-            cur_obj = level->obj_next;
-            level->obj_next = &level->obj_next[1];
-        }
-
-        level->remaining -= 1;
-
-        switch (ggl_obj_type(*cur_obj)) {
-        case GGL_TYPE_NULL:
-            ret = json_write_null(writer);
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            break;
-        case GGL_TYPE_BOOLEAN:
-            ret = json_write_bool(ggl_obj_into_bool(*cur_obj), writer);
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            break;
-        case GGL_TYPE_I64:
-            ret = json_write_i64(ggl_obj_into_i64(*cur_obj), writer);
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            break;
-        case GGL_TYPE_F64:
-            ret = json_write_f64(ggl_obj_into_f64(*cur_obj), writer);
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            break;
-        case GGL_TYPE_BUF:
-            ret = json_write_buf(ggl_obj_into_buf(*cur_obj), writer);
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-            break;
-        case GGL_TYPE_LIST: {
-            if (state_level >= GGL_MAX_OBJECT_DEPTH) {
-                return GGL_ERR_RANGE;
-            }
-
-            ret = ggl_writer_call(writer, GGL_STR("["));
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-
-            GglList list = ggl_obj_into_list(*cur_obj);
-            if (list.len > UINT8_MAX) {
-                return GGL_ERR_RANGE;
-            }
-            iter_state[state_level] = (IterLevel) {
-                .level_type = LEVEL_LIST_START,
-                .remaining = (uint8_t) list.len,
-                .obj_next = list.items,
-            };
-            state_level += 1;
-        } break;
-        case GGL_TYPE_MAP: {
-            if (state_level >= GGL_MAX_OBJECT_DEPTH) {
-                return GGL_ERR_RANGE;
-            }
-
-            ret = ggl_writer_call(writer, GGL_STR("{"));
-            if (ret != GGL_ERR_OK) {
-                return ret;
-            }
-
-            GglMap map = ggl_obj_into_map(*cur_obj);
-            if (map.len > UINT8_MAX) {
-                return GGL_ERR_RANGE;
-            }
-            iter_state[state_level] = (IterLevel) {
-                .level_type = LEVEL_MAP_START,
-                .remaining = (uint8_t) map.len,
-                .kv_next = map.pairs,
-            };
-            state_level += 1;
-        } break;
-        }
-    } while (state_level > 0);
-
-    return GGL_ERR_OK;
+static GglError json_encode_end_map(void *ctx) {
+    GglWriter *writer = ctx;
+    return ggl_writer_call(*writer, GGL_STR("}"));
 }
 
 GglError ggl_json_encode(GglObject obj, GglWriter writer) {
-    return json_write(obj, writer);
+    const GglObjectVisitHandlers VISIT_HANDLERS = {
+        .on_null = json_encode_on_null,
+        .on_bool = json_encode_on_bool,
+        .on_i64 = json_encode_on_i64,
+        .on_f64 = json_encode_on_f64,
+        .on_buf = json_encode_on_buf,
+        .on_list = json_encode_on_list,
+        .cont_list = json_encode_cont_list,
+        .end_list = json_encode_end_list,
+        .on_map = json_encode_on_map,
+        .on_map_key = json_encode_on_map_key,
+        .cont_map = json_encode_cont_map,
+        .end_map = json_encode_end_map,
+    };
+    return ggl_obj_visit(&VISIT_HANDLERS, &writer, &obj);
 }
 
 static GglError obj_read(void *ctx, GglBuffer *buf) {

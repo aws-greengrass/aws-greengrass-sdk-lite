@@ -6,10 +6,10 @@
 #include <ggl/arena.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
-#include <ggl/list.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
+#include <ggl/object_visit.h>
 #include <inttypes.h>
 #include <string.h>
 #include <stdbool.h>
@@ -142,153 +142,74 @@ GglError ggl_arena_claim_buf(GglBuffer buf[static 1], GglArena *arena) {
     return GGL_ERR_OK;
 }
 
-// NOLINTNEXTLINE(misc-no-recursion)
-static GglError claim_list(GglList *list, GglArena *arena) {
-    if (!ggl_arena_owns(arena, list->items)) {
-        if (list->len == 0) {
-            list->items = NULL;
-            return GGL_ERR_OK;
-        }
+static GglError claim_buf(void *ctx, GglBuffer val, GglObject obj[static 1]) {
+    GglArena *arena = ctx;
+    GglError ret = ggl_arena_claim_buf(&val, arena);
+    *obj = ggl_obj_buf(val);
+    return ret;
+}
 
-        GglObject *new_mem = GGL_ARENA_ALLOCN(arena, GglObject, list->len);
-        if (new_mem == NULL) {
-            GGL_LOGE("Insufficient memory when cloning list into %p.", arena);
-            return GGL_ERR_NOMEM;
-        }
-        memcpy(new_mem, list->items, list->len * sizeof(GglObject));
-        list->items = new_mem;
+static GglError claim_list(void *ctx, GglList val, GglObject obj[static 1]) {
+    GglArena *arena = ctx;
+    if (ggl_arena_owns(arena, val.items)) {
+        return GGL_ERR_OK;
     }
-
-    GGL_LIST_FOREACH (elem, *list) {
-        GglError ret = ggl_arena_claim_obj(elem, arena);
-        if (ret != GGL_ERR_OK) {
-            return ret;
-        }
+    if (val.len == 0) {
+        *obj = ggl_obj_list((GglList) { 0 });
+        return GGL_ERR_OK;
     }
-
+    GglObject *new_mem = GGL_ARENA_ALLOCN(arena, GglObject, val.len);
+    if (new_mem == NULL) {
+        GGL_LOGE("Insufficient memory when cloning list into %p.", arena);
+        return GGL_ERR_NOMEM;
+    }
+    memcpy(new_mem, val.items, val.len * sizeof(GglObject));
+    *obj = ggl_obj_list((GglList) { .items = new_mem, .len = val.len });
     return GGL_ERR_OK;
 }
 
-// NOLINTNEXTLINE(misc-no-recursion)
-static GglError claim_map(GglMap *map, GglArena *arena) {
-    if (!ggl_arena_owns(arena, map->pairs)) {
-        if (map->len == 0) {
-            map->pairs = NULL;
-            return GGL_ERR_OK;
-        }
-
-        GglKV *new_mem = GGL_ARENA_ALLOCN(arena, GglKV, map->len);
-        if (new_mem == NULL) {
-            GGL_LOGE("Insufficient memory when cloning map into %p.", arena);
-            return GGL_ERR_NOMEM;
-        }
-        memcpy(new_mem, map->pairs, map->len * sizeof(GglKV));
-        map->pairs = new_mem;
+static GglError claim_map(void *ctx, GglMap val, GglObject obj[static 1]) {
+    GglArena *arena = ctx;
+    if (ggl_arena_owns(arena, val.pairs)) {
+        return GGL_ERR_OK;
+    }
+    if (val.len == 0) {
+        *obj = ggl_obj_map((GglMap) { 0 });
+        val.pairs = NULL;
+        return GGL_ERR_OK;
     }
 
-    GGL_MAP_FOREACH (kv, *map) {
-        GglBuffer key = ggl_kv_key(*kv);
-        GglError ret = ggl_arena_claim_buf(&key, arena);
-        if (ret != GGL_ERR_OK) {
-            return ret;
-        }
-        ggl_kv_set_key(kv, key);
-
-        ret = ggl_arena_claim_obj(ggl_kv_val(kv), arena);
-        if (ret != GGL_ERR_OK) {
-            return ret;
-        }
+    GglKV *new_mem = GGL_ARENA_ALLOCN(arena, GglKV, val.len);
+    if (new_mem == NULL) {
+        GGL_LOGE("Insufficient memory when cloning map into %p.", arena);
+        return GGL_ERR_NOMEM;
     }
-
+    memcpy(new_mem, val.pairs, val.len * sizeof(GglKV));
+    *obj = ggl_obj_map((GglMap) { .pairs = new_mem, .len = val.len });
     return GGL_ERR_OK;
 }
 
-// NOLINTNEXTLINE(misc-no-recursion)
+static GglError claim_map_key(void *ctx, GglBuffer key, GglKV kv[static 1]) {
+    GglArena *arena = ctx;
+    GglError ret = ggl_arena_claim_buf(&key, arena);
+    ggl_kv_set_key(kv, key);
+    return ret;
+}
+
 GglError ggl_arena_claim_obj(GglObject obj[static 1], GglArena *arena) {
-    assert(obj != NULL);
-
-    switch (ggl_obj_type(*obj)) {
-    case GGL_TYPE_NULL:
-    case GGL_TYPE_BOOLEAN:
-    case GGL_TYPE_I64:
-    case GGL_TYPE_F64:
-        return GGL_ERR_OK;
-    case GGL_TYPE_BUF: {
-        GglBuffer buf = ggl_obj_into_buf(*obj);
-        GglError ret = ggl_arena_claim_buf(&buf, arena);
-        *obj = ggl_obj_buf(buf);
-        return ret;
-    }
-    case GGL_TYPE_LIST: {
-        GglList list = ggl_obj_into_list(*obj);
-        GglError ret = claim_list(&list, arena);
-        *obj = ggl_obj_list(list);
-        return ret;
-    }
-    case GGL_TYPE_MAP: {
-        GglMap map = ggl_obj_into_map(*obj);
-        GglError ret = claim_map(&map, arena);
-        *obj = ggl_obj_map(map);
-        return ret;
-    }
-    }
-
-    assert(false);
-    return GGL_ERR_FAILURE;
+    const GglObjectVisitHandlers VISIT_HANDLERS = {
+        .on_buf = claim_buf,
+        .on_list = claim_list,
+        .on_map = claim_map,
+        .on_map_key = claim_map_key,
+    };
+    return ggl_obj_visit(&VISIT_HANDLERS, arena, obj);
 }
 
-// NOLINTNEXTLINE(misc-no-recursion)
-static GglError claim_list_bufs(GglList list, GglArena *arena) {
-    GGL_LIST_FOREACH (elem, list) {
-        GglError ret = ggl_arena_claim_obj_bufs(elem, arena);
-        if (ret != GGL_ERR_OK) {
-            return ret;
-        }
-    }
-    return GGL_ERR_OK;
-}
-
-// NOLINTNEXTLINE(misc-no-recursion)
-static GglError claim_map_bufs(GglMap map, GglArena *arena) {
-    GGL_MAP_FOREACH (kv, map) {
-        GglBuffer key = ggl_kv_key(*kv);
-        GglError ret = ggl_arena_claim_buf(&key, arena);
-        if (ret != GGL_ERR_OK) {
-            return ret;
-        }
-        ggl_kv_set_key(kv, key);
-
-        ret = ggl_arena_claim_obj_bufs(ggl_kv_val(kv), arena);
-        if (ret != GGL_ERR_OK) {
-            return ret;
-        }
-    }
-
-    return GGL_ERR_OK;
-}
-
-// NOLINTNEXTLINE(misc-no-recursion)
 GglError ggl_arena_claim_obj_bufs(GglObject obj[static 1], GglArena *arena) {
-    assert(obj != NULL);
-
-    switch (ggl_obj_type(*obj)) {
-    case GGL_TYPE_NULL:
-    case GGL_TYPE_BOOLEAN:
-    case GGL_TYPE_I64:
-    case GGL_TYPE_F64:
-        return GGL_ERR_OK;
-    case GGL_TYPE_BUF: {
-        GglBuffer buf = ggl_obj_into_buf(*obj);
-        GglError ret = ggl_arena_claim_buf(&buf, arena);
-        *obj = ggl_obj_buf(buf);
-        return ret;
-    }
-    case GGL_TYPE_LIST:
-        return claim_list_bufs(ggl_obj_into_list(*obj), arena);
-    case GGL_TYPE_MAP:
-        return claim_map_bufs(ggl_obj_into_map(*obj), arena);
-    }
-
-    assert(false);
-    return GGL_ERR_FAILURE;
+    const GglObjectVisitHandlers VISIT_HANDLERS = {
+        .on_buf = claim_buf,
+        .on_map_key = claim_map_key,
+    };
+    return ggl_obj_visit(&VISIT_HANDLERS, arena, obj);
 }
