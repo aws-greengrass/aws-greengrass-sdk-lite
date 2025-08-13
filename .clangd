@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - -isystem../include
+    - -isystem../priv_include
