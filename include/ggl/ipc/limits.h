@@ -5,7 +5,6 @@
 #ifndef GGL_IPC_LIMITS_H
 #define GGL_IPC_LIMITS_H
 
-#define GGL_IPC_PAYLOAD_MAX_SUBOBJECTS (50)
 #define GGL_IPC_SVCUID_STR_LEN (16)
 
 /// Maximum size of eventstream packet.

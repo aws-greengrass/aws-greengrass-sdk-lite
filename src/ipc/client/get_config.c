@@ -5,7 +5,6 @@
 #include <ggl/arena.h>
 #include <ggl/attr.h>
 #include <ggl/buffer.h>
-#include <ggl/constants.h>
 #include <ggl/error.h>
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
@@ -48,7 +47,8 @@ static GglError ggipc_get_config_common(
     GgIpcResultCallback *result_callback,
     void *result_ctx
 ) {
-    GglObjVec path_vec = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH]) { 0 });
+    GglObjVec path_vec
+        = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH - 1]) { 0 });
     GglError ret = GGL_ERR_OK;
     for (size_t i = 0; i < key_path.len; i++) {
         ggl_obj_vec_chain_push(&ret, &path_vec, ggl_obj_buf(key_path.bufs[i]));
