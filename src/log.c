@@ -53,38 +53,38 @@ void ggl_log(
         }
     }
 
-    const char *level_str;
+    unsigned char level_c;
     switch (level) {
     case GGL_LOG_ERROR:
-        level_str = "\033[1;31mE";
+        level_c = 'E';
         break;
     case GGL_LOG_WARN:
-        level_str = "\033[1;33mW";
+        level_c = 'W';
         break;
     case GGL_LOG_INFO:
-        level_str = "\033[0;32mI";
+        level_c = 'I';
         break;
     case GGL_LOG_DEBUG:
-        level_str = "\033[0;34mD";
+        level_c = 'D';
         break;
     case GGL_LOG_TRACE:
-        level_str = "\033[0;37mT";
+        level_c = 'T';
         break;
     default:
-        level_str = "\033[0;37m?";
+        level_c = '?';
     }
 
     {
         GGL_MTX_SCOPE_GUARD(&log_mutex);
 
-        fprintf(stderr, "%s%s[%s] %s:%d: ", prefix, level_str, tag, file, line);
+        fprintf(stderr, "%s%c[%s] %s:%d: ", prefix, level_c, tag, file, line);
 
         va_list args;
         va_start(args, format);
         vfprintf(stderr, format, args);
         va_end(args);
 
-        fprintf(stderr, "\033[0m\n");
+        fprintf(stderr, "\n");
         fflush(stderr);
     }
 }
