@@ -29,6 +29,12 @@
 GGL_EXPORT ACCESS(write_only, 3)
 bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result);
 
+/// Get the value from a nested map corresponding with a key path.
+/// Returns whether the key was found in the map.
+/// If `result` is not NULL it is set to the found value or NULL.
+GGL_EXPORT ACCESS(write_only, 3)
+bool ggl_map_get_path(GglMap map, GglBufList path, GglObject **result);
+
 /// Construct a GglKV
 GGL_EXPORT CONST
 GglKV ggl_kv(GglBuffer key, GglObject val);
