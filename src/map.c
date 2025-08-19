@@ -81,6 +81,24 @@ bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result) {
     return false;
 }
 
+bool ggl_map_get_path(GglMap map, GglBufList path, GglObject **result) {
+    assert(path.len >= 1);
+
+    GglMap current = map;
+    for (size_t i = 0; i < path.len - 1; i++) {
+        GglObject *item;
+        if (!ggl_map_get(current, path.bufs[i], &item)) {
+            return false;
+        }
+        if (ggl_obj_type(*item) != GGL_TYPE_MAP) {
+            return false;
+        }
+        current = ggl_obj_into_map(*item);
+    }
+
+    return ggl_map_get(current, path.bufs[path.len - 1], result);
+}
+
 GglError ggl_map_validate(GglMap map, GglMapSchema schema) {
     for (size_t i = 0; i < schema.entry_count; i++) {
         const GglMapSchemaEntry *entry = &schema.entries[i];
