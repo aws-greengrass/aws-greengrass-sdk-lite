@@ -28,7 +28,7 @@ typedef enum FLAG_ENUM {
     EVENTSTREAM_TERMINATE_STREAM = 2,
 } EventStreamMessageFlags;
 
-#define EVENTSTREAM_FLAGS_MASK ((int32_t) 3);
+#define EVENTSTREAM_FLAGS_MASK ((int32_t) 3)
 
 typedef struct {
     int32_t stream_id;
