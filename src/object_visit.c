@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <ggl/error.h>
+#include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <ggl/object_visit.h>
@@ -82,6 +83,7 @@ GglError ggl_obj_visit(
             case GGL_TYPE_LIST: {
                 GglList list = ggl_obj_into_list(*cur_obj);
                 if (list.len > GGL_MAX_OBJECT_SUBOBJECTS - subobjects) {
+                    GGL_LOGE("Visited object's subobjects exceeds maximum.");
                     return GGL_ERR_RANGE;
                 }
                 subobjects += (uint16_t) list.len;
@@ -93,6 +95,7 @@ GglError ggl_obj_visit(
             case GGL_TYPE_MAP: {
                 GglMap map = ggl_obj_into_map(*cur_obj);
                 if (map.len > (GGL_MAX_OBJECT_SUBOBJECTS - subobjects) / 2) {
+                    GGL_LOGE("Visited object's subobjects exceeds maximum.");
                     return GGL_ERR_RANGE;
                 }
                 subobjects += (uint16_t) (map.len * 2);
@@ -116,6 +119,7 @@ GglError ggl_obj_visit(
 
             state.index += 1;
             if (state.index >= GGL_MAX_OBJECT_DEPTH) {
+                GGL_LOGE("Visited object's depth exceeds maximum.");
                 return GGL_ERR_RANGE;
             }
 
@@ -142,6 +146,7 @@ GglError ggl_obj_visit(
 
             state.index += 1;
             if (state.index >= GGL_MAX_OBJECT_DEPTH) {
+                GGL_LOGE("Visited object's depth exceeds maximum.");
                 return GGL_ERR_RANGE;
             }
 
