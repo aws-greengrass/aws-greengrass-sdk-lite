@@ -22,7 +22,7 @@
 ///   subobject_count(non-list/map object) = 0
 ///   subobject_count(list) = len + sum({item: subobject_count(item)})
 ///   subobject_count(map) = 2 * len + sum({pair: subobject_count(pair.value))})
-#define GGL_MAX_OBJECT_SUBOBJECTS (50U)
+#define GGL_MAX_OBJECT_SUBOBJECTS (255U)
 
 /// A generic object.
 typedef struct {
