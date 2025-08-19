@@ -18,6 +18,7 @@
 #include <ggl/init.h>
 #include <ggl/io.h>
 #include <ggl/ipc/client.h>
+#include <ggl/ipc/client_priv.h>
 #include <ggl/ipc/client_raw.h>
 #include <ggl/ipc/limits.h>
 #include <ggl/json_decode.h>
@@ -150,7 +151,13 @@ static GglError register_ipc_socket(int conn) {
     return ggl_socket_epoll_add(epoll_fd, conn, (uint64_t) conn);
 }
 
-GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
+__attribute__((weak)) GglError
+ggipc_connect_extra_header_handler(EventStreamHeaderIter headers) {
+    (void) headers;
+    return GGL_ERR_OK;
+}
+
+GglError ggipc_connect_with_payload(GglBuffer socket_path, GglObject payload) {
     assert(!connected());
 
     int conn = -1;
@@ -181,10 +188,6 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
           { EVENTSTREAM_STRING, .string = GGL_STR("0.1.0") } },
     };
     size_t headers_len = sizeof(headers) / sizeof(headers[0]);
-
-    GglObject payload = ggl_obj_map(
-        GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token)))
-    );
 
     ret = ipc_send_packet(
         conn, headers, headers_len, ggl_json_reader(&payload)
@@ -229,6 +232,11 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
         );
     }
 
+    ret = ggipc_connect_extra_header_handler(msg.headers);
+    if (ret != GGL_ERR_OK) {
+        return ret;
+    }
+
     ret = register_ipc_socket(conn);
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed to register GG-IPC fd %d for receiving.", conn);
@@ -239,6 +247,15 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
     ipc_conn_fd = conn;
 
     return GGL_ERR_OK;
+}
+
+GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token) {
+    return ggipc_connect_with_payload(
+        socket_path,
+        ggl_obj_map(
+            GGL_MAP(ggl_kv(GGL_STR("authToken"), ggl_obj_buf(auth_token)))
+        )
+    );
 }
 
 GglError ggipc_connect(void) {
