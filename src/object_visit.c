@@ -31,7 +31,7 @@ typedef struct {
     GglObject *obj[GGL_MAX_OBJECT_DEPTH];
     uint8_t state[GGL_MAX_OBJECT_DEPTH];
     uint8_t elem_index[GGL_MAX_OBJECT_DEPTH];
-    uint32_t index;
+    uint8_t index;
 } IterLevels;
 
 #define TRY_HANDLER(name, ...) \
@@ -55,7 +55,7 @@ GglError ggl_obj_visit(
     state.state[0] = LEVEL_DEFAULT;
     state.elem_index[0] = 0;
 
-    uint16_t subobjects = 0;
+    uint8_t subobjects = 0;
 
     while (true) {
         GglObject *cur_obj = state.obj[state.index];
@@ -86,7 +86,7 @@ GglError ggl_obj_visit(
                     GGL_LOGE("Visited object's subobjects exceeds maximum.");
                     return GGL_ERR_RANGE;
                 }
-                subobjects += (uint16_t) list.len;
+                subobjects += (uint8_t) list.len;
 
                 TRY_HANDLER(on_list, ctx, list, cur_obj);
                 state.state[state.index] = LEVEL_LIST;
@@ -98,7 +98,7 @@ GglError ggl_obj_visit(
                     GGL_LOGE("Visited object's subobjects exceeds maximum.");
                     return GGL_ERR_RANGE;
                 }
-                subobjects += (uint16_t) (map.len * 2);
+                subobjects += (uint8_t) (map.len * 2);
 
                 TRY_HANDLER(on_map, ctx, ggl_obj_into_map(*cur_obj), cur_obj);
                 state.state[state.index] = LEVEL_MAP;
@@ -118,7 +118,7 @@ GglError ggl_obj_visit(
             }
 
             state.index += 1;
-            if (state.index >= GGL_MAX_OBJECT_DEPTH) {
+            if (state.index == GGL_MAX_OBJECT_DEPTH) {
                 GGL_LOGE("Visited object's depth exceeds maximum.");
                 return GGL_ERR_RANGE;
             }
@@ -145,7 +145,7 @@ GglError ggl_obj_visit(
             TRY_HANDLER(on_map_key, ctx, ggl_kv_key(*kv), kv);
 
             state.index += 1;
-            if (state.index >= GGL_MAX_OBJECT_DEPTH) {
+            if (state.index == GGL_MAX_OBJECT_DEPTH) {
                 GGL_LOGE("Visited object's depth exceeds maximum.");
                 return GGL_ERR_RANGE;
             }
