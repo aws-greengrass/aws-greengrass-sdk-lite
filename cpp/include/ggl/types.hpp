@@ -46,29 +46,29 @@ typedef enum {
     GGL_TYPE_MAP,
 } GglObjectType;
 
-GglObjectType ggl_obj_type(GglObject);
-bool ggl_obj_into_bool(GglObject);
-int64_t ggl_obj_into_i64(GglObject);
-double ggl_obj_into_f64(GglObject);
-GglBuffer ggl_obj_into_buf(GglObject);
-GglList ggl_obj_into_list(GglObject);
-GglMap ggl_obj_into_map(GglObject);
+GglObjectType ggl_obj_type(GglObject) noexcept;
+bool ggl_obj_into_bool(GglObject) noexcept;
+int64_t ggl_obj_into_i64(GglObject) noexcept;
+double ggl_obj_into_f64(GglObject) noexcept;
+GglBuffer ggl_obj_into_buf(GglObject) noexcept;
+GglList ggl_obj_into_list(GglObject) noexcept;
+GglMap ggl_obj_into_map(GglObject) noexcept;
 
-GglObject ggl_obj_bool(bool);
-GglObject ggl_obj_i64(int64_t);
-GglObject ggl_obj_f64(double);
-GglObject ggl_obj_buf(GglBuffer);
-GglObject ggl_obj_list(GglList);
-GglObject ggl_obj_map(GglMap);
+GglObject ggl_obj_bool(bool) noexcept;
+GglObject ggl_obj_i64(int64_t) noexcept;
+GglObject ggl_obj_f64(double) noexcept;
+GglObject ggl_obj_buf(GglBuffer) noexcept;
+GglObject ggl_obj_list(GglList) noexcept;
+GglObject ggl_obj_map(GglMap) noexcept;
 
-GglKV ggl_kv(GglBuffer, GglObject);
-GglObject *ggl_kv_val(GglKV *);
-GglBuffer ggl_kv_key(GglKV);
-void ggl_kv_set_key(GglKV *kv, GglBuffer key);
+GglKV ggl_kv(GglBuffer, GglObject) noexcept;
+GglObject *ggl_kv_val(GglKV *) noexcept;
+GglBuffer ggl_kv_key(GglKV) noexcept;
+void ggl_kv_set_key(GglKV *kv, GglBuffer key) noexcept;
 
-GglError ggl_list_type_check(GglList list, GglObjectType type);
+GglError ggl_list_type_check(GglList list, GglObjectType type) noexcept;
 
-void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment);
+void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment) noexcept;
 }
 
 #endif
