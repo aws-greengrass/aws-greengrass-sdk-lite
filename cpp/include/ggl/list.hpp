@@ -5,7 +5,6 @@
 #include "ggl/types.hpp"
 #include "ggl/utility.hpp"
 #include <cstddef>
-#include <cstdint>
 #include <type_traits>
 #include <stdexcept>
 
