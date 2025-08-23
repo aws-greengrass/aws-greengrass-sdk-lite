@@ -57,6 +57,8 @@
           {
             "*.c" = fmt-c;
             "*.h" = fmt-c;
+            "*.cpp" = fmt-c;
+            "*.hpp" = fmt-c;
             "CMakeLists.txt" = fmt-cmake;
             ".clang*" = fmt-yaml;
             "*.py" = "${yapf}/bin/yapf -i";
