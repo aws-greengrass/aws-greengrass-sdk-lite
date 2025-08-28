@@ -26,7 +26,7 @@
 #endif
 
 #ifdef GGL_SDK_EXPORT_API
-#define GGL_EXPORT VISIBILITY(protected)
+#define GGL_EXPORT VISIBILITY(default)
 #else
 #define GGL_EXPORT VISIBILITY(hidden)
 #endif
