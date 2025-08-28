@@ -75,7 +75,13 @@ GglError ggl_fsync(int fd) {
     do {
         ret = fsync(fd);
     } while ((ret != 0) && (errno == EINTR));
-    return (ret == 0) ? GGL_ERR_OK : GGL_ERR_FAILURE;
+    if (ret == 0) {
+        return GGL_ERR_OK;
+    }
+    if ((errno == EROFS) || (errno == EINVAL)) {
+        return GGL_ERR_OK;
+    }
+    return GGL_ERR_FAILURE;
 }
 
 /// Call openat, looping when interrupted by signal.
