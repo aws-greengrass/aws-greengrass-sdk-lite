@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(aws-greengrass-sdk-lite-cpp CXX)
+project(aws-greengrass-sdk-lite-cpp C CXX)
 
 if(PROJECT_IS_TOP_LEVEL)
 
@@ -141,6 +141,9 @@ if(PROJECT_IS_TOP_LEVEL)
   set(ENV{SOURCE_DATE_EPOCH} "0")
   set(ENV{ZERO_AR_DATE} "1")
 
+  # TODO: Hacky, is given the C++20 switch for some reason
+  add_subdirectory(.. ${CMAKE_BINARY_DIR}/sdk-lite)
+
 endif()
 
 file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "src/*.cpp")
@@ -148,5 +151,24 @@ file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "src/*.cpp")
 add_library(ggl-sdk++ STATIC ${SRCS})
 
 set_property(TARGET ggl-sdk++ PROPERTY CXX_STANDARD 20)
-target_include_directories(ggl-sdk++ PRIVATE include)
+target_include_directories(ggl-sdk++ PRIVATE include priv_include)
 target_include_directories(ggl-sdk++ SYSTEM INTERFACE include)
+target_link_libraries(ggl-sdk++ PRIVATE ggl-sdk)
+
+if(PROJECT_IS_TOP_LEVEL)
+  install(TARGETS ggl-sdk ggl-sdk++)
+
+  if(BUILD_SAMPLES)
+    file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
+    foreach(sample_dir ${SAMPLE_DIRS})
+      get_filename_component(sample_name ${sample_dir} NAME_WLE)
+      set_property(
+        SOURCE ${sample_dir}/main.cpp
+        APPEND_STRING
+        PROPERTY COMPILE_FLAGS "-frandom-seed=${sample_dir}/main.cpp")
+      add_executable(sample_${sample_name} ${sample_dir}/main.cpp)
+      target_link_libraries(sample_${sample_name} PRIVATE ggl-sdk++)
+      install(TARGETS sample_${sample_name})
+    endforeach()
+  endif()
+endif()
