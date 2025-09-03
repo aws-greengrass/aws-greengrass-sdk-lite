@@ -11,7 +11,7 @@ namespace ggl {
 
 struct Arena : public GglArena {
 public:
-    Arena() noexcept = default;
+    constexpr Arena() noexcept = default;
 
     constexpr Arena(void *bytes, std::size_t size_bytes) noexcept
         : GglArena { .mem = static_cast<std::uint8_t *>(bytes),

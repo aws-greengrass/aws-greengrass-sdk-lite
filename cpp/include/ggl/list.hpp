@@ -24,7 +24,7 @@ public:
     using iterator = pointer;
     using const_iterator = const_pointer;
 
-    List() noexcept = default;
+    constexpr List() noexcept = default;
 
     constexpr List(GglObject *data, size_t size) noexcept
         : GglList { data, size } {

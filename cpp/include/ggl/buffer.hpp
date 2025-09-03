@@ -20,7 +20,7 @@ public:
     using iterator = pointer;
     using size_type = decltype(GglBuffer::len);
 
-    Buffer() noexcept = default;
+    constexpr Buffer() noexcept = default;
     constexpr Buffer(const Buffer &) noexcept = default;
 
     constexpr Buffer(const GglBuffer &buffer) noexcept

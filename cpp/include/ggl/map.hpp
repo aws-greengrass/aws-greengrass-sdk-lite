@@ -80,6 +80,8 @@ public:
     using size_type = size_t;
     using difference_type = ptrdiff_t;
 
+    constexpr Map() noexcept = default;
+
     constexpr Map(KV *pair_array, size_type size) noexcept
         : GglMap { pair_array, size } {
     }
@@ -270,6 +272,7 @@ public:
         });
     }
 };
+
 }
 
 static_assert(
