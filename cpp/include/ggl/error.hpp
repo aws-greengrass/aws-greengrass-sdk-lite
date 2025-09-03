@@ -46,6 +46,7 @@ typedef enum [[nodiscard]] GglError {
     GGL_ERR_TIMEOUT,
 } GglError;
 
+[[nodiscard]]
 const char *ggl_strerror(GglError err) noexcept;
 }
 

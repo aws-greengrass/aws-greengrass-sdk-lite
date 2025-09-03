@@ -103,7 +103,6 @@ if(PROJECT_IS_TOP_LEVEL)
     -Wwrite-strings
     -Wno-missing-braces
     -Wvla
-    -Wshadow
     -Wformat
     -Wformat=2
     -Wunused

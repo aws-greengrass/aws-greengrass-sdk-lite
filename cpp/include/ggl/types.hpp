@@ -16,6 +16,11 @@ typedef struct {
 } GglBuffer;
 
 typedef struct {
+    GglBuffer *bufs;
+    size_t len;
+} GglBufList;
+
+typedef struct {
     GglObject *items;
     size_t len;
 } GglList;
