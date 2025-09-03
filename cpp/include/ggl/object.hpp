@@ -205,7 +205,7 @@ template <ObjectType T> T get(Object obj) {
         GGL_THROW_OR_ABORT(BadObjectAccess { "get: Bad index for obj" });
     }
     if constexpr (std::is_same_v<Type, bool>) {
-        ggl_obj_into_bool(obj);
+        return ggl_obj_into_bool(obj);
     } else if constexpr (std::is_integral_v<Type>) {
         return ggl_obj_into_i64(obj);
     } else if constexpr (std::is_floating_point_v<Type>) {
