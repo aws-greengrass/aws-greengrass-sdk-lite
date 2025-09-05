@@ -14,8 +14,8 @@ ComponentConfiguration:
         access_policy:
           policyDescription: "Allows pub/sub to IoT Core topic hello"
           operations:
-            - aws.greengrass#PublishToIoTCore"
-            - aws.greengrass#SubscribeToIoTCore"
+            - aws.greengrass#PublishToIoTCore
+            - aws.greengrass#SubscribeToIoTCore
           resources:
             - "hello"
 Manifests:
