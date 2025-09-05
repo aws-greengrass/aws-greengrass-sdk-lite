@@ -1,0 +1,28 @@
+RecipeFormatVersion: 2020-01-25
+ComponentName: aws-greengrass-sdk-lite.samples.restart_component
+ComponentVersion: 1.0.0
+ComponentDescription:
+  Sample component demonstrating RestartComponent IPC operation
+ComponentPublisher: Amazon
+ComponentConfiguration:
+  DefaultConfiguration:
+    accessControl:
+      aws.greengrass.Cli:
+        access_policy:
+          policyDescription: "Allow component to restart itself"
+          operations:
+            - "aws.greengrass#RestartComponent"
+          resources:
+            - "aws-greengrass-sdk-lite.samples.restart_component"
+Manifests:
+  - Platform:
+      os: linux
+      runtime: "aws_nucleus_lite"
+    Lifecycle:
+      run: |
+        {artifacts:path}/sample_restart_component
+    Artifacts:
+      - URI: s3://EXAMPLE_BUCKET/sample_restart_component
+        Permission:
+          Read: "OWNER"
+          Execute: "OWNER"
