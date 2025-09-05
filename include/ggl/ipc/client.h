@@ -130,4 +130,8 @@ typedef enum ENUM_EXTENSIBILITY(closed) {
 GGL_EXPORT
 GglError ggipc_update_state(GglComponentState state);
 
+/// Restart a component on the core device
+GGL_EXPORT
+GglError ggipc_restart_component(GglBuffer component_name);
+
 #endif
