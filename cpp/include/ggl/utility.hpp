@@ -6,10 +6,10 @@
 #include <type_traits>
 
 #if __cpp_exceptions
-#define GGL_THROW_OR_ABORT(exception) throw(exception)
+#define GGL_THROW_OR_ABORT(...) throw(__VA_ARGS__)
 #else
 #include <cstdlib>
-#define GGL_THROW_OR_ABORT(exception) std::abort()
+#define GGL_THROW_OR_ABORT(...) std::abort()
 #endif
 
 namespace ggl {

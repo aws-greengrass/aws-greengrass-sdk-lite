@@ -5,6 +5,8 @@
 #ifndef GGL_ERROR_HPP
 #define GGL_ERROR_HPP
 
+#include <system_error>
+
 //! GGL error codes
 
 extern "C" {
@@ -45,9 +47,40 @@ typedef enum [[nodiscard]] GglError {
     /// Request timed out
     GGL_ERR_TIMEOUT,
 } GglError;
+}
 
-[[nodiscard]]
-const char *ggl_strerror(GglError err) noexcept;
+namespace ggl {
+// for differentiation between standard error categories
+const std::error_category &category() noexcept;
+}
+
+// Allow implicit conversion from GglError to std::error_code and comparisons
+// between GglError and std::error_code
+namespace std {
+template <> struct is_error_code_enum<GglError> : true_type { };
+}
+
+// implicit conversion uses make_error_code
+inline std::error_code make_error_code(GglError ggl_error_value) noexcept {
+    return { static_cast<int>(ggl_error_value), ggl::category() };
+}
+
+namespace ggl {
+class Exception : public std::system_error {
+public:
+    Exception(GglError code)
+        : std::system_error { code } {
+    }
+
+    Exception(GglError code, const std::string &what)
+        : std::system_error { code, what } {
+    }
+
+    Exception(GglError code, const char *what)
+        : std::system_error { code, what } {
+    }
+};
+
 }
 
 #endif
