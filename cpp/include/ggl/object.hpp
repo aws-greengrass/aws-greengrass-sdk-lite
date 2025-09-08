@@ -2,6 +2,7 @@
 #define GGL_OBJECT_HPP
 
 #include "ggl/buffer.hpp"
+#include "ggl/error.hpp"
 #include "ggl/list.hpp"
 #include "ggl/map.hpp"
 #include "ggl/types.hpp"
@@ -9,28 +10,12 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
-#include <exception>
 #include <span>
 #include <string_view>
 #include <type_traits>
 #include <variant>
 
 namespace ggl {
-
-class BadObjectAccess : public std::exception {
-public:
-    /// must be a string literal
-    BadObjectAccess(const char *what) noexcept
-        : m_what { what } {
-    }
-
-    const char *what() const noexcept override {
-        return m_what;
-    }
-
-private:
-    const char *m_what = "Bad ggl::Object access";
-};
 
 template <class T>
 using is_object_alternative = std::disjunction<
@@ -152,8 +137,8 @@ public:
     // Assumes Object is a Map
     Object operator[](std::string_view key) const {
         if (index() != GGL_TYPE_MAP) {
-            GGL_THROW_OR_ABORT(BadObjectAccess {
-                "key operator[]: ggl::Object is not ggl::Map" });
+            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
+                                           "ggl::Object is not ggl::Map" });
         }
 
         return *Map { ggl_obj_into_map(*this) }[key];
@@ -162,8 +147,8 @@ public:
     // Assumes Object is a List
     Object operator[](std::size_t idx) const {
         if (index() != GGL_TYPE_LIST) {
-            GGL_THROW_OR_ABORT(BadObjectAccess {
-                "index operator[]: ggl::Object is not ggl::List" });
+            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
+                                           "ggl::Object is not ggl::List" });
         }
         return List { ggl_obj_into_list(*this) }[idx];
     }
@@ -202,7 +187,8 @@ template <ObjectType T> constexpr GglObjectType index_for_type() noexcept {
 template <ObjectType T> T get(Object obj) {
     using Type = std::remove_cvref_t<T>;
     if (obj.index() != index_for_type<Type>()) {
-        GGL_THROW_OR_ABORT(BadObjectAccess { "get: Bad index for obj" });
+        GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
+                                       "get: Bad index for object." });
     }
     if constexpr (std::is_same_v<Type, bool>) {
         return ggl_obj_into_bool(obj);

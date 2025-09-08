@@ -1,6 +1,5 @@
 #include <array>
 #include <ggl/buffer.hpp>
-#include <ggl/error.hpp>
 #include <ggl/map.hpp>
 #include <ggl/object.hpp>
 #include <ggl/schema.hpp>
@@ -9,6 +8,7 @@
 #include <iostream>
 #include <optional>
 #include <string_view>
+#include <system_error>
 #include <variant>
 
 template <class... Ts> struct Overloads : Ts... {
@@ -53,36 +53,33 @@ int main() {
     };
 
     for (auto &&object : items) {
-        std::cout << "loop\n";
         std::visit(print_object, object.to_variant());
     }
 
     std::optional<bool> x;
 
-    [[maybe_unused]]
-    ggl::Object *key2_obj;
-    int64_t y;
     ggl::Object required;
 
-    ggl::Object *mutable_object;
+    int64_t y;
+
     ggl::Object object;
+    ggl::Object *mutable_object;
 
-    ggl::Object *mutable_optional_object;
     std::optional<ggl::Object> optional_object;
-    [[maybe_unused]]
-    GglError validated
-        = ggl::validate_map(
-            map,
-            ggl::MapSchema { "key", x },
-            ggl::MapSchemaMissingEntry { "key2" },
-            ggl::MapSchema { "key3", required },
-            ggl::MapSchema { "key4", y },
-            ggl::MapSchema { "key5", object, mutable_object },
-            ggl::MapSchema {
-                "optional_obj", optional_object, mutable_optional_object }
-        );
+    ggl::Object *mutable_optional_object;
 
-    if (validated == GGL_ERR_OK) {
+    std::error_code error = ggl::validate_map(
+        map,
+        ggl::MapSchema { "key", x },
+        ggl::MapSchemaMissingEntry { "key2" },
+        ggl::MapSchema { "key3", required },
+        ggl::MapSchema { "key4", y },
+        ggl::MapSchema { "key5", object, mutable_object },
+        ggl::MapSchema {
+            "optional_obj", optional_object, mutable_optional_object }
+    );
+
+    if (!error) {
         std::cout << "key: " << x.value_or(false) << '\n';
         std::cout << "key2: (missing)\n";
         std::cout << "key3: ";
@@ -99,5 +96,8 @@ int main() {
             print_object, optional_object.value_or(ggl::Object {}).to_variant()
         );
         std::cout << '\n';
+    } else {
+        std::cerr << "Failed to validate: " << error.category().name() << ":"
+                  << error.message() << "(" << error.value() << ")\n";
     }
 }
