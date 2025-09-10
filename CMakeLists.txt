@@ -10,7 +10,7 @@ string(STRIP "${GGSDKL_VERSION}" GGSDKL_VERSION)
 
 # Parse version components
 string(REPLACE "." ";" VERSION_LIST ${GGSDKL_VERSION})
-list(GET VERSION_LIST 0 GGL_VERSION_MAJOR)
+list(GET VERSION_LIST 0 GGSDKL_VERSION_MAJOR)
 
 # Add version to compile definitions
 add_compile_definitions("GGSDKL_VERSION=\"${GGSDKL_VERSION}\"")
@@ -196,7 +196,7 @@ if(BUILD_SHARED_LIBS)
     ggl-sdk-shared
     PROPERTIES OUTPUT_NAME ggl-sdk
                VERSION ${GGSDKL_VERSION}
-               SOVERSION ${GGL_VERSION_MAJOR})
+               SOVERSION ${GGSDKL_VERSION_MAJOR})
 
   # Override visibility for shared library (global setting is hidden)
   target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=default)
