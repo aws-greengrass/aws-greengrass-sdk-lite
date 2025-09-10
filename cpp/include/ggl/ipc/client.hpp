@@ -1,29 +1,85 @@
 #ifndef GGL_IPC_CLIENT_HPP
 #define GGL_IPC_CLIENT_HPP
 
-#include "ggl/error.hpp"
+#include "ggl/buffer.hpp"
+#include "ggl/map.hpp"
+#include "ggl/object.hpp"
+#include "ggl/sdk.hpp"
+#include "ggl/types.hpp"
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <string_view>
-
-namespace ggl {
-class Map;
-class List;
-class Buffer;
-class Object;
-}
+#include <system_error>
+#include <utility>
 
 namespace ggl::ipc {
-GglError connect() noexcept;
-GglError connect(
-    std::string_view socket_path, std::string_view auth_token
-) noexcept;
 
-GglError publish_to_iot_core(
-    std::string_view topic, std::string_view payload
-) noexcept;
-GglError publish_to_iot_core(
-    std::string_view topic, const Map &payload
-) noexcept;
+///
+class AllocatedObject {
+private:
+    std::unique_ptr<std::byte[]> arena;
+    Object head;
 
+public:
+    constexpr AllocatedObject() noexcept = default;
+
+    AllocatedObject(
+        const Object &head, std::unique_ptr<std::byte[]> &&arena
+    ) noexcept
+        : arena { std::move(arena) }
+        , head { head } {
+    }
+
+    AllocatedObject &operator=(AllocatedObject &&) noexcept = default;
+    AllocatedObject(AllocatedObject &&) noexcept = default;
+
+    constexpr Object get() const noexcept {
+        return head;
+    }
+};
+
+class Client {
+private:
+    constexpr Client() noexcept = default;
+
+public:
+    static Client &get() noexcept {
+        (void) Sdk::get();
+        static Client singleton {};
+        return singleton;
+    }
+
+    // Thread-safe as long as no other thread modifies environment variables
+    std::error_code connect() noexcept;
+
+    std::error_code connect(
+        std::string_view socket_path, std::string_view auth_token
+    ) noexcept;
+
+    std::error_code publish_to_topic(
+        std::string_view topic, Buffer bytes
+    ) noexcept;
+
+    std::error_code publish_to_topic(
+        std::string_view topic, const Map &json
+    ) noexcept;
+
+    std::error_code publish_to_iot_core(
+        std::string_view topic, Buffer bytes, uint8_t qos
+    ) noexcept;
+
+    std::error_code update_config(
+        std::span<const Buffer> key_path,
+        std::optional<std::chrono::system_clock::time_point> timestamp,
+        const Object &value
+    ) noexcept;
+
+    std::error_code update_component_state(ComponentState state) noexcept;
+
+    std::error_code restart_component(std::string_view component_name) noexcept;
+};
 }
 
 #endif

@@ -51,6 +51,15 @@ typedef enum {
     GGL_TYPE_MAP,
 } GglObjectType;
 
+enum class GglComponentState {
+    RUNNING,
+    ERRORED
+};
+
+namespace ggl {
+    using ComponentState = GglComponentState;
+}
+
 GglObjectType ggl_obj_type(GglObject) noexcept;
 bool ggl_obj_into_bool(GglObject) noexcept;
 int64_t ggl_obj_into_i64(GglObject) noexcept;
