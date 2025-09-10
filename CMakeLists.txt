@@ -17,7 +17,9 @@ add_compile_definitions("GGSDKL_VERSION=\"${GGSDKL_VERSION}\"")
 
 # Define GGL_EXPORT based on build type
 if(BUILD_SHARED_LIBS)
-  add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"protected\")))")
+  add_compile_definitions(
+    "GGL_EXPORT=__attribute__((visibility(\"protected\")))"
+  )
 else()
   add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"hidden\")))")
 endif()
@@ -200,7 +202,9 @@ if(BUILD_SHARED_LIBS)
 
   # Override visibility for shared library (global setting is hidden)
   target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=default)
-  target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE GGL_SDK_EXPORT_API)
+  target_compile_definitions(
+    ggl-sdk-shared PRIVATE _GNU_SOURCE GGL_SDK_EXPORT_API
+  )
   target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
   target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
   target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
