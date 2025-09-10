@@ -5,15 +5,15 @@
 cmake_minimum_required(VERSION 3.22)
 
 # Read version from file
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version" GGL_VERSION)
-string(STRIP "${GGL_VERSION}" GGL_VERSION)
+file(READ version GGSDKL_VERSION)
+string(STRIP "${GGSDKL_VERSION}" GGSDKL_VERSION)
 
 # Parse version components
-string(REPLACE "." ";" VERSION_LIST ${GGL_VERSION})
+string(REPLACE "." ";" VERSION_LIST ${GGSDKL_VERSION})
 list(GET VERSION_LIST 0 GGL_VERSION_MAJOR)
 
 # Add version to compile definitions
-add_compile_definitions("GGL_VERSION=\"${GGL_VERSION}\"")
+add_compile_definitions("GGSDKL_VERSION=\"${GGSDKL_VERSION}\"")
 
 # Define GGL_EXPORT based on build type
 if(BUILD_SHARED_LIBS)
@@ -22,7 +22,7 @@ else()
   add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"hidden\")))")
 endif()
 
-project(aws-greengrass-sdk-lite VERSION ${GGL_VERSION} LANGUAGES C)
+project(aws-greengrass-sdk-lite VERSION ${GGSDKL_VERSION} LANGUAGES C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
@@ -195,7 +195,7 @@ if(BUILD_SHARED_LIBS)
   set_target_properties(
     ggl-sdk-shared
     PROPERTIES OUTPUT_NAME ggl-sdk
-               VERSION ${GGL_VERSION}
+               VERSION ${GGSDKL_VERSION}
                SOVERSION ${GGL_VERSION_MAJOR})
 
   # Override visibility for shared library (global setting is hidden)
