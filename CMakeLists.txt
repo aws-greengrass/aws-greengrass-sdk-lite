@@ -3,7 +3,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.22)
-project(aws-greengrass-sdk-lite C)
+
+# Read version from file
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version" GGL_VERSION)
+string(STRIP "${GGL_VERSION}" GGL_VERSION)
+
+# Parse version components
+string(REPLACE "." ";" VERSION_LIST ${GGL_VERSION})
+list(GET VERSION_LIST 0 GGL_VERSION_MAJOR)
+
+# Add version to compile definitions
+add_compile_definitions("GGL_VERSION=\"${GGL_VERSION}\"")
+
+# Define GGL_EXPORT based on build type
+if(BUILD_SHARED_LIBS)
+  add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"protected\")))")
+else()
+  add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"hidden\")))")
+endif()
+
+project(aws-greengrass-sdk-lite VERSION ${GGL_VERSION} LANGUAGES C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
@@ -12,6 +31,8 @@ if(PROJECT_IS_TOP_LEVEL)
   option(ENABLE_WERROR "Compile warnings as errors")
 
   option(BUILD_SAMPLES "Build sample components" ON)
+
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -167,6 +188,24 @@ foreach(src ${SRCS})
 endforeach()
 
 add_library(ggl-sdk STATIC ${SRCS})
+
+# Also build a shared version if requested
+if(BUILD_SHARED_LIBS)
+  add_library(ggl-sdk-shared SHARED ${SRCS})
+  set_target_properties(
+    ggl-sdk-shared
+    PROPERTIES OUTPUT_NAME ggl-sdk
+               VERSION ${GGL_VERSION}
+               SOVERSION ${GGL_VERSION_MAJOR})
+
+  # Override visibility for shared library (global setting is hidden)
+  target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=default)
+  target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE GGL_SDK_EXPORT_API)
+  target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
+  target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
+  target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+endif()
+
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)
 target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)
@@ -178,8 +217,19 @@ string(TOUPPER "${GGL_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
+# Apply log level to shared library too
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(ggl-sdk-shared
+                             PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
+endif()
+
 if(PROJECT_IS_TOP_LEVEL)
-  install(TARGETS ggl-sdk)
+  # Install both static and shared libraries
+  if(BUILD_SHARED_LIBS)
+    install(TARGETS ggl-sdk ggl-sdk-shared)
+  else()
+    install(TARGETS ggl-sdk)
+  endif()
 
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")

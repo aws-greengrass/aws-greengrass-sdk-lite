@@ -25,6 +25,10 @@
 #define VISIBILITY(v)
 #endif
 
+#ifndef GGL_EXPORT
+#define GGL_EXPORT
+#endif
+
 #ifdef __has_attribute
 #if __has_attribute(format)
 #define FORMAT(...) __attribute__((format(__VA_ARGS__)))
