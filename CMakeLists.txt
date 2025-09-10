@@ -15,6 +15,13 @@ list(GET VERSION_LIST 0 GGL_VERSION_MAJOR)
 # Add version to compile definitions
 add_compile_definitions("GGL_VERSION=\"${GGL_VERSION}\"")
 
+# Define GGL_EXPORT based on build type
+if(BUILD_SHARED_LIBS)
+  add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"protected\")))")
+else()
+  add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"hidden\")))")
+endif()
+
 project(aws-greengrass-sdk-lite VERSION ${GGL_VERSION} LANGUAGES C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
