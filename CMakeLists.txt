@@ -3,13 +3,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.22)
-project(aws-greengrass-sdk-lite C)
+
+file(READ version GGLSDK_VERSION)
+string(STRIP "${GGLSDK_VERSION}" GGLSDK_VERSION)
+
+project(
+  aws-greengrass-sdk-lite
+  VERSION ${GGLSDK_VERSION}
+  LANGUAGES C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
 if(PROJECT_IS_TOP_LEVEL)
 
   option(ENABLE_WERROR "Compile warnings as errors")
+
+  option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
   option(BUILD_SAMPLES "Build sample components" ON)
 
@@ -166,7 +175,10 @@ foreach(src ${SRCS})
     PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
 endforeach()
 
-add_library(ggl-sdk STATIC ${SRCS})
+add_library(ggl-sdk ${SRCS})
+set_target_properties(ggl-sdk PROPERTIES VERSION ${PROJECT_VERSION}
+                                         SOVERSION ${PROJECT_VERSION_MAJOR})
+
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)
 target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)

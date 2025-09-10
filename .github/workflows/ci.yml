@@ -32,6 +32,8 @@ jobs:
             check: packages-ggl-sdk-static-aarch64
           - name: build with Clang
             check: build-clang
+          - name: build shared lib
+            check: build-shared
           - name: formatting
             check: formatting
           - name: clang-tidy
