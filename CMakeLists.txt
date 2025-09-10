@@ -3,7 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.22)
-project(aws-greengrass-sdk-lite C)
+
+# Read version from file
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version" GGL_VERSION)
+string(STRIP "${GGL_VERSION}" GGL_VERSION)
+
+# Parse version components
+string(REPLACE "." ";" VERSION_LIST ${GGL_VERSION})
+list(GET VERSION_LIST 0 GGL_VERSION_MAJOR)
+
+# Add version to compile definitions
+add_compile_definitions("GGL_VERSION=\"${GGL_VERSION}\"")
+
+project(aws-greengrass-sdk-lite VERSION ${GGL_VERSION} LANGUAGES C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
@@ -177,26 +189,12 @@ if(BUILD_SHARED_LIBS)
   set_target_properties(
     ggl-sdk-shared
     PROPERTIES OUTPUT_NAME ggl-sdk
-               VERSION 0.2.0
-               SOVERSION 0)
+               VERSION ${GGL_VERSION}
+               SOVERSION ${GGL_VERSION_MAJOR})
 
-  # Apply same settings to shared library Note: Override -fvisibility=hidden for
-  # shared library to export symbols. Disable LTO to avoid Clang issues with
-  # alloc_size attribute.
-  target_compile_options(
-    ggl-sdk-shared
-    PRIVATE -pthread
-            -fno-strict-aliasing
-            -std=gnu11
-            -fno-semantic-interposition
-            -fno-common
-            -fno-unwind-tables
-            -fno-asynchronous-unwind-tables
-            -fvisibility=default
-            -fno-lto
-            -Wno-missing-braces)
-  target_link_options(ggl-sdk-shared PRIVATE -fno-lto)
-  target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE)
+  # Override visibility for shared library (global setting is hidden)
+  target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=default)
+  target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE GGL_SDK_EXPORT_API)
   target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
   target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
   target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
