@@ -12,6 +12,7 @@
           root = ./.;
           fileset = lib.fileset.unions [
             ./CMakeLists.txt
+            ./version
             ./include
             ./priv_include
             ./src
