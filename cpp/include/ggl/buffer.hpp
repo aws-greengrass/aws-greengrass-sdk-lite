@@ -77,6 +77,14 @@ public:
     constexpr iterator cend() const noexcept {
         return data() + size();
     }
+
+    constexpr bool operator==(const Buffer &rhs) const noexcept {
+        return (size() == rhs.size()) && std::ranges::equal(*this, rhs);
+    }
+
+    constexpr bool operator!=(const Buffer &rhs) const noexcept {
+        return !(*this == rhs);
+    }
 };
 
 template <class T> Buffer as_buffer(std::span<T> bytes) noexcept {
