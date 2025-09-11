@@ -14,7 +14,7 @@ std::error_code Client::connect() noexcept {
     // C++ std::getenv has stronger thread-safety guarantees than C's
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     char *svcuid = std::getenv("SVCUID");
-    if (svcuid == NULL) {
+    if (svcuid == nullptr) {
         return GGL_ERR_CONFIG;
     }
 
@@ -22,7 +22,7 @@ std::error_code Client::connect() noexcept {
         // NOLINTNEXTLINE(concurrency-mt-unsafe)
         = std::getenv("AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT");
 
-    if (socket_path == NULL) {
+    if (socket_path == nullptr) {
         return GGL_ERR_CONFIG;
     }
 

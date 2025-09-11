@@ -83,6 +83,8 @@ void ggl_kv_set_key(GglKV *kv, GglBuffer key) noexcept;
 GglError ggl_list_type_check(GglList list, GglObjectType type) noexcept;
 
 void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment) noexcept;
+
+GglError ggl_obj_mem_usage(GglObject obj, size_t *size) noexcept;
 }
 
 #endif
