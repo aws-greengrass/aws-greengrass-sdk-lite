@@ -3,7 +3,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.22)
-project(aws-greengrass-sdk-lite C)
+
+# Read version from file
+file(READ version GGSDKL_VERSION)
+string(STRIP "${GGSDKL_VERSION}" GGSDKL_VERSION)
+
+project(
+  aws-greengrass-sdk-lite
+  VERSION ${GGSDKL_VERSION}
+  LANGUAGES C)
+
+# Parse version components
+string(REPLACE "." ";" VERSION_LIST ${GGSDKL_VERSION})
+list(GET VERSION_LIST 0 GGSDKL_VERSION_MAJOR)
+
+# Add version to compile definitions
+add_compile_definitions("GGSDKL_VERSION=\"${GGSDKL_VERSION}\"")
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
@@ -13,8 +28,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_SAMPLES "Build sample components" ON)
 
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  option(BUILD_SHARED "Build shared libraries" OFF)
 
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
   include(GNUInstallDirs)
 
   # Put outputs in build/bin and build/lib
@@ -167,7 +183,15 @@ foreach(src ${SRCS})
     PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
 endforeach()
 
-add_library(ggl-sdk STATIC ${SRCS})
+if(BUILD_SHARED)
+  add_library(ggl-sdk SHARED ${SRCS})
+  set_target_properties(ggl-sdk PROPERTIES VERSION ${GGSDKL_VERSION}
+                                           SOVERSION ${GGSDKL_VERSION_MAJOR})
+  target_compile_definitions(ggl-sdk PRIVATE GGL_SDK_EXPORT_API)
+else()
+  add_library(ggl-sdk STATIC ${SRCS})
+endif()
+
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)
 target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)
@@ -180,6 +204,7 @@ set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
 if(PROJECT_IS_TOP_LEVEL)
+  # Install libraries
   install(TARGETS ggl-sdk)
 
   if(BUILD_SAMPLES)
