@@ -30,9 +30,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_SHARED "Build shared libraries" OFF)
 
-
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
   include(GNUInstallDirs)
 
   # Put outputs in build/bin and build/lib
@@ -186,10 +184,8 @@ endforeach()
 
 if(BUILD_SHARED)
   add_library(ggl-sdk SHARED ${SRCS})
-  set_target_properties(
-    ggl-sdk
-    PROPERTIES VERSION ${GGSDKL_VERSION}
-               SOVERSION ${GGSDKL_VERSION_MAJOR})
+  set_target_properties(ggl-sdk PROPERTIES VERSION ${GGSDKL_VERSION}
+                                           SOVERSION ${GGSDKL_VERSION_MAJOR})
   target_compile_definitions(ggl-sdk PRIVATE GGL_SDK_EXPORT_API)
 else()
   add_library(ggl-sdk STATIC ${SRCS})
