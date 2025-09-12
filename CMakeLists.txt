@@ -20,14 +20,6 @@ list(GET VERSION_LIST 0 GGSDKL_VERSION_MAJOR)
 # Add version to compile definitions
 add_compile_definitions("GGSDKL_VERSION=\"${GGSDKL_VERSION}\"")
 
-# Define GGL_EXPORT based on build type
-if(BUILD_SHARED)
-  add_compile_definitions(
-    "GGL_EXPORT=__attribute__((visibility(\"protected\")))")
-else()
-  add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"hidden\")))")
-endif()
-
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
 if(PROJECT_IS_TOP_LEVEL)
@@ -36,7 +28,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_SAMPLES "Build sample components" ON)
 
-  option(BUILD_SHARED "Build shared libraries" ON)
+  option(BUILD_SHARED "Build shared libraries" OFF)
+
 
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -191,24 +184,15 @@ foreach(src ${SRCS})
     PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
 endforeach()
 
-add_library(ggl-sdk STATIC ${SRCS})
-
-# Also build a shared version if requested
 if(BUILD_SHARED)
-  add_library(ggl-sdk-shared SHARED ${SRCS})
+  add_library(ggl-sdk SHARED ${SRCS})
   set_target_properties(
-    ggl-sdk-shared
-    PROPERTIES OUTPUT_NAME ggl-sdk
-               VERSION ${GGSDKL_VERSION}
+    ggl-sdk
+    PROPERTIES VERSION ${GGSDKL_VERSION}
                SOVERSION ${GGSDKL_VERSION_MAJOR})
-
-  # Override visibility for shared library (global setting is hidden)
-  target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=hidden)
-  target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE
-                                                    GGL_SDK_EXPORT_API)
-  target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
-  target_include_directories(ggl-sdk-shared SYSTEM INTERFACE include)
-  target_compile_definitions(ggl-sdk-shared PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+  target_compile_definitions(ggl-sdk PRIVATE GGL_SDK_EXPORT_API)
+else()
+  add_library(ggl-sdk STATIC ${SRCS})
 endif()
 
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
@@ -222,18 +206,9 @@ string(TOUPPER "${GGL_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
-# Apply log level to shared library too
-if(BUILD_SHARED)
-  target_compile_definitions(ggl-sdk-shared
-                             PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
-endif()
-
 if(PROJECT_IS_TOP_LEVEL)
   # Install libraries
   install(TARGETS ggl-sdk)
-  if(BUILD_SHARED)
-    install(TARGETS ggl-sdk-shared)
-  endif()
 
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")

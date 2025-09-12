@@ -25,8 +25,10 @@
 #define VISIBILITY(v)
 #endif
 
-#ifndef GGL_EXPORT
-#define GGL_EXPORT
+#ifdef GGL_SDK_EXPORT_API
+#define GGL_EXPORT VISIBILITY(default)
+#else
+#define GGL_EXPORT VISIBILITY(hidden)
 #endif
 
 #ifdef __has_attribute
