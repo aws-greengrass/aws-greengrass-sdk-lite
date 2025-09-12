@@ -42,7 +42,7 @@ static inline GglArena ggl_arena_init(GglBuffer buf) {
     (typeof(type) *) ggl_arena_alloc(arena, (n) * sizeof(type), alignof(type))
 
 /// Allocate `size` bytes with given alignment from an arena.
-GGL_EXPORT ALLOC_ALIGN(3) ACCESS(read_write, 1)
+GGL_EXPORT
 void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment);
 
 /// Resize ptr's allocation (must be the last allocated ptr).
