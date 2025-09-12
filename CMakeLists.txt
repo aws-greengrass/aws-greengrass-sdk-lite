@@ -8,6 +8,11 @@ cmake_minimum_required(VERSION 3.22)
 file(READ version GGSDKL_VERSION)
 string(STRIP "${GGSDKL_VERSION}" GGSDKL_VERSION)
 
+project(
+  aws-greengrass-sdk-lite
+  VERSION ${GGSDKL_VERSION}
+  LANGUAGES C)
+
 # Parse version components
 string(REPLACE "." ";" VERSION_LIST ${GGSDKL_VERSION})
 list(GET VERSION_LIST 0 GGSDKL_VERSION_MAJOR)
@@ -16,17 +21,12 @@ list(GET VERSION_LIST 0 GGSDKL_VERSION_MAJOR)
 add_compile_definitions("GGSDKL_VERSION=\"${GGSDKL_VERSION}\"")
 
 # Define GGL_EXPORT based on build type
-if(BUILD_SHARED_LIBS)
+if(BUILD_SHARED)
   add_compile_definitions(
     "GGL_EXPORT=__attribute__((visibility(\"protected\")))")
 else()
   add_compile_definitions("GGL_EXPORT=__attribute__((visibility(\"hidden\")))")
 endif()
-
-project(
-  aws-greengrass-sdk-lite
-  VERSION ${GGSDKL_VERSION}
-  LANGUAGES C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
@@ -36,7 +36,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_SAMPLES "Build sample components" ON)
 
-  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+  option(BUILD_SHARED "Build shared libraries" ON)
 
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -194,7 +194,7 @@ endforeach()
 add_library(ggl-sdk STATIC ${SRCS})
 
 # Also build a shared version if requested
-if(BUILD_SHARED_LIBS)
+if(BUILD_SHARED)
   add_library(ggl-sdk-shared SHARED ${SRCS})
   set_target_properties(
     ggl-sdk-shared
@@ -203,7 +203,7 @@ if(BUILD_SHARED_LIBS)
                SOVERSION ${GGSDKL_VERSION_MAJOR})
 
   # Override visibility for shared library (global setting is hidden)
-  target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=default)
+  target_compile_options(ggl-sdk-shared PRIVATE -fvisibility=hidden)
   target_compile_definitions(ggl-sdk-shared PRIVATE _GNU_SOURCE
                                                     GGL_SDK_EXPORT_API)
   target_include_directories(ggl-sdk-shared PRIVATE include priv_include)
@@ -223,17 +223,16 @@ set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 
 # Apply log level to shared library too
-if(BUILD_SHARED_LIBS)
+if(BUILD_SHARED)
   target_compile_definitions(ggl-sdk-shared
                              PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-  # Install both static and shared libraries
-  if(BUILD_SHARED_LIBS)
-    install(TARGETS ggl-sdk ggl-sdk-shared)
-  else()
-    install(TARGETS ggl-sdk)
+  # Install libraries
+  install(TARGETS ggl-sdk)
+  if(BUILD_SHARED)
+    install(TARGETS ggl-sdk-shared)
   endif()
 
   if(BUILD_SAMPLES)
