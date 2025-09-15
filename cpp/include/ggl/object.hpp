@@ -85,42 +85,43 @@ public:
     constexpr Object(const Object &) noexcept = default;
     constexpr Object &operator=(const Object &) noexcept = default;
 
-    explicit Object(std::monostate /*unused*/) noexcept { };
+    Object(std::monostate /*unused*/) noexcept { };
 
-    explicit Object(std::span<uint8_t> value) noexcept
-        : GglObject { ggl_obj_buf(as_buffer(value)) } {
+    explicit Object(bool boolean) noexcept
+        : GglObject { ggl_obj_bool(boolean) } {
     }
 
-    explicit Object(ggl::Buffer value) noexcept
-        : GglObject { ggl_obj_buf(value) } {
+    Object(std::integral auto i64) noexcept
+        : GglObject { ggl_obj_i64(static_cast<int64_t>(i64)) } {
     }
 
-    explicit Object(List value) noexcept
-        : GglObject { ggl_obj_list(value) } {
+    Object(std::floating_point auto f64) noexcept
+        : GglObject { ggl_obj_f64(static_cast<double>(f64)) } {
     }
 
-    explicit Object(Map value) noexcept
-        : GglObject { ggl_obj_map(value) } {
+    Object(ggl::Buffer buffer) noexcept
+        : GglObject { ggl_obj_buf(buffer) } {
     }
 
-    explicit Object(bool value) noexcept
-        : GglObject { ggl_obj_bool(value) } {
+    Object(std::span<uint8_t> buffer) noexcept
+        : Object { Buffer { buffer } } {
     }
 
-    explicit Object(std::integral auto value) noexcept
-        : GglObject { ggl_obj_i64(static_cast<int64_t>(value)) } {
+    Object(std::string_view str) noexcept
+        : Object { Buffer { str } } {
     }
 
-    explicit Object(std::floating_point auto value) noexcept
-        : GglObject { ggl_obj_f64(static_cast<double>(value)) } {
+    template <size_t N>
+    Object(const char (&arr)[N]) noexcept
+        : Object { std::string_view { arr, N } } {
     }
 
-    explicit Object(const char *str) noexcept
-        : Object { as_buffer(str) } {
+    Object(List list) noexcept
+        : GglObject { ggl_obj_list(list) } {
     }
 
-    explicit Object(std::string_view str) noexcept
-        : Object { as_buffer(str) } {
+    Object(Map map) noexcept
+        : GglObject { ggl_obj_map(map) } {
     }
 
     template <class T>
@@ -137,8 +138,9 @@ public:
     // Assumes Object is a Map
     Object operator[](std::string_view key) const {
         if (index() != GGL_TYPE_MAP) {
-            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
-                                           "ggl::Object is not ggl::Map" });
+            GGL_THROW_OR_ABORT(
+                Exception { GGL_ERR_PARSE, "ggl::Object is not ggl::Map" }
+            );
         }
 
         return *Map { ggl_obj_into_map(*this) }[key];
@@ -147,8 +149,9 @@ public:
     // Assumes Object is a List
     Object operator[](std::size_t idx) const {
         if (index() != GGL_TYPE_LIST) {
-            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
-                                           "ggl::Object is not ggl::List" });
+            GGL_THROW_OR_ABORT(
+                Exception { GGL_ERR_PARSE, "ggl::Object is not ggl::List" }
+            );
         }
         return List { ggl_obj_into_list(*this) }[idx];
     }
@@ -187,8 +190,9 @@ template <ObjectType T> constexpr GglObjectType index_for_type() noexcept {
 template <ObjectType T> T get(Object obj) {
     using Type = std::remove_cvref_t<T>;
     if (obj.index() != index_for_type<Type>()) {
-        GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
-                                       "get: Bad index for object." });
+        GGL_THROW_OR_ABORT(
+            Exception { GGL_ERR_PARSE, "get: Bad index for object." }
+        );
     }
     if constexpr (std::is_same_v<Type, bool>) {
         return ggl_obj_into_bool(obj);

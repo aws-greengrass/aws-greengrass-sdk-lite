@@ -30,21 +30,14 @@ public:
         return *this = KV { kv };
     }
 
-    KV(GglBuffer key, GglObject value) noexcept
-        : GglKV { ggl_kv(key, value) } {
+    KV(Buffer key, const Object &value) noexcept;
+
+    KV(std::string_view key, const Object &value) noexcept
+        : KV { Buffer { key }, value } {
     }
 
-    KV(std::string_view key, GglObject value) noexcept
-        : KV { as_buffer(key), value } {
-    }
-
-    // key must be null-terminated
-    KV(const char *key, GglObject value) noexcept
-        : KV { as_buffer(key), value } {
-    }
-
-    KV(std::span<uint8_t> key, GglObject value) noexcept
-        : KV { as_buffer(key), value } {
+    KV(std::span<uint8_t> key, const Object &value) noexcept
+        : KV { Buffer { key }, value } {
     }
 
     std::string_view key() const noexcept {
@@ -59,11 +52,11 @@ public:
     }
 
     void key(std::string_view str) noexcept {
-        ggl_kv_set_key(this, as_buffer(str));
+        ggl_kv_set_key(this, Buffer { str });
     }
 
     void key(std::span<uint8_t> key) noexcept {
-        ggl_kv_set_key(this, as_buffer(key));
+        ggl_kv_set_key(this, Buffer { key });
     }
 
     void value(GglObject obj) noexcept {
