@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <concepts>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <type_traits>
@@ -23,6 +24,7 @@ using is_object_alternative = std::disjunction<
     std::is_integral<T>,
     std::is_floating_point<T>,
     std::is_same<T, std::span<uint8_t>>,
+    std::is_same<std::string_view, T>,
     std::is_same<T, List>,
     std::is_same<T, Map>>;
 
@@ -138,9 +140,8 @@ public:
     // Assumes Object is a Map
     Object operator[](std::string_view key) const {
         if (index() != GGL_TYPE_MAP) {
-            GGL_THROW_OR_ABORT(
-                Exception { GGL_ERR_PARSE, "ggl::Object is not ggl::Map" }
-            );
+            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
+                                           "ggl::Object is not ggl::Map" });
         }
 
         return *Map { ggl_obj_into_map(*this) }[key];
@@ -149,9 +150,8 @@ public:
     // Assumes Object is a List
     Object operator[](std::size_t idx) const {
         if (index() != GGL_TYPE_LIST) {
-            GGL_THROW_OR_ABORT(
-                Exception { GGL_ERR_PARSE, "ggl::Object is not ggl::List" }
-            );
+            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
+                                           "ggl::Object is not ggl::List" });
         }
         return List { ggl_obj_into_list(*this) }[idx];
     }
@@ -187,36 +187,40 @@ template <ObjectType T> constexpr GglObjectType index_for_type() noexcept {
     }
 }
 
-template <ObjectType T> T get(Object obj) {
+template <ObjectType T> std::optional<T> get_if(Object *obj) noexcept {
     using Type = std::remove_cvref_t<T>;
-    if (obj.index() != index_for_type<Type>()) {
-        GGL_THROW_OR_ABORT(
-            Exception { GGL_ERR_PARSE, "get: Bad index for object." }
-        );
+    if (obj == nullptr) {
+        return std::nullopt;
+    }
+    if (obj->index() != index_for_type<Type>()) {
+        return std::nullopt;
     }
     if constexpr (std::is_same_v<Type, bool>) {
-        return ggl_obj_into_bool(obj);
+        return ggl_obj_into_bool(*obj);
     } else if constexpr (std::is_integral_v<Type>) {
-        return ggl_obj_into_i64(obj);
+        return ggl_obj_into_i64(*obj);
     } else if constexpr (std::is_floating_point_v<Type>) {
-        return ggl_obj_into_f64(obj);
+        return ggl_obj_into_f64(*obj);
     } else if constexpr (is_buffer_type<Type>::value) {
-        Buffer buf = ggl_obj_into_buf(obj);
-        if constexpr (std::is_same_v<
-                          Buffer::pointer,
-                          std::remove_cv_t<typename T::pointer>>) {
-            return { buf.data(), buf.size() };
-        } else {
-            return { reinterpret_cast<typename T::pointer>(buf.data()),
-                     buf.size() };
-        }
+        Buffer buf = ggl_obj_into_buf(*obj);
+        return T { reinterpret_cast<typename T::pointer>(buf.data()),
+                   buf.size() };
     } else if constexpr (std::is_same_v<Type, List>) {
-        return ggl_obj_into_list(obj);
+        return ggl_obj_into_list(*obj);
     } else if constexpr (std::is_same_v<Type, Map>) {
-        return ggl_obj_into_map(obj);
+        return ggl_obj_into_map(*obj);
     } else {
-        return {};
+        return T {};
     }
+}
+
+template <ObjectType T> T get(Object obj) {
+    auto value = get_if<T>(&obj);
+    if (!value) {
+        GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
+                                       "get: Bad index for object." });
+    }
+    return *value;
 }
 
 constexpr Object nullobj {};

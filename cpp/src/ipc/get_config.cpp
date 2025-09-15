@@ -21,14 +21,14 @@ GglError ggl_arena_claim_obj(GglObject *obj, GglArena *arena) noexcept;
 GglError get_config_str_callback(void *ctx, GglMap result) noexcept {
     std::string &str = *static_cast<std::string *>(ctx);
 
-    std::span<uint8_t> value;
+    std::string_view value;
     std::error_code error = validate_map(result, MapSchema { "value", value });
     if (error) {
         return GGL_ERR_PARSE;
     }
 
     try {
-        str.assign(reinterpret_cast<char *>(value.data()), value.size());
+        str = value;
     } catch (...) {
         return GGL_ERR_NOMEM;
     }
@@ -49,6 +49,11 @@ GglError get_config_obj_callback(void *ctx, GglMap result) noexcept {
     error = ggl_obj_mem_usage(value, &len);
     if (error) {
         return GGL_ERR_INVALID;
+    }
+
+    if (len == 0) {
+        obj = AllocatedObject { value, nullptr };
+        return GGL_ERR_OK;
     }
 
     std::unique_ptr<std::byte[]> alloc { new (std::nothrow) std::byte[len] };

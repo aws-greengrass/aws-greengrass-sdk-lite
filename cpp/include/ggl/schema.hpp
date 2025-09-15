@@ -9,7 +9,6 @@
 #include <string_view>
 #include <system_error>
 #include <type_traits>
-#include <variant>
 
 namespace ggl {
 
@@ -31,7 +30,31 @@ template <class T> struct is_map_schema_candidate<std::optional<T>> {
 template <class T>
 concept MapSchemaType = is_map_schema_candidate<T>::value;
 
-template <MapSchemaType T> class MapSchema {
+// code deduplication for Optional and non-Optional schema
+template <class T> class MapSchemaBase {
+protected:
+    static GglError retrieve_value(
+        Map::iterator iter, Object **object, T &entry
+    ) noexcept {
+        if constexpr (std::is_same_v<T, Object>) {
+            entry = *iter->second;
+        } else {
+            auto value = get_if<T>(iter->second);
+            if (!value) {
+                return GGL_ERR_PARSE;
+            }
+            entry = *value;
+        }
+
+        if (object != nullptr) {
+            *object = iter->second;
+        }
+
+        return GGL_ERR_OK;
+    }
+};
+
+template <MapSchemaType T> class MapSchema : MapSchemaBase<T> {
     std::string_view key;
     Object **object;
     T *entry;
@@ -58,26 +81,12 @@ public:
             return GGL_ERR_NOENTRY;
         }
 
-        if constexpr (std::is_same_v<T, Object>) {
-            *entry = *(found->second);
-        } else {
-            auto variant = found->second->to_variant();
-            auto *value = std::get_if<T>(&variant);
-            if (value == nullptr) {
-                return GGL_ERR_PARSE;
-            }
-            *entry = *value;
-        }
-
-        if (object != nullptr) {
-            *object = found->second;
-        }
-
-        return GGL_ERR_OK;
+        return MapSchemaBase<T>::retrieve_value(found, object, *entry);
     }
 };
 
-template <MapSchemaType T> class MapSchema<std::optional<T>> {
+template <MapSchemaType T>
+class MapSchema<std::optional<T>> : MapSchemaBase<T> {
     std::string_view key;
     Object **object;
     std::optional<T> *entry;
@@ -108,23 +117,12 @@ public:
             return GGL_ERR_OK;
         }
 
-        if constexpr (std::is_same_v<T, Object>) {
-            *entry = *found->second;
-        } else {
-            auto variant = found->second->to_variant();
-            auto *got = std::get_if<T>(&variant);
-            if (got == nullptr) {
-                *entry = std::nullopt;
-            } else {
-                *entry = *got;
-            }
+        T val;
+        GglError ret = MapSchemaBase<T>::retrieve_value(found, object, val);
+        if (ret == GGL_ERR_OK) {
+            *entry = val;
         }
-
-        if (object != nullptr) {
-            *object = found->second;
-        }
-
-        return GGL_ERR_OK;
+        return ret;
     }
 };
 
