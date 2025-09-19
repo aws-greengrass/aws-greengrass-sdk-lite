@@ -84,8 +84,7 @@ if(PROJECT_IS_TOP_LEVEL)
   add_cflags(-pthread -fno-strict-aliasing)
 
   # Following flags are optional
-  add_cflags(-std=gnu11 -fvisibility=hidden -fno-semantic-interposition
-             -fno-common)
+  add_cflags(-std=gnu11 -fno-semantic-interposition -fno-common)
 
   # This stops GCC from generating unstrippable inline DWARF debug info
   add_cflags(-fno-unwind-tables -fno-asynchronous-unwind-tables)

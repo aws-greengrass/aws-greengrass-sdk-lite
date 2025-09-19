@@ -18,7 +18,7 @@
          name = &name[1])
 // NOLINTEND(bugprone-macro-parentheses)
 
-VISIBILITY(default) PURE
+PURE
 GglError ggl_list_type_check(GglList list, GglObjectType type);
 
 #endif

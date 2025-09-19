@@ -5,7 +5,6 @@
 #ifndef GGL_IPC_CLIENT_RAW_H
 #define GGL_IPC_CLIENT_RAW_H
 
-#include <ggl/attr.h>
 #include <ggl/buffer.h>
 #include <ggl/error.h>
 #include <ggl/object.h>
@@ -15,7 +14,6 @@ typedef GglError GgIpcErrorCallback(
     void *ctx, GglBuffer error_code, GglBuffer message
 );
 
-VISIBILITY(default)
 GglError ggipc_call(
     GglBuffer operation,
     GglBuffer service_model_type,
@@ -29,7 +27,6 @@ typedef GglError GgIpcSubscribeCallback(
     void *ctx, GglBuffer service_model_type, GglMap data
 );
 
-VISIBILITY(default)
 GglError ggipc_subscribe(
     GglBuffer operation,
     GglBuffer service_model_type,

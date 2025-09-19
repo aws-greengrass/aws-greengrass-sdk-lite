@@ -26,29 +26,29 @@
 /// Get the value corresponding with a key.
 /// Returns whether the key was found in the map.
 /// If `result` is not NULL it is set to the found value or NULL.
-VISIBILITY(default) ACCESS(write_only, 3)
+ACCESS(write_only, 3)
 bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result);
 
 /// Get the value from a nested map corresponding with a key path.
 /// Returns whether the key was found in the map.
 /// If `result` is not NULL it is set to the found value or NULL.
-VISIBILITY(default) ACCESS(write_only, 3)
+ACCESS(write_only, 3)
 bool ggl_map_get_path(GglMap map, GglBufList path, GglObject **result);
 
 /// Construct a GglKV
-VISIBILITY(default) CONST
+CONST
 GglKV ggl_kv(GglBuffer key, GglObject val);
 
 /// Get a GglKV's key
-VISIBILITY(default) CONST
+CONST
 GglBuffer ggl_kv_key(GglKV kv);
 
 /// Set a GglKV's key
-VISIBILITY(default) ACCESS(write_only, 1)
+ACCESS(write_only, 1)
 void ggl_kv_set_key(GglKV *kv, GglBuffer key);
 
 /// Get a GglKV's value
-VISIBILITY(default) CONST ACCESS(none, 1)
+CONST ACCESS(none, 1)
 GglObject *ggl_kv_val(GglKV *kv);
 
 typedef struct {
@@ -70,7 +70,6 @@ typedef struct {
             / (sizeof(GglMapSchemaEntry)) \
     }
 
-VISIBILITY(default)
 GglError ggl_map_validate(GglMap map, GglMapSchema schema);
 
 #endif
