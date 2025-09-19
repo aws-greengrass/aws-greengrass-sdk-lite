@@ -15,7 +15,7 @@ typedef GglError GgIpcErrorCallback(
     void *ctx, GglBuffer error_code, GglBuffer message
 );
 
-GGL_EXPORT
+VISIBILITY(default)
 GglError ggipc_call(
     GglBuffer operation,
     GglBuffer service_model_type,
@@ -29,7 +29,7 @@ typedef GglError GgIpcSubscribeCallback(
     void *ctx, GglBuffer service_model_type, GglMap data
 );
 
-GGL_EXPORT
+VISIBILITY(default)
 GglError ggipc_subscribe(
     GglBuffer operation,
     GglBuffer service_model_type,

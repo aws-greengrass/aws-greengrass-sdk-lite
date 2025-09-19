@@ -10,7 +10,7 @@
 /// Initializes the sdk, including starting necessary threads.
 /// Unused portions of sdk may not be initialized.
 /// Exits on error.
-GGL_EXPORT
+VISIBILITY(default)
 void ggl_sdk_init(void);
 
 #endif

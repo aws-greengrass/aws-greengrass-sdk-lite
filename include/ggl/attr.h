@@ -25,12 +25,6 @@
 #define VISIBILITY(v)
 #endif
 
-#ifdef GGL_SDK_EXPORT_API
-#define GGL_EXPORT VISIBILITY(default)
-#else
-#define GGL_EXPORT VISIBILITY(hidden)
-#endif
-
 #ifdef __has_attribute
 #if __has_attribute(format)
 #define FORMAT(...) __attribute__((format(__VA_ARGS__)))

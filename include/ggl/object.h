@@ -75,63 +75,63 @@ typedef struct {
     }
 
 /// Get type of an GglObject
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObjectType ggl_obj_type(GglObject obj);
 
 #define GGL_OBJ_NULL (GglObject) { 0 }
 
 /// Create bool object.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObject ggl_obj_bool(bool value);
 
 /// Get the bool represented by an object.
 /// The GglObject must be of type GGL_TYPE_BOOLEAN.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 bool ggl_obj_into_bool(GglObject boolean);
 
 /// Create signed integer object.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObject ggl_obj_i64(int64_t value);
 
 /// Get the i64 represented by an object.
 /// The GglObject must be of type GGL_TYPE_I64.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 int64_t ggl_obj_into_i64(GglObject i64);
 
 /// Create floating point object.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObject ggl_obj_f64(double value);
 
 /// Get the f64 represented by an object.
 /// The GglObject must be of type GGL_TYPE_F64.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 double ggl_obj_into_f64(GglObject f64);
 
 /// Create buffer object.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObject ggl_obj_buf(GglBuffer value);
 
 /// Get the buffer represented by an object.
 /// The GglObject must be of type GGL_TYPE_BUF.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglBuffer ggl_obj_into_buf(GglObject buf);
 
 /// Create map object.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObject ggl_obj_map(GglMap value);
 
 /// Get the map represented by an object.
 /// The GglObject must be of type GGL_TYPE_MAP.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglMap ggl_obj_into_map(GglObject map);
 
 /// Create list object.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglObject ggl_obj_list(GglList value);
 
 /// Get the list represented by an object.
 /// The GglObject must be of type GGL_TYPE_LIST.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglList ggl_obj_into_list(GglObject list);
 
 #endif

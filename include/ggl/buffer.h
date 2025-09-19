@@ -69,38 +69,38 @@ bool cbmc_buffer_restrict(GglBuffer *buf) {
 #endif
 
 /// Convert null-terminated string to buffer
-GGL_EXPORT PURE NULL_TERMINATED_STRING_ARG(1)
+VISIBILITY(default) PURE NULL_TERMINATED_STRING_ARG(1)
 GglBuffer ggl_buffer_from_null_term(char str[static 1]);
 
 /// Returns whether two buffers have identical content.
-GGL_EXPORT PURE
+VISIBILITY(default) PURE
 bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2);
 
 /// Returns whether the buffer has the given prefix.
-GGL_EXPORT PURE
+VISIBILITY(default) PURE
 bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix);
 
 /// Removes a prefix. Returns whether the prefix was removed.
-GGL_EXPORT ACCESS(read_write, 1)
+VISIBILITY(default) ACCESS(read_write, 1)
 bool ggl_buffer_remove_prefix(GglBuffer buf[static 1], GglBuffer prefix);
 
 /// Returns whether the buffer has the given suffix.
-GGL_EXPORT PURE
+VISIBILITY(default) PURE
 bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix);
 
 /// Removes a suffix. Returns whether the suffix was removed.
-GGL_EXPORT ACCESS(read_write, 1)
+VISIBILITY(default) ACCESS(read_write, 1)
 bool ggl_buffer_remove_suffix(GglBuffer buf[static 1], GglBuffer suffix);
 
 /// Returns whether the buffer contains the given substring.
 /// Outputs start index if non-null.
-GGL_EXPORT ACCESS(write_only, 3) REPRODUCIBLE
+VISIBILITY(default) ACCESS(write_only, 3) REPRODUCIBLE
 bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start);
 
 /// Returns substring of buffer from start to end.
 /// The result is the overlap between the start to end range and the input
 /// bounds.
-GGL_EXPORT CONST
+VISIBILITY(default) CONST
 GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end)
     CBMC_CONTRACT(
         requires(cbmc_buffer_restrict(&buf)),
@@ -125,7 +125,7 @@ GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end)
     );
 
 /// Parse an integer from a string
-GGL_EXPORT ACCESS(write_only, 2)
+VISIBILITY(default) ACCESS(write_only, 2)
 GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) CBMC_CONTRACT(
     requires(cbmc_buffer_restrict(&str)),
     requires(cbmc_restrict(value)),
