@@ -79,7 +79,20 @@ public:
     std::error_code update_component_state(ComponentState state) noexcept;
 
     std::error_code restart_component(std::string_view component_name) noexcept;
+
+    std::error_code get_config(
+        std::span<const Buffer> key_path,
+        std::optional<std::string_view> component_name,
+        std::string &value
+    ) noexcept;
+
+    std::error_code get_config(
+        std::span<const Buffer> key_path,
+        std::optional<std::string_view> component_name,
+        AllocatedObject &value
+    ) noexcept;
 };
+
 }
 
 #endif

@@ -14,7 +14,7 @@ std::error_code Client::connect() noexcept {
     // C++ std::getenv has stronger thread-safety guarantees than C's
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     char *svcuid = std::getenv("SVCUID");
-    if (svcuid == NULL) {
+    if (svcuid == nullptr) {
         return GGL_ERR_CONFIG;
     }
 
@@ -22,7 +22,7 @@ std::error_code Client::connect() noexcept {
         // NOLINTNEXTLINE(concurrency-mt-unsafe)
         = std::getenv("AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT");
 
-    if (socket_path == NULL) {
+    if (socket_path == nullptr) {
         return GGL_ERR_CONFIG;
     }
 
@@ -36,7 +36,7 @@ std::error_code Client::connect(
     std::string_view socket_path, std::string_view auth_token
 ) noexcept {
     return ggipc_connect_with_token(
-        as_buffer(socket_path), as_buffer(auth_token)
+        Buffer { socket_path }, Buffer { auth_token }
     );
 }
 
@@ -48,24 +48,24 @@ std::error_code Client::update_component_state(GglComponentState state
 std::error_code Client::publish_to_topic(
     std::string_view topic, Buffer bytes
 ) noexcept {
-    return ggipc_publish_to_topic_binary(as_buffer(topic), bytes);
+    return ggipc_publish_to_topic_binary(Buffer { topic }, bytes);
 }
 
 std::error_code Client::publish_to_topic(
     std::string_view topic, const Map &json
 ) noexcept {
-    return ggipc_publish_to_topic_json(as_buffer(topic), json);
+    return ggipc_publish_to_topic_json(Buffer { topic }, json);
 }
 
 std::error_code Client::publish_to_iot_core(
     std::string_view topic, Buffer bytes, uint8_t qos
 ) noexcept {
-    return ggipc_publish_to_iot_core(as_buffer(topic), bytes, qos);
+    return ggipc_publish_to_iot_core(Buffer { topic }, bytes, qos);
 }
 
 std::error_code Client::restart_component(std::string_view component_name
 ) noexcept {
-    return ggipc_restart_component(as_buffer(component_name));
+    return ggipc_restart_component(Buffer { component_name });
 }
 
 // NOLINTEND(readability-convert-member-functions-to-static)

@@ -8,4 +8,8 @@ Object *KV::value() noexcept {
     return static_cast<Object *>(ggl_kv_val(this));
 }
 
+KV::KV(Buffer key, const Object &value) noexcept
+    : GglKV { ggl_kv(key, value) } {
+}
+
 }

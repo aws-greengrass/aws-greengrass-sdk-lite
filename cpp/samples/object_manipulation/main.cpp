@@ -19,14 +19,12 @@ int main() {
     std::array list { ggl::Object { "15" },
                       ggl::Object { 24 },
                       ggl::Object { 4.0 } };
-    std::array pairs {
-        ggl::KV { "key", ggl::Object { false } },
-        ggl::KV { "another key", ggl::Object { "Value" } },
-        ggl::KV { "key3", ggl::Object { "Anything" } },
-        ggl::KV { "key4", ggl::Object { 25 } },
-        ggl::KV { "key5",
-                  ggl::Object { ggl::List { list.data(), list.size() } } }
-    };
+    std::array pairs { ggl::KV { "key", false },
+                       ggl::KV { "another key", "Value" },
+                       ggl::KV { "key3", "Anything" },
+                       ggl::KV { "key4", 25 },
+                       ggl::KV { "key5",
+                                 ggl::List { list.data(), list.size() } } };
     ggl::Map map { pairs.data(), pairs.size() };
     ggl::Buffer buffer { "thing" };
     std::array items { ggl::Object { buffer },

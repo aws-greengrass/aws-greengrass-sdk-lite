@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <span>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <type_traits>
 
@@ -23,6 +22,15 @@ public:
     constexpr Buffer() noexcept = default;
     constexpr Buffer(const Buffer &) noexcept = default;
 
+    constexpr Buffer(std::span<uint8_t> bytes) noexcept
+        : GglBuffer { bytes.data(), bytes.size() } {
+    }
+
+    Buffer(std::string_view sv) noexcept
+        : Buffer { reinterpret_cast<uint8_t *>(const_cast<char *>(sv.data())),
+                   sv.size() } {
+    }
+
     constexpr Buffer(const GglBuffer &buffer) noexcept
         : GglBuffer { buffer } {
     }
@@ -30,8 +38,6 @@ public:
     constexpr Buffer(pointer buf, size_type size) noexcept
         : GglBuffer { buf, size } {
     }
-
-    Buffer(const char *str) noexcept;
 
     constexpr Buffer &operator=(const Buffer &) noexcept = default;
 
@@ -86,41 +92,6 @@ public:
         return !(*this == rhs);
     }
 };
-
-template <class T> Buffer as_buffer(std::span<T> bytes) noexcept {
-    return Buffer { reinterpret_cast<std::uint8_t *>(bytes.data()),
-                    bytes.size_bytes() };
-}
-
-template <> constexpr Buffer as_buffer(std::span<std::uint8_t> bytes) noexcept {
-    return Buffer { bytes.data(), bytes.size_bytes() };
-}
-
-template <class Traits = std::char_traits<std::uint8_t>>
-constexpr Buffer as_buffer(std::basic_string_view<std::uint8_t, Traits> sv
-) noexcept {
-    return Buffer { const_cast<std::uint8_t *>(sv.data()), sv.size() };
-}
-
-template <class CharT, class Traits = std::char_traits<CharT>>
-Buffer as_buffer(std::basic_string_view<CharT, Traits> sv) noexcept {
-    auto *data
-        = reinterpret_cast<std::uint8_t *>(const_cast<CharT *>(sv.data()));
-    if constexpr (sizeof(CharT) > 1) {
-        return Buffer { data, sv.size() / sizeof(CharT) };
-    } else {
-        return Buffer { data, sv.size() };
-    }
-}
-
-/// Must be string literal / c string
-inline Buffer as_buffer(const char *str) noexcept {
-    return as_buffer(std::string_view { str });
-}
-
-inline Buffer::Buffer(const char *str) noexcept
-    : GglBuffer { as_buffer(std::string_view { str }) } {
-}
 
 }
 
