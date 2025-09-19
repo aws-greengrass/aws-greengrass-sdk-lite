@@ -214,29 +214,8 @@ public:
             return *(*this + offset);
         }
 
-        constexpr bool operator==(const MapIterator &rhs) const noexcept {
-            return kv == rhs.kv;
-        }
-
-        constexpr bool operator!=(const MapIterator &rhs) const noexcept {
-            return !(*this == rhs);
-        }
-
-        constexpr bool operator<(const MapIterator &rhs) const noexcept {
-            return kv < rhs.kv;
-        }
-
-        constexpr bool operator>=(const MapIterator &rhs) const noexcept {
-            return !(*this < rhs);
-        }
-
-        constexpr bool operator>(const MapIterator &rhs) const noexcept {
-            return rhs < *this;
-        }
-
-        constexpr bool operator<=(const MapIterator &rhs) const noexcept {
-            return !(*this > rhs);
-        }
+        constexpr bool operator<=>(const MapIterator &rhs) const noexcept
+            = default;
 
         value_type operator*() const noexcept {
             return { kv->key(), kv->value() };
