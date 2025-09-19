@@ -10,18 +10,16 @@ namespace ggl::ipc {
 
 std::error_code Client::update_config(
     std::span<const Buffer> key_path,
-    std::optional<std::chrono::system_clock::time_point> timestamp,
-    const Object &value
+    const Object &value,
+    std::chrono::system_clock::time_point timestamp
 ) noexcept {
-    std::timespec ts {};
-    if (timestamp.has_value()) {
-        using namespace std::chrono;
-        auto rel_time = timestamp->time_since_epoch();
-        auto sec = duration_cast<seconds>(rel_time);
-        auto nsec = duration_cast<nanoseconds>(rel_time - sec);
-        ts = { .tv_sec = static_cast<std::time_t>(sec.count()),
-               .tv_nsec = static_cast<decltype(ts.tv_nsec)>(nsec.count()) };
-    }
+    using namespace std::chrono;
+    auto rel_time = timestamp.time_since_epoch();
+    auto sec = duration_cast<seconds>(rel_time);
+    auto nsec = duration_cast<nanoseconds>(rel_time - sec);
+    std::timespec ts
+        = { .tv_sec = static_cast<std::time_t>(sec.count()),
+            .tv_nsec = static_cast<decltype(ts.tv_nsec)>(nsec.count()) };
 
     return ggipc_update_config(
         { .bufs = const_cast<Buffer *>(key_path.data()),

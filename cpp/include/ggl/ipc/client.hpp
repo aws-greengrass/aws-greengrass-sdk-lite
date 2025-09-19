@@ -72,8 +72,8 @@ public:
 
     std::error_code update_config(
         std::span<const Buffer> key_path,
-        std::optional<std::chrono::system_clock::time_point> timestamp,
-        const Object &value
+        const Object &value,
+        std::chrono::system_clock::time_point timestamp = {}
     ) noexcept;
 
     std::error_code update_component_state(ComponentState state) noexcept;
