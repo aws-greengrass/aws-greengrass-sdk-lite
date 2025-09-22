@@ -65,13 +65,14 @@
           };
 
         pname = "ggl-sdk";
-        package = { stdenv, pkg-config, cmake, ninja }:
+        package = { stdenv, pkg-config, cmake, ninja, static ? true }:
           stdenv.mkDerivation {
             name = "ggl-sdk";
             src = filteredSrc;
             nativeBuildInputs = [ pkg-config cmake ninja ];
             cmakeBuildType = "MinSizeRel";
-            cmakeFlags = [ "-DENABLE_WERROR=1" ];
+            cmakeFlags = [ "-DENABLE_WERROR=1" ]
+              ++ lib.optional (!static) "-DBUILD_SHARED_LIBS=1";
             hardeningDisable = [ "all" ];
             dontStrip = true;
           };
@@ -106,6 +107,8 @@
           {
             build-clang = pkgs: pkgs.ggl-sdk.override
               { stdenv = llvmStdenv pkgs; };
+
+            build-shared = pkgs: pkgs.ggl-sdk.override { static = false; };
 
             clang-tidy = pkgs: ''
               set -eo pipefail
