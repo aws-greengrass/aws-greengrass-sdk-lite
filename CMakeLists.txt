@@ -3,15 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.22)
-
-# Read version from file
-file(READ version GGSDKL_VERSION)
-string(STRIP "${GGSDKL_VERSION}" GGSDKL_VERSION)
-
-project(
-  aws-greengrass-sdk-lite
-  VERSION ${GGSDKL_VERSION}
-  LANGUAGES C)
+project(aws-greengrass-sdk-lite C)
 
 set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
 
@@ -177,13 +169,6 @@ foreach(src ${SRCS})
 endforeach()
 
 add_library(ggl-sdk ${SRCS})
-set_target_properties(ggl-sdk PROPERTIES VERSION ${PROJECT_VERSION}
-                                         SOVERSION ${PROJECT_VERSION_MAJOR})
-if(BUILD_SHARED_LIBS)
-  target_compile_definitions(ggl-sdk PUBLIC GGL_SDK_EXPORT_API)
-else()
-  target_compile_definitions(ggl-sdk PUBLIC GGL_STATIC_LIB)
-endif()
 
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)
