@@ -43,7 +43,7 @@ typedef struct {
 #ifndef GGL_DISABLE_MACRO_TYPE_CHECKING
 /// Create buffer literal from a byte array.
 #define GGL_BUF(...) \
-    _Generic((&(__VA_ARGS__)), uint8_t(*)[]: GGL_BUF_UNCHECKED(__VA_ARGS__))
+    _Generic((&(__VA_ARGS__)), uint8_t (*)[]: GGL_BUF_UNCHECKED(__VA_ARGS__))
 #else
 #define GGL_BUF GGL_BUF_UNCHECKED
 #endif
@@ -101,28 +101,26 @@ bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start);
 /// The result is the overlap between the start to end range and the input
 /// bounds.
 CONST
-GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end)
-    CBMC_CONTRACT(
-        requires(cbmc_buffer_restrict(&buf)),
-        requires(start < end),
-        ensures(cbmc_implies(
-            (buf.data == NULL),
-            (cbmc_return.data == NULL) && (cbmc_return.len == 0)
-        )),
-        ensures(cbmc_implies(
-            (buf.data != NULL),
-            (cbmc_ptr_in_range(buf.data, cbmc_return.data, buf.data + buf.len)),
-            ((cbmc_return.data - buf.data) <= (buf.len - cbmc_return.len))
-        )),
-        ensures(cbmc_implies(
-            (buf.data != NULL) && (start <= buf.len),
-            (cbmc_return.data == buf.data + start)
-        )),
-        ensures(cbmc_implies(
-            (buf.data != NULL) && (end <= buf.len),
-            (cbmc_return.len == end - start)
-        )),
-    );
+GglBuffer
+ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CBMC_CONTRACT(
+    requires(cbmc_buffer_restrict(&buf)),
+    requires(start < end),
+    ensures(cbmc_implies(
+        (buf.data == NULL), (cbmc_return.data == NULL) && (cbmc_return.len == 0)
+    )),
+    ensures(cbmc_implies(
+        (buf.data != NULL),
+        (cbmc_ptr_in_range(buf.data, cbmc_return.data, buf.data + buf.len)),
+        ((cbmc_return.data - buf.data) <= (buf.len - cbmc_return.len))
+    )),
+    ensures(cbmc_implies(
+        (buf.data != NULL) && (start <= buf.len),
+        (cbmc_return.data == buf.data + start)
+    )),
+    ensures(cbmc_implies(
+        (buf.data != NULL) && (end <= buf.len), (cbmc_return.len == end - start)
+    )),
+);
 
 /// Parse an integer from a string
 ACCESS(write_only, 2)

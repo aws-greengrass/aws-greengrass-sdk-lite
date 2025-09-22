@@ -137,8 +137,9 @@ public:
     // Assumes Object is a Map
     Object operator[](std::string_view key) const {
         if (index() != GGL_TYPE_MAP) {
-            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
-                                           "ggl::Object is not ggl::Map" });
+            GGL_THROW_OR_ABORT(
+                Exception { GGL_ERR_PARSE, "ggl::Object is not ggl::Map" }
+            );
         }
 
         return *Map { ggl_obj_into_map(*this) }[key];
@@ -147,8 +148,9 @@ public:
     // Assumes Object is a List
     Object operator[](std::size_t idx) const {
         if (index() != GGL_TYPE_LIST) {
-            GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
-                                           "ggl::Object is not ggl::List" });
+            GGL_THROW_OR_ABORT(
+                Exception { GGL_ERR_PARSE, "ggl::Object is not ggl::List" }
+            );
         }
         return List { ggl_obj_into_list(*this) }[idx];
     }
@@ -187,8 +189,9 @@ template <ObjectType T> constexpr GglObjectType index_for_type() noexcept {
 template <ObjectType T> T get(Object obj) {
     using Type = std::remove_cvref_t<T>;
     if (obj.index() != index_for_type<Type>()) {
-        GGL_THROW_OR_ABORT(Exception { GGL_ERR_PARSE,
-                                       "get: Bad index for object." });
+        GGL_THROW_OR_ABORT(
+            Exception { GGL_ERR_PARSE, "get: Bad index for object." }
+        );
     }
     if constexpr (std::is_same_v<Type, bool>) {
         return ggl_obj_into_bool(obj);

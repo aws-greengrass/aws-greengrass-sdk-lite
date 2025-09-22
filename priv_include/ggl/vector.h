@@ -80,8 +80,8 @@ typedef struct {
 #define GGL_BYTE_VEC(...) \
     _Generic( \
         (&(__VA_ARGS__)), \
-        uint8_t(*)[]: GGL_BYTE_VEC_UNCHECKED(__VA_ARGS__), \
-        char(*)[]: GGL_BYTE_VEC_UNCHECKED(__VA_ARGS__) \
+        uint8_t (*)[]: GGL_BYTE_VEC_UNCHECKED(__VA_ARGS__), \
+        char (*)[]: GGL_BYTE_VEC_UNCHECKED(__VA_ARGS__) \
     )
 #else
 #define GGL_BYTE_VEC GGL_BYTE_VEC_UNCHECKED

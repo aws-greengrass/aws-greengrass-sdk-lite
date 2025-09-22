@@ -109,8 +109,9 @@ public:
     Object &at(key_type key) const {
         auto found = find(key);
         if (found == cend()) {
-            GGL_THROW_OR_ABORT(std::out_of_range {
-                "ggl::Map::at: Non-existent key." });
+            GGL_THROW_OR_ABORT(
+                std::out_of_range { "ggl::Map::at: Non-existent key." }
+            );
         }
         return *(found->second);
     }
@@ -179,7 +180,8 @@ public:
             return temp;
         }
 
-        constexpr difference_type operator-(const MapIterator &rhs
+        constexpr difference_type operator-(
+            const MapIterator &rhs
         ) const noexcept {
             return std::distance(rhs.kv, kv);
         }

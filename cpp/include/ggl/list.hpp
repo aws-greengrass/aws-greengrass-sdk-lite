@@ -66,7 +66,8 @@ public:
 
     reference at(size_type pos) const {
         if (pos >= size()) {
-            GGL_THROW_OR_ABORT(std::out_of_range("ggl::List::at: out of range")
+            GGL_THROW_OR_ABORT(
+                std::out_of_range("ggl::List::at: out of range")
             );
         }
 

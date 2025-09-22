@@ -97,7 +97,8 @@ template <> constexpr Buffer as_buffer(std::span<std::uint8_t> bytes) noexcept {
 }
 
 template <class Traits = std::char_traits<std::uint8_t>>
-constexpr Buffer as_buffer(std::basic_string_view<std::uint8_t, Traits> sv
+constexpr Buffer as_buffer(
+    std::basic_string_view<std::uint8_t, Traits> sv
 ) noexcept {
     return Buffer { const_cast<std::uint8_t *>(sv.data()), sv.size() };
 }

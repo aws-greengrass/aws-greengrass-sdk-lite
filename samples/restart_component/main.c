@@ -26,8 +26,10 @@ int main(void) {
         sleep(1);
     }
 
-    printf("Restarting component "
-           "'aws-greengrass-sdk-lite.samples.restart_component'...\n");
+    printf(
+        "Restarting component "
+        "'aws-greengrass-sdk-lite.samples.restart_component'...\n"
+    );
     err = ggipc_restart_component(
         GGL_STR("aws-greengrass-sdk-lite.samples.restart_component")
     );

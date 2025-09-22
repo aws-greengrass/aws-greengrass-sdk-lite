@@ -34,10 +34,12 @@ static GglError response_handler(void *ctx, GglMap response) {
     GglObject *restart_status_obj;
     GglError ret = ggl_map_validate(
         response,
-        GGL_MAP_SCHEMA({ GGL_STR("restartStatus"),
-                         GGL_REQUIRED,
-                         GGL_TYPE_BUF,
-                         &restart_status_obj })
+        GGL_MAP_SCHEMA(
+            { GGL_STR("restartStatus"),
+              GGL_REQUIRED,
+              GGL_TYPE_BUF,
+              &restart_status_obj }
+        )
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("RestartComponent response missing restartStatus.");
@@ -54,9 +56,9 @@ static GglError response_handler(void *ctx, GglMap response) {
 }
 
 GglError ggipc_restart_component(GglBuffer component_name) {
-    GglMap args
-        = GGL_MAP(ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))
-        );
+    GglMap args = GGL_MAP(
+        ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))
+    );
 
     return ggipc_call(
         GGL_STR("aws.greengrass#RestartComponent"),

@@ -62,9 +62,9 @@ GglError ggipc_publish_to_topic_binary_b64(
 ) {
     GglMap binary_message
         = GGL_MAP(ggl_kv(GGL_STR("message"), ggl_obj_buf(b64_payload)));
-    GglMap publish_message
-        = GGL_MAP(ggl_kv(GGL_STR("binaryMessage"), ggl_obj_map(binary_message))
-        );
+    GglMap publish_message = GGL_MAP(
+        ggl_kv(GGL_STR("binaryMessage"), ggl_obj_map(binary_message))
+    );
 
     return publish_to_topic_common(topic, publish_message);
 }

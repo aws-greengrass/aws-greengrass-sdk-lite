@@ -37,8 +37,9 @@
 #define GGL_MACRO_FOREACH(macro, join, ...) \
     GGL_MACRO_RESCAN_16(GGL_MACRO_FOREACH__ITER(macro, join, __VA_ARGS__))
 #define GGL_MACRO_FOREACH__ITER(macro, join, arg, ...) \
-    macro(arg \
-    ) __VA_OPT__(join GGL_MACRO_HIDE(FOREACH__ITER)(macro, join, __VA_ARGS__))
+    macro(arg) __VA_OPT__( \
+        join GGL_MACRO_HIDE(FOREACH__ITER)(macro, join, __VA_ARGS__) \
+    )
 
 #define GGL_MACRO_ID(...) __VA_ARGS__
 

@@ -40,7 +40,8 @@ std::error_code Client::connect(
     );
 }
 
-std::error_code Client::update_component_state(GglComponentState state
+std::error_code Client::update_component_state(
+    GglComponentState state
 ) noexcept {
     return ggipc_update_state(state);
 }
@@ -63,7 +64,8 @@ std::error_code Client::publish_to_iot_core(
     return ggipc_publish_to_iot_core(as_buffer(topic), bytes, qos);
 }
 
-std::error_code Client::restart_component(std::string_view component_name
+std::error_code Client::restart_component(
+    std::string_view component_name
 ) noexcept {
     return ggipc_restart_component(as_buffer(component_name));
 }
