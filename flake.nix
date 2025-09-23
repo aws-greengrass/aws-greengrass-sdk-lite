@@ -103,12 +103,14 @@
                 dontFixup = true;
                 allowSubstitutes = false;
               };
+
+            shared-lib = pkgs: pkgs.ggl-sdk.override { static = false; };
           in
           {
             build-clang = pkgs: pkgs.ggl-sdk.override
               { stdenv = llvmStdenv pkgs; };
 
-            build-shared = pkgs: pkgs.ggl-sdk.override { static = false; };
+            build-shared = shared-lib;
 
             clang-tidy = pkgs: ''
               set -eo pipefail
@@ -118,6 +120,16 @@
               clangd-tidy -j$(nproc) -p ${clangBuildDir pkgs} --color=always \
                 $(fd . src -e c -e h)
             '';
+
+            namespacing = pkgs:
+              let so = "${shared-lib pkgs}/lib/libggl-sdk.so"; in
+              ''
+                set -eo pipefail
+                PATH=${lib.makeBinPath
+                  (with pkgs; [gcc gnugrep])}:$PATH
+                nm -D --defined-only ${so} | cut -d' ' -f3 > syms
+                grep -v '^ggl_\|^ggipc_' syms && exit 1 || true
+              '';
 
             cbmc-contracts = { stdenv, pkg-config, cmake, cbmc, python3, ... }:
               stdenv.mkDerivation {
