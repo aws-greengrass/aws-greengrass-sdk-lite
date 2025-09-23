@@ -38,6 +38,8 @@ jobs:
             check: formatting
           - name: clang-tidy
             check: clang-tidy
+          - name: namespacing
+            check: namespacing
           - name: cbmc-contracts
             check: cbmc-contracts
           - name: header includes
