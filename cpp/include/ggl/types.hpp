@@ -60,26 +60,43 @@ namespace ggl {
     using ComponentState = GglComponentState;
 }
 
+[[gnu::const]]
 GglObjectType ggl_obj_type(GglObject) noexcept;
+[[gnu::const]]
 bool ggl_obj_into_bool(GglObject) noexcept;
+[[gnu::const]]
 int64_t ggl_obj_into_i64(GglObject) noexcept;
+[[gnu::const]]
 double ggl_obj_into_f64(GglObject) noexcept;
+[[gnu::const]]
 GglBuffer ggl_obj_into_buf(GglObject) noexcept;
+[[gnu::const]]
 GglList ggl_obj_into_list(GglObject) noexcept;
+[[gnu::const]]
 GglMap ggl_obj_into_map(GglObject) noexcept;
 
+[[gnu::const]]
 GglObject ggl_obj_bool(bool) noexcept;
+[[gnu::const]]
 GglObject ggl_obj_i64(int64_t) noexcept;
+[[gnu::const]]
 GglObject ggl_obj_f64(double) noexcept;
+[[gnu::const]]
 GglObject ggl_obj_buf(GglBuffer) noexcept;
+[[gnu::const]]
 GglObject ggl_obj_list(GglList) noexcept;
+[[gnu::const]]
 GglObject ggl_obj_map(GglMap) noexcept;
 
+[[gnu::const]]
 GglKV ggl_kv(GglBuffer, GglObject) noexcept;
+[[gnu::const]]
 GglObject *ggl_kv_val(GglKV *) noexcept;
+[[gnu::const]]
 GglBuffer ggl_kv_key(GglKV) noexcept;
 void ggl_kv_set_key(GglKV *kv, GglBuffer key) noexcept;
 
+[[gnu::pure]]
 GglError ggl_list_type_check(GglList list, GglObjectType type) noexcept;
 
 void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment) noexcept;

@@ -2,7 +2,7 @@
 #include <system_error>
 
 extern "C" {
-[[nodiscard]]
+[[gnu::const]]
 const char *ggl_strerror(GglError err) noexcept;
 }
 
