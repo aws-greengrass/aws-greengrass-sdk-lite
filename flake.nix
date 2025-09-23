@@ -17,6 +17,12 @@
             ./src
             ./.clang-tidy
             ./samples
+            ./cpp/CMakeLists.txt
+            ./cpp/include
+            ./cpp/priv_include
+            ./cpp/src
+            ./cpp/.clang-tidy
+            ./cpp/samples
           ];
         };
 

@@ -86,7 +86,10 @@ if(PROJECT_IS_TOP_LEVEL)
   add_cflags(-pthread -fno-strict-aliasing)
 
   # Following flags are optional
-  add_cflags(-std=gnu11 -fno-semantic-interposition -fno-common)
+
+  add_cflags($<$<COMPILE_LANGUAGE:C>:-std=gnu11>)
+
+  add_cflags(-fno-semantic-interposition -fno-common)
 
   # This stops GCC from generating unstrippable inline DWARF debug info
   add_cflags(-fno-unwind-tables -fno-asynchronous-unwind-tables)
@@ -113,12 +116,12 @@ if(PROJECT_IS_TOP_LEVEL)
     -Wwrite-strings
     -Wno-missing-braces
     -Wvla
-    -Wshadow
+    $<$<COMPILE_LANGUAGE:C>:-Wshadow>
     -Wformat
     -Wformat=2
-    -Wmissing-prototypes
-    -Wstrict-prototypes
-    -Wold-style-definition
+    $<$<COMPILE_LANGUAGE:C>:-Wmissing-prototypes>
+    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
+    $<$<COMPILE_LANGUAGE:C>:-Wold-style-definition>
     -Wunused
     -Wundef
     -Wconversion
@@ -128,12 +131,15 @@ if(PROJECT_IS_TOP_LEVEL)
     -Wdate-time
     -Wstack-protector)
 
-  try_add_cflag(Wenum-int-mismatch -Wenum-int-mismatch)
+  try_add_cflag_if(Wenum-int-mismatch $<COMPILE_LANGUAGE:C>
+                   -Wenum-int-mismatch>)
   try_add_cflag(Wtrampolines -Wtrampolines)
   try_add_cflag(Wbidi-chars -Wbidi-chars=any,ucn)
 
-  add_cflags(-Werror=format-security -Werror=implicit
-             -Werror=incompatible-pointer-types -Werror=int-conversion)
+  add_cflags(
+    -Werror=format-security $<$<COMPILE_LANGUAGE:C>:-Werror=implicit>
+    $<$<COMPILE_LANGUAGE:C>:-Werror=incompatible-pointer-types>
+    $<$<COMPILE_LANGUAGE:C>:-Werror=int-conversion>)
 
   add_link_options(
     LINKER:-z,relro,-z,now,-z,noexecstack,-z,nodlopen LINKER:--as-needed
@@ -159,7 +165,6 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "src/*.c")
-list(LENGTH SRCS SRCS_LEN)
 
 foreach(src ${SRCS})
   set_property(
@@ -177,6 +182,7 @@ target_include_directories(ggl-sdk PRIVATE include priv_include)
 target_include_directories(ggl-sdk SYSTEM INTERFACE include)
 
 target_compile_definitions(ggl-sdk PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+
 string(TOUPPER "${GGL_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
@@ -198,3 +204,5 @@ if(PROJECT_IS_TOP_LEVEL)
     endforeach()
   endif()
 endif()
+
+add_subdirectory(cpp)
