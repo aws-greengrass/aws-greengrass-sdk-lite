@@ -1,3 +1,7 @@
+// aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 #include <ggl/arena.hpp>
 #include <ggl/buffer.hpp>
 #include <ggl/error.hpp>
