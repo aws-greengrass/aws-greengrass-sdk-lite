@@ -124,7 +124,7 @@
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
               clangd-tidy -j$(nproc) -p ${clangBuildDir pkgs} --color=always \
-                $(fd . src -e c -e h)
+                $(fd . src -e c -e h -e cpp -e hpp)
             '';
 
             namespacing = pkgs:
@@ -163,7 +163,7 @@
               red=$(printf "\e[1;31m")
               clear=$(printf "\e[0m")
               iwyu_tool.py -o clang -j $(nproc) -p ${clangBuildDir pkgs} \
-                $(fd . ${filteredSrc}/ -e c) -- \
+                $(fd . ${filteredSrc}/ -e c -e cpp) -- \
                 -Xiwyu --error -Xiwyu --check_also="${filteredSrc}/*" \
                 -Xiwyu --mapping_file=${./.}/misc/iwyu_mappings.yml |\
                 { grep error: || true; } |\
