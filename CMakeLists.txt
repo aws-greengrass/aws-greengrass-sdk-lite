@@ -131,8 +131,7 @@ if(PROJECT_IS_TOP_LEVEL)
     -Wdate-time
     -Wstack-protector)
 
-  try_add_cflag_if(Wenum-int-mismatch $<COMPILE_LANGUAGE:C>
-                   -Wenum-int-mismatch>)
+  try_add_cflag_if(Wenum-int-mismatch $<COMPILE_LANGUAGE:C> -Wenum-int-mismatch)
   try_add_cflag(Wtrampolines -Wtrampolines)
   try_add_cflag(Wbidi-chars -Wbidi-chars=any,ucn)
 
