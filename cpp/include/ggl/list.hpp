@@ -9,7 +9,6 @@
 #include <ggl/types.hpp>
 #include <ggl/utility.hpp>
 #include <cstddef>
-#include <stdexcept>
 #include <type_traits>
 
 namespace ggl {

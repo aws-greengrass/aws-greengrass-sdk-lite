@@ -8,10 +8,15 @@
 #include <ggl/buffer.hpp>
 #include <ggl/types.hpp>
 #include <ggl/utility.hpp>
+#include <stddef.h>
 #include <cstdint>
 #include <algorithm>
+#include <iterator>
+#include <span>
 #include <stdexcept>
+#include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace ggl {

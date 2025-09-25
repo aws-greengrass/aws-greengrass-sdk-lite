@@ -5,7 +5,9 @@
 #ifndef GGL_ERROR_HPP
 #define GGL_ERROR_HPP
 
+#include <string>
 #include <system_error>
+#include <type_traits>
 
 //! GGL error codes
 

@@ -7,13 +7,22 @@
 #include <ggl/error.hpp>
 #include <ggl/ipc/client.hpp>
 #include <ggl/ipc/client_raw_c_api.hpp>
+#include <ggl/list.hpp>
 #include <ggl/map.hpp>
 #include <ggl/object.hpp>
 #include <ggl/schema.hpp>
 #include <ggl/types.hpp>
+#include <cstddef>
 #include <algorithm>
+#include <array>
+#include <memory>
 #include <new>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
 #include <system_error>
+#include <utility>
 
 namespace ggl::ipc::detail {
 

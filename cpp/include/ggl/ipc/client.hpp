@@ -10,10 +10,13 @@
 #include <ggl/object.hpp>
 #include <ggl/sdk.hpp>
 #include <ggl/types.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>

@@ -1,9 +1,11 @@
 #include <ggl/buffer.hpp>
 #include <ggl/ipc/client.hpp>
-#include <ggl/object.hpp>
 #include <array>
+#include <chrono>
 #include <iostream>
 #include <optional>
+#include <span>
+#include <string>
 #include <system_error>
 #include <thread>
 

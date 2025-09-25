@@ -7,10 +7,12 @@
 #include <ggl/ipc/client.hpp>
 #include <ggl/ipc/client_c_api.hpp>
 #include <ggl/map.hpp>
-#include <ggl/types.hpp>
+#include <stdint.h>
 #include <cstdlib>
 #include <string_view>
 #include <system_error>
+
+enum class GglComponentState;
 
 namespace ggl::ipc {
 

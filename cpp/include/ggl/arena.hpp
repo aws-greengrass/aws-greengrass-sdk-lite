@@ -9,6 +9,7 @@
 #include <ggl/utility.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 
 namespace ggl {

@@ -8,6 +8,7 @@
 #include <ggl/types.hpp>
 #include <ggl/utility.hpp>
 #include <cstdint>
+#include <algorithm>
 #include <span>
 #include <stdexcept>
 #include <string_view>

@@ -3,6 +3,7 @@
 
 #include <ggl/error.hpp>
 #include <ggl/types.hpp>
+#include <stdint.h>
 
 extern "C" {
 
