@@ -2,8 +2,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "ggl/ipc/client.hpp"
-#include "ggl/ipc/client_c_api.hpp"
+#include <ggl/ipc/client.hpp>
+#include <ggl/ipc/client_c_api.hpp>
 #include <chrono>
 #include <ctime>
 #include <system_error>
