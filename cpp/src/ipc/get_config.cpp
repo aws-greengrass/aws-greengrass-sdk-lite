@@ -13,6 +13,7 @@
 #include <ggl/schema.hpp>
 #include <ggl/types.hpp>
 #include <cstddef>
+#include <cstdint>
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -29,6 +30,12 @@ namespace ggl::ipc::detail {
 constexpr size_t ggl_max_object_depth = 15U;
 
 extern "C" {
+
+struct GetConfigObjectContext {
+    AllocatedObject *obj;
+    GglObjectType expected_type;
+};
+
 GglError ggl_arena_claim_obj(GglObject *obj, GglArena *arena) noexcept;
 
 GglError get_config_str_callback(void *ctx, GglMap result) noexcept {
@@ -50,11 +57,15 @@ GglError get_config_str_callback(void *ctx, GglMap result) noexcept {
 }
 
 GglError get_config_obj_callback(void *ctx, GglMap result) noexcept {
-    AllocatedObject &obj = *static_cast<AllocatedObject *>(ctx);
+    auto &context = *static_cast<GetConfigObjectContext *>(ctx);
 
     Object value;
     std::error_code error = validate_map(result, MapSchema { "value", value });
     if (error) {
+        return GGL_ERR_PARSE;
+    }
+    if ((context.expected_type != GGL_TYPE_NULL)
+        && (context.expected_type != value.index())) {
         return GGL_ERR_PARSE;
     }
 
@@ -65,7 +76,7 @@ GglError get_config_obj_callback(void *ctx, GglMap result) noexcept {
     }
 
     if (len == 0) {
-        obj = AllocatedObject { value, nullptr };
+        *context.obj = AllocatedObject { value, nullptr };
         return GGL_ERR_OK;
     }
 
@@ -80,7 +91,7 @@ GglError get_config_obj_callback(void *ctx, GglMap result) noexcept {
     if (error) {
         return GGL_ERR_NOMEM;
     }
-    obj = AllocatedObject { value, std::move(alloc) };
+    *context.obj = AllocatedObject { value, std::move(alloc) };
     return GGL_ERR_OK;
 }
 
@@ -151,9 +162,57 @@ std::error_code Client::get_config(
     std::optional<std::string_view> component_name,
     AllocatedObject &value
 ) noexcept {
+    detail::GetConfigObjectContext ctx { .obj = &value,
+                                         .expected_type = GGL_TYPE_NULL };
     return detail::get_config_common(
-        key_path, component_name, &value, detail::get_config_obj_callback
+        key_path, component_name, &ctx, detail::get_config_obj_callback
     );
+}
+
+namespace {
+    template <class T>
+    std::error_code get_config_overload(
+        std::span<const Buffer> key_path,
+        std::optional<std::string_view> component_name,
+        T &value
+    ) noexcept {
+        constexpr auto expected_type = ggl::index_for_type<T>();
+        AllocatedObject alloc {};
+        detail::GetConfigObjectContext ctx { .obj = &alloc,
+                                             .expected_type = expected_type };
+        GglError error = detail::get_config_common(
+            key_path, component_name, &ctx, detail::get_config_obj_callback
+        );
+        if (Object obj = alloc.get();
+            (error == GGL_ERR_OK) && (obj.index() == expected_type)) {
+            value = *get_if<T>(&obj);
+        }
+        return error;
+    }
+}
+
+std::error_code Client::get_config(
+    std::span<const Buffer> key_path,
+    std::optional<std::string_view> component_name,
+    std::int64_t &value
+) noexcept {
+    return get_config_overload<std::int64_t>(key_path, component_name, value);
+}
+
+std::error_code Client::get_config(
+    std::span<const Buffer> key_path,
+    std::optional<std::string_view> component_name,
+    double &value
+) noexcept {
+    return get_config_overload<double>(key_path, component_name, value);
+}
+
+std::error_code Client::get_config(
+    std::span<const Buffer> key_path,
+    std::optional<std::string_view> component_name,
+    bool &value
+) noexcept {
+    return get_config_overload<bool>(key_path, component_name, value);
 }
 
 // NOLINTEND(readability-convert-member-functions-to-static)

@@ -114,6 +114,24 @@ public:
         std::optional<std::string_view> component_name,
         AllocatedObject &value
     ) noexcept;
+
+    std::error_code get_config(
+        std::span<const Buffer> key_path,
+        std::optional<std::string_view> component_name,
+        std::int64_t &value
+    ) noexcept;
+
+    std::error_code get_config(
+        std::span<const Buffer> key_path,
+        std::optional<std::string_view> component_name,
+        double &value
+    ) noexcept;
+
+    std::error_code get_config(
+        std::span<const Buffer> key_path,
+        std::optional<std::string_view> component_name,
+        bool &value
+    ) noexcept;
 };
 
 }
