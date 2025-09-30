@@ -9,6 +9,7 @@
 
 #include <ggl/attr.h>
 #include <ggl/buffer.h>
+#include <ggl/error.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -133,5 +134,10 @@ GglObject ggl_obj_list(GglList value);
 /// The GglObject must be of type GGL_TYPE_LIST.
 CONST
 GglList ggl_obj_into_list(GglObject list);
+
+/// Calculates the memory required to claim this object with
+/// ggl_arena_claim_obj.
+ACCESS(write_only, 2) REPRODUCIBLE
+GglError ggl_obj_mem_usage(GglObject obj, size_t *size);
 
 #endif

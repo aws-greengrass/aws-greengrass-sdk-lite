@@ -5,9 +5,12 @@
 #include <assert.h>
 #include <ggl/attr.h>
 #include <ggl/buffer.h>
+#include <ggl/error.h>
 #include <ggl/log.h>
 #include <ggl/object.h>
+#include <ggl/object_visit.h>
 #include <string.h>
+#include <stdalign.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -171,4 +174,56 @@ GglList ggl_obj_into_list(GglObject list) {
     memcpy(&ptr, list._private, sizeof(void *));
     memcpy(&len, &list._private[sizeof(void *)], 2);
     return (GglList) { .items = ptr, .len = len };
+}
+
+static GglError mem_usage_buf(
+    void *ctx, GglBuffer val, GglObject obj[static 1]
+) {
+    (void) obj;
+    size_t *measured = ctx;
+    *measured += val.len;
+    return GGL_ERR_OK;
+}
+
+static GglError mem_usage_list(
+    void *ctx, GglList val, GglObject obj[static 1]
+) {
+    (void) obj;
+    size_t *measured = ctx;
+    static_assert(alignof(GglObject) == 1, "Assumes no padding");
+    *measured += val.len * sizeof(GglObject);
+    return GGL_ERR_OK;
+}
+
+static GglError mem_usage_map(void *ctx, GglMap val, GglObject obj[static 1]) {
+    (void) obj;
+    size_t *measured = ctx;
+    static_assert(alignof(GglKV) == 1, "Assumes no padding");
+    *measured += val.len * sizeof(GglKV);
+    return GGL_ERR_OK;
+}
+
+static GglError mem_usage_map_key(
+    void *ctx, GglBuffer key, GglKV kv[static 1]
+) {
+    (void) kv;
+    size_t *measured = ctx;
+    *measured += key.len;
+    return GGL_ERR_OK;
+}
+
+GglError ggl_obj_mem_usage(GglObject obj, size_t *size) {
+    const GglObjectVisitHandlers VISIT_HANDLERS = {
+        .on_buf = mem_usage_buf,
+        .on_map_key = mem_usage_map_key,
+        .on_map = mem_usage_map,
+        .on_list = mem_usage_list,
+    };
+
+    size_t measured = 0;
+    GglError ret = ggl_obj_visit(&VISIT_HANDLERS, &measured, &obj);
+    if ((size != NULL) && (ret == GGL_ERR_OK)) {
+        *size = measured;
+    }
+    return ret;
 }
