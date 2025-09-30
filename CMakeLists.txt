@@ -172,7 +172,11 @@ foreach(src ${SRCS})
     PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
 endforeach()
 
-add_library(ggl-sdk ${SRCS})
+if(PROJECT_IS_TOP_LEVEL)
+  add_library(ggl-sdk ${SRCS})
+else()
+  add_library(ggl-sdk EXCLUDE_FROM_ALL ${SRCS})
+endif()
 
 target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
                                        -Wno-missing-braces)

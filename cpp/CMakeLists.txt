@@ -22,7 +22,11 @@ foreach(src ${SRCS})
     PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
 endforeach()
 
-add_library(ggl-sdk++ STATIC ${SRCS})
+if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
+  add_library(ggl-sdk++ STATIC ${SRCS})
+else()
+  add_library(ggl-sdk++ STATIC EXCLUDE_FROM_ALL ${SRCS})
+endif()
 
 target_compile_options(ggl-sdk++ PRIVATE -pthread -fno-strict-aliasing
                                          -std=gnu++20)
