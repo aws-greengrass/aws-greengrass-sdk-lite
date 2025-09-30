@@ -426,6 +426,10 @@ GglError ggl_file_read_partial(int fd, GglBuffer *buf) {
             GGL_LOGE("Read timed out on fd %d.", fd);
             return GGL_ERR_FAILURE;
         }
+        if (errno == ECONNRESET) {
+            GGL_LOGW("Peer closed %d with written data pending.", fd);
+            return GGL_ERR_NODATA;
+        }
         GGL_LOGE("Failed to read fd %d: %d.", fd, errno);
         return GGL_ERR_FAILURE;
     }
@@ -477,7 +481,11 @@ GglError ggl_file_write_partial(int fd, GglBuffer *buf) {
             return GGL_ERR_FAILURE;
         }
         if (errno == EPIPE) {
-            GGL_LOGE("Write failed to %d; peer closed socket/pipe.", fd);
+            GGL_LOGE("Write failed to %d; peer closed pipe.", fd);
+            return GGL_ERR_NOCONN;
+        }
+        if (errno == ECONNRESET) {
+            GGL_LOGE("Write failed to %d; peer closed connection.", fd);
             return GGL_ERR_NOCONN;
         }
         GGL_LOGE("Failed to write to fd %d: %d.", fd, errno);
