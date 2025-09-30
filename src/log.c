@@ -5,7 +5,9 @@
 #include <ggl/cleanup.h>
 #include <ggl/log.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -16,7 +18,27 @@ static bool enable_systemd_log_prefix = false;
 
 __attribute__((constructor)) static void configure_logging(void) {
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    if (getenv("JOURNAL_STREAM") != NULL) {
+    const char *journal_stream = getenv("JOURNAL_STREAM");
+    if (journal_stream == NULL) {
+        return;
+    }
+
+    struct stat stderr_stat;
+    if (fstat(STDERR_FILENO, &stderr_stat) != 0) {
+        return;
+    }
+
+    // Parse JOURNAL_STREAM format: "device:inode"
+    char *endptr;
+    unsigned long journal_dev = strtoul(journal_stream, &endptr, 10);
+    if (*endptr != ':') {
+        return;
+    }
+    unsigned long journal_ino = strtoul(endptr + 1, NULL, 10);
+
+    // Check if stderr matches the journal stream
+    if (stderr_stat.st_dev == journal_dev
+        && stderr_stat.st_ino == journal_ino) {
         enable_systemd_log_prefix = true;
     }
 }
