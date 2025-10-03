@@ -42,6 +42,23 @@ GglError ggipc_update_config(
         return GGL_ERR_UNSUPPORTED;
     }
 
+    GglKV pair_to_merge;
+    GglObjectType type = ggl_obj_type(value_to_merge);
+    if (type != GGL_TYPE_MAP) {
+        // For v2 compatibility, map the final key in the path to the
+        // value_to_merge
+        if (key_path.len == 0) {
+            GGL_LOGE("Root configuration object must be a map.");
+            return GGL_ERR_INVALID;
+        }
+        pair_to_merge = ggl_kv(key_path.bufs[key_path.len - 1], value_to_merge);
+        value_to_merge = ggl_obj_map((GglMap) {
+            .pairs = &pair_to_merge,
+            .len = 1,
+        });
+        key_path.len -= 1;
+    }
+
     GglObjVec path_vec
         = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH - 1]) { 0 });
     GglError ret = GGL_ERR_OK;
