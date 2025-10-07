@@ -9,7 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void response_handler(GglBuffer topic, GglBuffer payload) {
+static void response_handler(
+    GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
+) {
+    (void) handle;
     printf(
         "Received [%.*s] on [%.*s].\n",
         (int) payload.len,
@@ -31,7 +34,9 @@ int main(void) {
     }
     printf("Connected to GG nucleus.\n");
 
-    ret = ggipc_subscribe_to_iot_core(GGL_STR("hello"), 0, &response_handler);
+    ret = ggipc_subscribe_to_iot_core(
+        GGL_STR("hello"), 0, &response_handler, NULL
+    );
     if (ret != GGL_ERR_OK) {
         fprintf(stderr, "Failed to call subscribe_to_iot_core.\n");
         exit(1);

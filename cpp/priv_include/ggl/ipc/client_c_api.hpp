@@ -13,6 +13,10 @@ GglError ggipc_connect_with_token(
     GglBuffer socket_path, GglBuffer auth_token
 ) noexcept;
 
+typedef struct {
+    uint32_t val;
+} GgIpcSubscriptionHandle;
+
 GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload) noexcept;
 
 GglError ggipc_publish_to_topic_binary(
@@ -24,12 +28,18 @@ GglError ggipc_publish_to_topic_binary_b64(
 ) noexcept;
 
 typedef struct {
-    void (*json_handler)(GglBuffer topic, GglMap payload) noexcept;
-    void (*binary_handler)(GglBuffer topic, GglBuffer payload) noexcept;
+    void (*json_handler)(
+        GglBuffer topic, GglMap payload, GgIpcSubscriptionHandle handle
+    ) noexcept;
+    void (*binary_handler)(
+        GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
+    ) noexcept;
 } GgIpcSubscribeToTopicCallbacks;
 
 GglError ggipc_subscribe_to_topic(
-    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks *callbacks
+    GglBuffer topic,
+    const GgIpcSubscribeToTopicCallbacks *callbacks,
+    GgIpcSubscriptionHandle *handle
 ) noexcept;
 
 GglError ggipc_publish_to_iot_core(
@@ -41,13 +51,14 @@ GglError ggipc_publish_to_iot_core_b64(
 ) noexcept;
 
 typedef void GgIpcSubscribeToIotCoreCallback(
-    GglBuffer topic, GglBuffer payload
+    GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
 ) noexcept;
 
 GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
-    GgIpcSubscribeToIotCoreCallback *callback
+    GgIpcSubscribeToIotCoreCallback *callback,
+    GgIpcSubscriptionHandle *handle
 ) noexcept;
 
 GglError ggipc_get_config(

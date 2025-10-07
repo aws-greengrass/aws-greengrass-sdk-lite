@@ -15,7 +15,10 @@
 #include <string.h>
 
 static GglError subscribe_to_iot_core_resp_handler(
-    void *ctx, GglBuffer service_model_type, GglMap data
+    void *ctx,
+    GgIpcSubscriptionHandle handle,
+    GglBuffer service_model_type,
+    GglMap data
 ) {
     GgIpcSubscribeToIotCoreCallback *callback = ctx;
 
@@ -60,7 +63,7 @@ static GglError subscribe_to_iot_core_resp_handler(
         return GGL_ERR_INVALID;
     }
 
-    callback(topic, payload);
+    callback(topic, payload, handle);
     return GGL_ERR_OK;
 }
 
@@ -86,7 +89,8 @@ static GglError error_handler(
 GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
-    GgIpcSubscribeToIotCoreCallback *callback
+    GgIpcSubscribeToIotCoreCallback *callback,
+    GgIpcSubscriptionHandle *handle
 ) {
     if (qos > 2) {
         GGL_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
@@ -106,6 +110,7 @@ GglError ggipc_subscribe_to_iot_core(
         &error_handler,
         NULL,
         &subscribe_to_iot_core_resp_handler,
-        callback
+        callback,
+        handle
     );
 }

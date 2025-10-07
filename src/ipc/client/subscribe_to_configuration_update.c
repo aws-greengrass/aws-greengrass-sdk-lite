@@ -14,7 +14,10 @@
 #include <stddef.h>
 
 static GglError subscribe_to_configuration_update_resp_handler(
-    void *ctx, GglBuffer service_model_type, GglMap data
+    void *ctx,
+    GgIpcSubscriptionHandle handle,
+    GglBuffer service_model_type,
+    GglMap data
 ) {
     GgIpcSubscribeToConfigurationUpdateCallback *handler = ctx;
 
@@ -62,7 +65,7 @@ static GglError subscribe_to_configuration_update_resp_handler(
     GglList key_path = ggl_obj_into_list(*key_path_obj);
 
     if (handler != NULL) {
-        handler(component_name, key_path);
+        handler(component_name, key_path, handle);
     }
 
     return GGL_ERR_OK;
@@ -93,7 +96,8 @@ static GglError error_handler(
 GglError ggipc_subscribe_to_configuration_update(
     const GglBuffer *component_name,
     GglBufList key_path,
-    GgIpcSubscribeToConfigurationUpdateCallback *callback
+    GgIpcSubscribeToConfigurationUpdateCallback *callback,
+    GgIpcSubscriptionHandle *handle
 ) {
     GglKVVec args = GGL_KV_VEC((GglKV[2]) { 0 });
 
@@ -126,6 +130,7 @@ GglError ggipc_subscribe_to_configuration_update(
         &error_handler,
         NULL,
         &subscribe_to_configuration_update_resp_handler,
-        callback
+        callback,
+        handle
     );
 }

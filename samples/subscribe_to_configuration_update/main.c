@@ -19,7 +19,10 @@ static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t config_cond = PTHREAD_COND_INITIALIZER;
 static bool config_updated = false;
 
-static void config_update_handler(GglBuffer component_name, GglList key_path) {
+static void config_update_handler(
+    GglBuffer component_name, GglList key_path, GgIpcSubscriptionHandle handle
+) {
+    (void) handle;
     printf("Configuration update received:\n");
     printf(
         "  Component: %.*s\n", (int) component_name.len, component_name.data
@@ -61,7 +64,7 @@ int main(void) {
     // component
     GglBufList key_path = GGL_BUF_LIST(GGL_STR("test_str"));
     ret = ggipc_subscribe_to_configuration_update(
-        NULL, key_path, config_update_handler
+        NULL, key_path, config_update_handler, NULL
     );
 
     if (ret != GGL_ERR_OK) {

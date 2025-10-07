@@ -15,7 +15,10 @@
 #include <stdbool.h>
 
 static GglError subscribe_to_topic_resp_handler(
-    void *ctx, GglBuffer service_model_type, GglMap data
+    void *ctx,
+    GgIpcSubscriptionHandle handle,
+    GglBuffer service_model_type,
+    GglMap data
 ) {
     const GgIpcSubscribeToTopicCallbacks *callbacks = ctx;
 
@@ -87,14 +90,14 @@ static GglError subscribe_to_topic_resp_handler(
 
     if (is_json) {
         GglMap payload = ggl_obj_into_map(*message_obj);
-        callbacks->json_handler(topic, payload);
+        callbacks->json_handler(topic, payload, handle);
     } else {
         GglBuffer payload = ggl_obj_into_buf(*message_obj);
         if (!ggl_base64_decode_in_place(&payload)) {
             GGL_LOGE("Failed to decode pubsub subscription response payload.");
             return GGL_ERR_INVALID;
         }
-        callbacks->binary_handler(topic, payload);
+        callbacks->binary_handler(topic, payload, handle);
     }
 
     return GGL_ERR_OK;
@@ -120,7 +123,9 @@ static GglError error_handler(
 }
 
 GglError ggipc_subscribe_to_topic(
-    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks callbacks[static 1]
+    GglBuffer topic,
+    const GgIpcSubscribeToTopicCallbacks callbacks[static 1],
+    GgIpcSubscriptionHandle *handle
 ) {
     GglMap args = GGL_MAP(ggl_kv(GGL_STR("topic"), ggl_obj_buf(topic)), );
 
@@ -132,6 +137,7 @@ GglError ggipc_subscribe_to_topic(
         &error_handler,
         NULL,
         &subscribe_to_topic_resp_handler,
-        (void *) callbacks
+        (void *) callbacks,
+        handle
     );
 }

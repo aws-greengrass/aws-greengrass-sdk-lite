@@ -34,6 +34,16 @@ GglError ggipc_connect(void);
 /// Connect to a GG-IPC socket with a given SVCUID token.
 GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 
+// Subscription management
+
+/// Handle for referring to a subscripion created by an IPC call
+typedef struct {
+    uint32_t val;
+} GgIpcSubscriptionHandle;
+
+/// Close a subscription returned by an IPC call
+void ggipc_close_subscription(GgIpcSubscriptionHandle handle);
+
 // IPC calls
 
 /// Publish a message to a local topic in JSON format
@@ -50,17 +60,23 @@ GglError ggipc_publish_to_topic_binary_b64(
 );
 
 typedef struct {
-    void (*json_handler)(GglBuffer topic, GglMap payload);
-    void (*binary_handler)(GglBuffer topic, GglBuffer payload);
+    void (*json_handler)(
+        GglBuffer topic, GglMap payload, GgIpcSubscriptionHandle handle
+    );
+    void (*binary_handler)(
+        GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
+    );
 } GgIpcSubscribeToTopicCallbacks;
 
 /// Subscribe to messages on a local topic
-/// `handlers` must have static lifetime.
+/// `handlers` must live until the handle is closed.
 /// `json_handler` or `binary_handler` may be NULL if that payload type is not
 /// expected.
 ACCESS(read_only, 2)
 GglError ggipc_subscribe_to_topic(
-    GglBuffer topic, const GgIpcSubscribeToTopicCallbacks callbacks[static 1]
+    GglBuffer topic,
+    const GgIpcSubscribeToTopicCallbacks callbacks[static 1],
+    GgIpcSubscriptionHandle *handle
 );
 
 /// Publish an MQTT message to AWS IoT Core on a topic
@@ -76,7 +92,7 @@ GglError ggipc_publish_to_iot_core_b64(
 );
 
 typedef void GgIpcSubscribeToIotCoreCallback(
-    GglBuffer topic, GglBuffer payload
+    GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
 );
 
 /// Subscribe to MQTT messages from AWS IoT Core on a topic or topic filter
@@ -84,7 +100,8 @@ NONNULL(3)
 GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
-    GgIpcSubscribeToIotCoreCallback *callback
+    GgIpcSubscribeToIotCoreCallback *callback,
+    GgIpcSubscriptionHandle *handle
 );
 
 /// Get a configuration value for a component on the core device
@@ -126,7 +143,7 @@ GglError ggipc_update_state(GglComponentState state);
 GglError ggipc_restart_component(GglBuffer component_name);
 
 typedef void GgIpcSubscribeToConfigurationUpdateCallback(
-    GglBuffer component_name, GglList key_path
+    GglBuffer component_name, GglList key_path, GgIpcSubscriptionHandle handle
 );
 
 /// Subscribe to configuration updates for a component
@@ -135,7 +152,8 @@ ACCESS(read_only, 1)
 GglError ggipc_subscribe_to_configuration_update(
     const GglBuffer *component_name,
     GglBufList key_path,
-    GgIpcSubscribeToConfigurationUpdateCallback *callback
+    GgIpcSubscribeToConfigurationUpdateCallback *callback,
+    GgIpcSubscriptionHandle *handle
 );
 
 #endif
