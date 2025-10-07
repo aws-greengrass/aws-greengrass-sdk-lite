@@ -79,14 +79,25 @@ static GglError ggipc_get_config_common(
     );
 }
 
-static GglError get_resp_value(GglMap resp, GglObject **value) {
+static GglError get_resp_value(
+    GglMap resp, GglObject **value, GglBuffer *final_key
+) {
     GglError ret = ggl_map_validate(
         resp,
-        GGL_MAP_SCHEMA({ GGL_STR("value"), GGL_REQUIRED, GGL_TYPE_NULL, value })
+        GGL_MAP_SCHEMA({ GGL_STR("value"), GGL_REQUIRED, GGL_TYPE_MAP, value })
     );
     if (ret != GGL_ERR_OK) {
         GGL_LOGE("Failed validating server response.");
         return GGL_ERR_INVALID;
+    }
+
+    GglMap map = ggl_obj_into_map(**value);
+
+    // Maps IPC response according to classic behavior
+    if ((final_key != NULL) && (map.len == 1)
+        && (ggl_buffer_eq(ggl_kv_key(map.pairs[0]), *final_key))
+        && (ggl_obj_type(*ggl_kv_val(&map.pairs[0])) != GGL_TYPE_MAP)) {
+        *value = ggl_kv_val(&map.pairs[0]);
     }
 
     return GGL_ERR_OK;
@@ -95,15 +106,23 @@ static GglError get_resp_value(GglMap resp, GglObject **value) {
 typedef struct {
     GglObject *value;
     GglArena *alloc;
+    GglBuffer *final_key;
 } CopyObjectCtx;
 
 static GglError copy_config_obj(void *ctx, GglMap result) {
     CopyObjectCtx *copy_ctx = ctx;
 
     GglObject *value;
-    GglError ret = get_resp_value(result, &value);
+    GglError ret = get_resp_value(result, &value, copy_ctx->final_key);
     if (ret != GGL_ERR_OK) {
         return GGL_ERR_INVALID;
+    }
+
+    if (ggl_obj_type(*value) == GGL_TYPE_MAP) {
+        GglMap map = ggl_obj_into_map(*value);
+        if (map.len == 1) {
+            value = ggl_kv_val(&map.pairs[0]);
+        }
     }
 
     if (copy_ctx->value != NULL) {
@@ -129,37 +148,48 @@ GglError ggipc_get_config(
         *value = GGL_OBJ_NULL;
     }
 
-    CopyObjectCtx response_ctx = { .value = value, .alloc = alloc };
+    CopyObjectCtx response_ctx
+        = { .value = value,
+            .alloc = alloc,
+            .final_key
+            = (key_path.len == 0) ? NULL : &key_path.bufs[key_path.len - 1] };
     return ggipc_get_config_common(
         key_path, component_name, &copy_config_obj, &response_ctx
     );
 }
 
+typedef struct {
+    GglBuffer *value;
+    GglBuffer *final_key;
+} CopyBufferCtx;
+
 static GglError copy_config_buf(void *ctx, GglMap result) {
-    GglBuffer *resp_buf = ctx;
+    CopyBufferCtx *resp_ctx = ctx;
 
     GglObject *value;
-    GglError ret = get_resp_value(result, &value);
+    GglError ret = get_resp_value(result, &value, resp_ctx->final_key);
     if (ret != GGL_ERR_OK) {
         return GGL_ERR_INVALID;
     }
 
     if (ggl_obj_type(*value) != GGL_TYPE_BUF) {
-        GGL_LOGE("Config value is not a string");
+        GGL_LOGE(
+            "Config value is not a string. Type: %d", ggl_obj_type(*value)
+        );
         return GGL_ERR_FAILURE;
     }
 
-    if (resp_buf != NULL) {
+    if (resp_ctx->value != NULL) {
         GglBuffer value_buf = ggl_obj_into_buf(*value);
 
-        GglArena alloc = ggl_arena_init(*resp_buf);
+        GglArena alloc = ggl_arena_init(*resp_ctx->value);
         ret = ggl_arena_claim_buf(&value_buf, &alloc);
         if (ret != GGL_ERR_OK) {
             GGL_LOGE("Insufficent memory provided for response.");
             return ret;
         }
 
-        *resp_buf = value_buf;
+        *resp_ctx->value = value_buf;
     }
 
     return GGL_ERR_OK;
@@ -168,8 +198,13 @@ static GglError copy_config_buf(void *ctx, GglMap result) {
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 ) {
+    CopyBufferCtx copy_ctx
+        = { .value = value,
+            .final_key
+            = (key_path.len == 0) ? NULL : &key_path.bufs[key_path.len - 1] };
+
     GglError ret = ggipc_get_config_common(
-        key_path, component_name, &copy_config_buf, value
+        key_path, component_name, &copy_config_buf, &copy_ctx
     );
     if ((ret != GGL_ERR_OK) && (value != NULL)) {
         *value = GGL_STR("");
