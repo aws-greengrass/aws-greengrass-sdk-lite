@@ -9,6 +9,12 @@ ComponentPublisher: AWS
 ComponentConfiguration:
   DefaultConfiguration:
     test_str: "hi"
+    sample_map:
+      key1: "value1"
+      key2_map:
+        subkey1: "subvalue1"
+        subkey2: "subvalue2"
+      key3: 10
 Manifests:
   - Platform:
       os: linux
@@ -18,3 +24,6 @@ Manifests:
         Script: "{artifacts:path}/sample_config"
     Artifacts:
       - URI: s3://EXAMPLE_BUCKET/sample_config
+        Permission:
+          Read: "OWNER"
+          Execute: "OWNER"
