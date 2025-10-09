@@ -27,9 +27,19 @@ The following Greengrass v2 IPC operations are currently supported by this SDK:
 - [SubscribeToTopic](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-subscribetotopic)
 - [PublishToIoTCore](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-publishtoiotcore)
 - [SubscribeToIoTCore](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-subscribetoiotcore)
+- [UpdateState](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html#ipc-operation-updatestate)
 - [GetConfiguration](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration)
 - [UpdateConfiguration](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-updateconfiguration)
-- [UpdateState](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html#ipc-operation-updatestate)
+- [SubscribeToConfigurationUpdate](https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-subscribetoconfigurationupdate)
+- RestartComponent
+
+## Sample Generic Components
+
+- [IoT Core MQTT Pub/Sub](samples/iot_core_mqtt/)
+- [Update State](samples/update_state/)
+- [Configuration Operations](samples/config/)
+- [Subscribe to Configuration Update](samples/subscribe_to_configuration_update/)
+- [Restart Component](samples/restart_component/)
 
 ## Security
 
