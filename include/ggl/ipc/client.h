@@ -125,4 +125,17 @@ GglError ggipc_update_state(GglComponentState state);
 /// Restart a component on the core device
 GglError ggipc_restart_component(GglBuffer component_name);
 
+typedef void GgIpcSubscribeToConfigurationUpdateCallback(
+    GglBuffer component_name, GglList key_path
+);
+
+/// Subscribe to configuration updates for a component
+/// Pass NULL for component_name to refer to current component.
+ACCESS(read_only, 1)
+GglError ggipc_subscribe_to_configuration_update(
+    const GglBuffer *component_name,
+    GglBufList key_path,
+    GgIpcSubscribeToConfigurationUpdateCallback *callback
+);
+
 #endif
