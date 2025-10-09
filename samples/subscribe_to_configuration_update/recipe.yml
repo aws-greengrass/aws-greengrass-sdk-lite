@@ -1,0 +1,22 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "aws-greengrass-sdk-lite.samples.SubscribeToConfigurationUpdate"
+ComponentVersion: "1.0.0"
+ComponentDescription:
+  "Component that subscribes to ConfigUpdater configuration updates"
+ComponentPublisher: "Amazon"
+ComponentConfiguration:
+  DefaultConfiguration:
+    test_str: "hi"
+Manifests:
+  - Platform:
+      os: linux
+      runtime: "*"
+    Lifecycle:
+      run: |
+        {artifacts:path}/sample_subscribe_to_configuration_update
+    Artifacts:
+      - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/sample_subscribe_to_configuration_update"
+        Permission:
+          Read: "OWNER"
+          Execute: "OWNER"

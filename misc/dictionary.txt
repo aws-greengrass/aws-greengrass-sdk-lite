@@ -4,7 +4,9 @@ coverity
 dfcc
 EPOLLIN
 ggipc
+greengrassv2
 iwyu
+journalctl
 libggl
 LOGD
 LOGE
