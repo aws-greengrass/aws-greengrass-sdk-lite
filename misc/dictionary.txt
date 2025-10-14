@@ -3,6 +3,7 @@ cbmc
 coverity
 dfcc
 EPOLLIN
+fileb
 ggipc
 greengrassv2
 iwyu

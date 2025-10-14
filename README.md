@@ -35,6 +35,9 @@ The following Greengrass v2 IPC operations are currently supported by this SDK:
 
 ## Sample Generic Components
 
+For deployment instructions, see the
+[samples deployment guide](samples/README.md).
+
 - [IoT Core MQTT Pub/Sub](samples/iot_core_mqtt/)
 - [Update State](samples/update_state/)
 - [Configuration Operations](samples/config/)

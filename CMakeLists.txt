@@ -196,6 +196,9 @@ if(PROJECT_IS_TOP_LEVEL)
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
     foreach(sample_dir ${SAMPLE_DIRS})
+      if(NOT IS_DIRECTORY ${sample_dir})
+        continue()
+      endif()
       get_filename_component(sample_name ${sample_dir} NAME_WLE)
       set_property(
         SOURCE ${sample_dir}/main.c
