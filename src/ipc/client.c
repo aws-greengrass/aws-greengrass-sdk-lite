@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -46,6 +47,7 @@ static uint8_t
     ipc_recv_decode_mem[sizeof(GglObject[GGL_MAX_OBJECT_SUBOBJECTS])];
 
 static int epoll_fd = -1;
+static pid_t recv_thread_id = -1;
 
 typedef struct {
     void (*fn)(void);
@@ -525,6 +527,13 @@ GglError ggipc_subscribe(
         return GGL_ERR_NOCONN;
     }
 
+    if (recv_thread_id == gettid()) {
+        GGL_LOGE(
+            "GG IPC calls may not be made from within subscription callbacks."
+        );
+        return GGL_ERR_INVALID;
+    }
+
     pthread_condattr_t notify_condattr;
     pthread_condattr_init(&notify_condattr);
     pthread_condattr_setclock(&notify_condattr, CLOCK_MONOTONIC);
@@ -778,6 +787,8 @@ noreturn static void *recv_thread(void *args) {
     (void) args;
 
     GGL_LOGI("Starting GG-IPC receive thread.");
+
+    recv_thread_id = gettid();
 
     (void) ggl_socket_epoll_run(epoll_fd, &data_ready_callback, NULL);
 
