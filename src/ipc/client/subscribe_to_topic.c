@@ -89,9 +89,27 @@ static GglError subscribe_to_topic_resp_handler(
     GglBuffer topic = ggl_obj_into_buf(*topic_obj);
 
     if (is_json) {
+        if (callbacks->json_handler == NULL) {
+            GGL_LOGW(
+                "Skipping unhandled JSON payload on local topic %.*s.",
+                (int) topic.len,
+                topic.data
+            );
+            return GGL_ERR_OK;
+        }
+
         GglMap payload = ggl_obj_into_map(*message_obj);
         callbacks->json_handler(topic, payload, handle);
     } else {
+        if (callbacks->json_handler == NULL) {
+            GGL_LOGW(
+                "Skipping unhandled binary payload on local topic %.*s.",
+                (int) topic.len,
+                topic.data
+            );
+            return GGL_ERR_OK;
+        }
+
         GglBuffer payload = ggl_obj_into_buf(*message_obj);
         if (!ggl_base64_decode_in_place(&payload)) {
             GGL_LOGE("Failed to decode pubsub subscription response payload.");
