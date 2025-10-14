@@ -59,23 +59,16 @@ GglError ggipc_publish_to_topic_binary_b64(
     GglBuffer topic, GglBuffer b64_payload
 );
 
-typedef struct {
-    void (*json_handler)(
-        GglBuffer topic, GglMap payload, GgIpcSubscriptionHandle handle
-    );
-    void (*binary_handler)(
-        GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
-    );
-} GgIpcSubscribeToTopicCallbacks;
+typedef void GgIpcSubscribeToTopicCallback(
+    GglBuffer topic, GglObject payload, GgIpcSubscriptionHandle handle
+);
 
 /// Subscribe to messages on a local topic
-/// `handlers` must live until the handle is closed.
-/// `json_handler` or `binary_handler` may be NULL if that payload type is not
-/// expected.
-ACCESS(read_only, 2)
+/// Payload will be a map for json messages and a buffer for binary messages.
+NONNULL(2)
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
-    const GgIpcSubscribeToTopicCallbacks callbacks[static 1],
+    GgIpcSubscribeToTopicCallback *callback,
     GgIpcSubscriptionHandle *handle
 );
 

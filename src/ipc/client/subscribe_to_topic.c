@@ -20,7 +20,7 @@ static GglError subscribe_to_topic_resp_handler(
     GglBuffer service_model_type,
     GglMap data
 ) {
-    const GgIpcSubscribeToTopicCallbacks *callbacks = ctx;
+    GgIpcSubscribeToTopicCallback *callback = ctx;
 
     if (!ggl_buffer_eq(
             service_model_type,
@@ -88,36 +88,18 @@ static GglError subscribe_to_topic_resp_handler(
 
     GglBuffer topic = ggl_obj_into_buf(*topic_obj);
 
-    if (is_json) {
-        if (callbacks->json_handler == NULL) {
-            GGL_LOGW(
-                "Skipping unhandled JSON payload on local topic %.*s.",
-                (int) topic.len,
-                topic.data
-            );
-            return GGL_ERR_OK;
-        }
+    GglObject payload = *message_obj;
 
-        GglMap payload = ggl_obj_into_map(*message_obj);
-        callbacks->json_handler(topic, payload, handle);
-    } else {
-        if (callbacks->json_handler == NULL) {
-            GGL_LOGW(
-                "Skipping unhandled binary payload on local topic %.*s.",
-                (int) topic.len,
-                topic.data
-            );
-            return GGL_ERR_OK;
-        }
-
-        GglBuffer payload = ggl_obj_into_buf(*message_obj);
-        if (!ggl_base64_decode_in_place(&payload)) {
+    if (!is_json) {
+        GglBuffer payload_buf = ggl_obj_into_buf(*message_obj);
+        if (!ggl_base64_decode_in_place(&payload_buf)) {
             GGL_LOGE("Failed to decode pubsub subscription response payload.");
             return GGL_ERR_INVALID;
         }
-        callbacks->binary_handler(topic, payload, handle);
+        payload = ggl_obj_buf(payload_buf);
     }
 
+    callback(topic, payload, handle);
     return GGL_ERR_OK;
 }
 
@@ -142,7 +124,7 @@ static GglError error_handler(
 
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
-    const GgIpcSubscribeToTopicCallbacks callbacks[static 1],
+    GgIpcSubscribeToTopicCallback callback,
     GgIpcSubscriptionHandle *handle
 ) {
     GglMap args = GGL_MAP(ggl_kv(GGL_STR("topic"), ggl_obj_buf(topic)), );
@@ -155,7 +137,7 @@ GglError ggipc_subscribe_to_topic(
         &error_handler,
         NULL,
         &subscribe_to_topic_resp_handler,
-        (void *) callbacks,
+        callback,
         handle
     );
 }

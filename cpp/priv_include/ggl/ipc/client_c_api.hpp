@@ -27,18 +27,13 @@ GglError ggipc_publish_to_topic_binary_b64(
     GglBuffer topic, GglBuffer b64_payload
 ) noexcept;
 
-typedef struct {
-    void (*json_handler)(
-        GglBuffer topic, GglMap payload, GgIpcSubscriptionHandle handle
-    ) noexcept;
-    void (*binary_handler)(
-        GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
-    ) noexcept;
-} GgIpcSubscribeToTopicCallbacks;
+typedef void GgIpcSubscribeToTopicCallback(
+    GglBuffer topic, GglObject payload, GgIpcSubscriptionHandle handle
+);
 
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
-    const GgIpcSubscribeToTopicCallbacks *callbacks,
+    GgIpcSubscribeToTopicCallback *callback,
     GgIpcSubscriptionHandle *handle
 ) noexcept;
 
