@@ -50,7 +50,7 @@ static int epoll_fd = -1;
 static pid_t recv_thread_id = -1;
 
 typedef struct {
-    void (*fn)(void);
+    GgIpcSubscribeCallback *fn;
     void *ctx;
 } StreamHandler;
 
@@ -480,7 +480,7 @@ static void response_handler(
                 index,
                 common_headers.stream_id,
                 (StreamHandler) {
-                    .fn = (void (*)(void)) call_ctx->sub_callback,
+                    .fn = call_ctx->sub_callback,
                     .ctx = call_ctx->sub_callback_ctx,
                 }
             );
@@ -572,7 +572,7 @@ GglError ggipc_subscribe(
         stream_index,
         stream_id,
         (StreamHandler) {
-            .fn = (void (*)(void)) response_handler,
+            .fn = NULL,
             .ctx = &response_handler_ctx,
         }
     );
@@ -737,9 +737,7 @@ static GglError dispatch_incoming_packet(int conn) {
         return GGL_ERR_OK;
     }
 
-    assert(stream_state_handler[index].fn != NULL);
-
-    if (stream_state_handler[index].fn == (void (*)(void)) response_handler) {
+    if (stream_state_handler[index].fn == NULL) {
         // Must hold stream_state_mtx through handler call.
         response_handler(
             index, stream_state_handler[index].ctx, common_headers, msg
@@ -749,7 +747,7 @@ static GglError dispatch_incoming_packet(int conn) {
 
     GglError sub_ret = call_sub_callback(
         get_current_handle(index),
-        (GgIpcSubscribeCallback *) stream_state_handler[index].fn,
+        stream_state_handler[index].fn,
         stream_state_handler[index].ctx,
         common_headers,
         msg
