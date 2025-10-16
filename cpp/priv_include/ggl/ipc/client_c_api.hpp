@@ -28,12 +28,16 @@ GglError ggipc_publish_to_topic_binary_b64(
 ) noexcept;
 
 typedef void GgIpcSubscribeToTopicCallback(
-    GglBuffer topic, GglObject payload, GgIpcSubscriptionHandle handle
+    void *ctx,
+    GglBuffer topic,
+    GglObject payload,
+    GgIpcSubscriptionHandle handle
 );
 
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
     GgIpcSubscribeToTopicCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 ) noexcept;
 
@@ -46,13 +50,17 @@ GglError ggipc_publish_to_iot_core_b64(
 ) noexcept;
 
 typedef void GgIpcSubscribeToIotCoreCallback(
-    GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
+    void *ctx,
+    GglBuffer topic,
+    GglBuffer payload,
+    GgIpcSubscriptionHandle handle
 ) noexcept;
 
 GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
     GgIpcSubscribeToIotCoreCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 ) noexcept;
 

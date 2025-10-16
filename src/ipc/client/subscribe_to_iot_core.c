@@ -16,6 +16,7 @@
 
 static GglError subscribe_to_iot_core_resp_handler(
     void *ctx,
+    void *aux_ctx,
     GgIpcSubscriptionHandle handle,
     GglBuffer service_model_type,
     GglMap data
@@ -63,7 +64,7 @@ static GglError subscribe_to_iot_core_resp_handler(
         return GGL_ERR_INVALID;
     }
 
-    callback(topic, payload, handle);
+    callback(aux_ctx, topic, payload, handle);
     return GGL_ERR_OK;
 }
 
@@ -90,6 +91,7 @@ GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
     GgIpcSubscribeToIotCoreCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 ) {
     if (qos > 2) {
@@ -111,6 +113,7 @@ GglError ggipc_subscribe_to_iot_core(
         NULL,
         &subscribe_to_iot_core_resp_handler,
         callback,
+        ctx,
         handle
     );
 }

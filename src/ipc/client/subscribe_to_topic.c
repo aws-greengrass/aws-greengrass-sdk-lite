@@ -16,6 +16,7 @@
 
 static GglError subscribe_to_topic_resp_handler(
     void *ctx,
+    void *aux_ctx,
     GgIpcSubscriptionHandle handle,
     GglBuffer service_model_type,
     GglMap data
@@ -99,7 +100,7 @@ static GglError subscribe_to_topic_resp_handler(
         payload = ggl_obj_buf(payload_buf);
     }
 
-    callback(topic, payload, handle);
+    callback(aux_ctx, topic, payload, handle);
     return GGL_ERR_OK;
 }
 
@@ -125,6 +126,7 @@ static GglError error_handler(
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
     GgIpcSubscribeToTopicCallback callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 ) {
     GglMap args = GGL_MAP(ggl_kv(GGL_STR("topic"), ggl_obj_buf(topic)), );
@@ -138,6 +140,7 @@ GglError ggipc_subscribe_to_topic(
         NULL,
         &subscribe_to_topic_resp_handler,
         callback,
+        ctx,
         handle
     );
 }

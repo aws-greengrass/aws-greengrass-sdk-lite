@@ -60,7 +60,10 @@ GglError ggipc_publish_to_topic_binary_b64(
 );
 
 typedef void GgIpcSubscribeToTopicCallback(
-    GglBuffer topic, GglObject payload, GgIpcSubscriptionHandle handle
+    void *ctx,
+    GglBuffer topic,
+    GglObject payload,
+    GgIpcSubscriptionHandle handle
 );
 
 /// Subscribe to messages on a local topic
@@ -69,6 +72,7 @@ NONNULL(2)
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
     GgIpcSubscribeToTopicCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 );
 
@@ -85,7 +89,10 @@ GglError ggipc_publish_to_iot_core_b64(
 );
 
 typedef void GgIpcSubscribeToIotCoreCallback(
-    GglBuffer topic, GglBuffer payload, GgIpcSubscriptionHandle handle
+    void *ctx,
+    GglBuffer topic,
+    GglBuffer payload,
+    GgIpcSubscriptionHandle handle
 );
 
 /// Subscribe to MQTT messages from AWS IoT Core on a topic or topic filter
@@ -94,6 +101,7 @@ GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
     uint8_t qos,
     GgIpcSubscribeToIotCoreCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 );
 
@@ -136,7 +144,10 @@ GglError ggipc_update_state(GglComponentState state);
 GglError ggipc_restart_component(GglBuffer component_name);
 
 typedef void GgIpcSubscribeToConfigurationUpdateCallback(
-    GglBuffer component_name, GglList key_path, GgIpcSubscriptionHandle handle
+    void *ctx,
+    GglBuffer component_name,
+    GglList key_path,
+    GgIpcSubscriptionHandle handle
 );
 
 /// Subscribe to configuration updates for a component
@@ -146,6 +157,7 @@ GglError ggipc_subscribe_to_configuration_update(
     const GglBuffer *component_name,
     GglBufList key_path,
     GgIpcSubscribeToConfigurationUpdateCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 );
 

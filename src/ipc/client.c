@@ -52,6 +52,7 @@ static pid_t recv_thread_id = -1;
 typedef struct {
     GgIpcSubscribeCallback *fn;
     void *ctx;
+    void *aux_ctx;
 } StreamHandler;
 
 static_assert(
@@ -444,6 +445,7 @@ typedef struct {
     void *response_ctx;
     GgIpcSubscribeCallback *sub_callback;
     void *sub_callback_ctx;
+    void *sub_callback_aux_ctx;
 } ResponseHandlerCtx;
 
 // Must hold stream_state_mtx
@@ -482,6 +484,7 @@ static void response_handler(
                 (StreamHandler) {
                     .fn = call_ctx->sub_callback,
                     .ctx = call_ctx->sub_callback_ctx,
+                    .aux_ctx = call_ctx->sub_callback_aux_ctx,
                 }
             );
         }
@@ -508,6 +511,7 @@ GglError ggipc_call(
         response_ctx,
         NULL,
         NULL,
+        NULL,
         NULL
     );
 }
@@ -521,6 +525,7 @@ GglError ggipc_subscribe(
     void *response_ctx,
     GgIpcSubscribeCallback *sub_callback,
     void *sub_callback_ctx,
+    void *sub_callback_aux_ctx,
     GgIpcSubscriptionHandle *sub_handle
 ) {
     if (!connected()) {
@@ -551,6 +556,7 @@ GglError ggipc_subscribe(
         .response_ctx = response_ctx,
         .sub_callback = sub_callback,
         .sub_callback_ctx = sub_callback_ctx,
+        .sub_callback_aux_ctx = sub_callback_aux_ctx,
     };
 
     uint16_t stream_index;
@@ -626,6 +632,7 @@ static GglError call_sub_callback(
     GgIpcSubscriptionHandle handle,
     GgIpcSubscribeCallback *sub_callback,
     void *sub_callback_ctx,
+    void *sub_callback_aux_ctx,
     EventStreamCommonHeaders common_headers,
     EventStreamMessage msg
 ) {
@@ -696,7 +703,11 @@ static GglError call_sub_callback(
     }
 
     return sub_callback(
-        sub_callback_ctx, handle, service_model_type, ggl_obj_into_map(response)
+        sub_callback_ctx,
+        sub_callback_aux_ctx,
+        handle,
+        service_model_type,
+        ggl_obj_into_map(response)
     );
 }
 
@@ -749,6 +760,7 @@ static GglError dispatch_incoming_packet(int conn) {
         get_current_handle(index),
         stream_state_handler[index].fn,
         stream_state_handler[index].ctx,
+        stream_state_handler[index].aux_ctx,
         common_headers,
         msg
     );

@@ -15,6 +15,7 @@
 
 static GglError subscribe_to_configuration_update_resp_handler(
     void *ctx,
+    void *aux_ctx,
     GgIpcSubscriptionHandle handle,
     GglBuffer service_model_type,
     GglMap data
@@ -65,7 +66,7 @@ static GglError subscribe_to_configuration_update_resp_handler(
     GglList key_path = ggl_obj_into_list(*key_path_obj);
 
     if (handler != NULL) {
-        handler(component_name, key_path, handle);
+        handler(aux_ctx, component_name, key_path, handle);
     }
 
     return GGL_ERR_OK;
@@ -97,6 +98,7 @@ GglError ggipc_subscribe_to_configuration_update(
     const GglBuffer *component_name,
     GglBufList key_path,
     GgIpcSubscribeToConfigurationUpdateCallback *callback,
+    void *ctx,
     GgIpcSubscriptionHandle *handle
 ) {
     GglKVVec args = GGL_KV_VEC((GglKV[2]) { 0 });
@@ -131,6 +133,7 @@ GglError ggipc_subscribe_to_configuration_update(
         NULL,
         &subscribe_to_configuration_update_resp_handler,
         callback,
+        ctx,
         handle
     );
 }

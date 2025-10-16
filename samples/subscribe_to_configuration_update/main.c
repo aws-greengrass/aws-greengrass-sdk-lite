@@ -20,8 +20,12 @@ static pthread_cond_t config_cond = PTHREAD_COND_INITIALIZER;
 static bool config_updated = false;
 
 static void config_update_handler(
-    GglBuffer component_name, GglList key_path, GgIpcSubscriptionHandle handle
+    void *ctx,
+    GglBuffer component_name,
+    GglList key_path,
+    GgIpcSubscriptionHandle handle
 ) {
+    (void) ctx;
     (void) handle;
     printf("Configuration update received:\n");
     printf(
@@ -64,7 +68,7 @@ int main(void) {
     // component
     GglBufList key_path = GGL_BUF_LIST(GGL_STR("test_str"));
     ret = ggipc_subscribe_to_configuration_update(
-        NULL, key_path, config_update_handler, NULL
+        NULL, key_path, config_update_handler, NULL, NULL
     );
 
     if (ret != GGL_ERR_OK) {
