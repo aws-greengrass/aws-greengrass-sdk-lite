@@ -1,0 +1,22 @@
+[package]
+name = "ggl-sdk"
+version = "0.0.2"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/aws/aws-greengrass-sdk-lite"
+description = "Lightweight AWS IoT Greengrass SDK"
+readme = "../README.md"
+keywords = ["aws", "greengrass", "iot"]
+categories = ["api-bindings"]
+
+[build-dependencies]
+bindgen = "0.72"
+cc = "1"
+cmake = "0.1"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

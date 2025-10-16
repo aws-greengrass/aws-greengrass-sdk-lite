@@ -1,4 +1,5 @@
 ALLOCN
+bufs
 cbmc
 coverity
 dfcc
@@ -15,4 +16,14 @@ LOGI
 LOGT
 LOGW
 MQTT
+nanos
+noconn
+nodata
+noentry
 NOLINTNEXTLINE
+nomem
+nsec
+repr
+rustc
+strs
+svcuid

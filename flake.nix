@@ -42,8 +42,17 @@
             git
             cmake
             cbmc
+            cargo
+            rustc
+            rustPlatform.bindgenHook
+            clippy
+            rustfmt
+            rust-analyzer-unwrapped
           ];
-          env.NIX_HARDENING_ENABLE = "";
+          env = { rustPlatform, ... }: {
+            NIX_HARDENING_ENABLE = "";
+            RUST_SRC_PATH = "${rustPlatform.rustLibSrc}";
+          };
           shellHook = ''
             export MAKEFLAGS=-j
           '';
@@ -57,6 +66,7 @@
         formatters =
           { llvmPackages_latest
           , cmake-format
+          , rustfmt
           , nodePackages
           , yapf
           , ...
@@ -74,6 +84,7 @@
             "*.hpp" = fmt-c;
             "CMakeLists.txt" = fmt-cmake;
             ".clang*" = fmt-yaml;
+            "*.rs" = "${rustfmt}/bin/rustfmt";
             "*.py" = "${yapf}/bin/yapf -i";
           };
 
@@ -217,6 +228,36 @@
               ${pkgs.nodePackages.cspell}/bin/cspell "**" --quiet
               ${pkgs.coreutils}/bin/sort -cuf misc/dictionary.txt
             '';
+
+            build-rust-crate = { rustPlatform, cmake, clippy, ... }:
+              rustPlatform.buildRustPackage {
+                pname = "ggl-sdk-rs";
+                version = "0.0.2";
+                nativeBuildInputs = [
+                  rustPlatform.bindgenHook
+                  cmake
+                  clippy
+                ];
+                dontUseCmakeConfigure = true;
+                src = lib.fileset.toSource {
+                  root = ./.;
+                  fileset = lib.fileset.unions [
+                    ./CMakeLists.txt
+                    ./include
+                    ./priv_include
+                    ./src
+                    ./rust
+                  ];
+                };
+                cargoLock.lockFile = ./rust/Cargo.lock;
+                cargoRoot = "rust";
+                buildAndTestSubdir = "rust";
+                postCheck = ''
+                  pushd rust
+                  cargo clippy --profile $cargoCheckType -- --deny warnings
+                  popd
+                '';
+              };
           };
 
         withOverlays = final: prev: {
