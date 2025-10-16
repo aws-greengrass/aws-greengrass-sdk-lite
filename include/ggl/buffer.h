@@ -131,4 +131,6 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) CBMC_CONTRACT(
     assigns(*value)
 );
 
+GglError ggl_buf_copy(GglBuffer source, GglBuffer *target);
+
 #endif

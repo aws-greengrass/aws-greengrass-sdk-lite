@@ -142,11 +142,11 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
 static GglError buf_write(void *ctx, GglBuffer buf) {
     GglBuffer *target = ctx;
 
-    if (target->len < buf.len) {
-        GGL_LOGT("Buffer write failed due to insufficient space.");
-        return GGL_ERR_NOMEM;
+    GglError ret = ggl_buf_copy(buf, target);
+    if (ret != GGL_ERR_OK) {
+        return ret;
     }
-    memcpy(target->data, buf.data, buf.len);
+
     *target = ggl_buffer_substr(*target, buf.len, SIZE_MAX);
 
     return GGL_ERR_OK;
@@ -154,4 +154,18 @@ static GglError buf_write(void *ctx, GglBuffer buf) {
 
 GglWriter ggl_buf_writer(GglBuffer *buf) {
     return (GglWriter) { .ctx = buf, .write = &buf_write };
+}
+
+GglError ggl_buf_copy(GglBuffer source, GglBuffer *target) {
+    if (source.len == 0) {
+        target->len = 0;
+        GGL_LOGD("Source has zero length buffer");
+        return GGL_ERR_OK;
+    }
+    if (target->len < source.len) {
+        GGL_LOGT("Failed to copy buffer due to insufficient space.");
+        return GGL_ERR_NOMEM;
+    }
+    memcpy(target->data, source.data, source.len);
+    return GGL_ERR_OK;
 }
