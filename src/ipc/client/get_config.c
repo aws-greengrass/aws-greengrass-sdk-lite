@@ -118,13 +118,6 @@ static GglError copy_config_obj(void *ctx, GglMap result) {
         return GGL_ERR_INVALID;
     }
 
-    if (ggl_obj_type(*value) == GGL_TYPE_MAP) {
-        GglMap map = ggl_obj_into_map(*value);
-        if (map.len == 1) {
-            value = ggl_kv_val(&map.pairs[0]);
-        }
-    }
-
     if (copy_ctx->value != NULL) {
         ret = ggl_arena_claim_obj(value, copy_ctx->alloc);
         if (ret != GGL_ERR_OK) {
