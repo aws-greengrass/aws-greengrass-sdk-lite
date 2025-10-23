@@ -141,14 +141,14 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
 
 static GglError buf_write(void *ctx, GglBuffer buf) {
     GglBuffer *target = ctx;
+    GglBuffer target_copy = *target;
 
-    GglError ret = ggl_buf_copy(buf, target);
+    GglError ret = ggl_buf_copy(buf, &target_copy);
     if (ret != GGL_ERR_OK) {
         return ret;
     }
 
     *target = ggl_buffer_substr(*target, buf.len, SIZE_MAX);
-
     return GGL_ERR_OK;
 }
 
@@ -159,7 +159,7 @@ GglWriter ggl_buf_writer(GglBuffer *buf) {
 GglError ggl_buf_copy(GglBuffer source, GglBuffer *target) {
     if (source.len == 0) {
         target->len = 0;
-        GGL_LOGD("Source has zero length buffer");
+        GGL_LOGT("Source has zero length buffer");
         return GGL_ERR_OK;
     }
     if (target->len < source.len) {
@@ -167,5 +167,7 @@ GglError ggl_buf_copy(GglBuffer source, GglBuffer *target) {
         return GGL_ERR_NOMEM;
     }
     memcpy(target->data, source.data, source.len);
+    target->len = source.len;
+
     return GGL_ERR_OK;
 }
