@@ -7,6 +7,7 @@
 #include <ggl/flags.h>
 #include <ggl/ipc/client.h>
 #include <ggl/ipc/client_raw.h>
+#include <ggl/list.h>
 #include <ggl/log.h>
 #include <ggl/map.h>
 #include <ggl/object.h>
@@ -20,7 +21,7 @@ static GglError subscribe_to_configuration_update_resp_handler(
     GglBuffer service_model_type,
     GglMap data
 ) {
-    GgIpcSubscribeToConfigurationUpdateCallback *handler = ctx;
+    GgIpcSubscribeToConfigurationUpdateCallback *callback = ctx;
 
     if (!ggl_buffer_eq(
             service_model_type,
@@ -65,9 +66,13 @@ static GglError subscribe_to_configuration_update_resp_handler(
     GglBuffer component_name = ggl_obj_into_buf(*component_name_obj);
     GglList key_path = ggl_obj_into_list(*key_path_obj);
 
-    if (handler != NULL) {
-        handler(aux_ctx, component_name, key_path, handle);
+    ret = ggl_list_type_check(key_path, GGL_TYPE_BUF);
+    if (ret != GGL_ERR_OK) {
+        GGL_LOGE("Key path must contain only buffers.");
+        return GGL_ERR_INVALID;
     }
+
+    callback(aux_ctx, component_name, key_path, handle);
 
     return GGL_ERR_OK;
 }

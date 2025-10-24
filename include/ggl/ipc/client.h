@@ -152,7 +152,7 @@ typedef void GgIpcSubscribeToConfigurationUpdateCallback(
 
 /// Subscribe to configuration updates for a component
 /// Pass NULL for component_name to refer to current component.
-ACCESS(read_only, 1)
+ACCESS(read_only, 1) NONNULL(3)
 GglError ggipc_subscribe_to_configuration_update(
     const GglBuffer *component_name,
     GglBufList key_path,
