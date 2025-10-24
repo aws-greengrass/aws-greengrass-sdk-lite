@@ -12,7 +12,6 @@
 #include <ggl/log.h>
 #include <inttypes.h>
 #include <pthread.h>
-#include <sys/types.h>
 
 static uint8_t ipc_b64_encode_mem[GGL_IPC_MAX_MSG_LEN] = { 0 };
 static pthread_mutex_t ipc_b64_encode_mtx = PTHREAD_MUTEX_INITIALIZER;

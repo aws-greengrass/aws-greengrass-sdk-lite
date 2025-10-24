@@ -10,7 +10,6 @@
 #include <ggl/map.h>
 #include <ggl/object.h>
 #include <ggl/vector.h>
-#include <string.h>
 #include <time.h>
 
 struct timespec;

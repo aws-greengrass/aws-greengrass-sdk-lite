@@ -6,7 +6,6 @@
 #include <ggl/log.h>
 #include <pthread.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdbool.h>

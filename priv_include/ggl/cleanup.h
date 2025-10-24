@@ -9,7 +9,6 @@
 
 #include <ggl/macro_util.h>
 #include <pthread.h>
-#include <sys/types.h>
 #include <stdlib.h>
 
 #define GGL_CLEANUP_ID(ident, fn, exp) \

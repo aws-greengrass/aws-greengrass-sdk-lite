@@ -9,7 +9,6 @@
 #include <ggl/sdk.h>
 #include <pthread.h>
 #include <string.h>
-#include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

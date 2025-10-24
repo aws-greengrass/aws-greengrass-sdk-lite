@@ -16,6 +16,7 @@
             ./priv_include
             ./src
             ./.clang-tidy
+            ./.clangd
             ./samples
             ./cpp/CMakeLists.txt
             ./cpp/include
@@ -26,9 +27,9 @@
           ];
         };
 
-        llvmStdenv = pkgs: pkgs.overrideCC pkgs.llvmPackages_21.stdenv
-          (pkgs.llvmPackages_21.stdenv.cc.override
-            { inherit (pkgs.llvmPackages_21) bintools; });
+        llvmStdenv = pkgs: pkgs.overrideCC pkgs.llvmPackages_latest.stdenv
+          (pkgs.llvmPackages_latest.stdenv.cc.override
+            { inherit (pkgs.llvmPackages_latest) bintools; });
       in
       {
         inherit inputs;
@@ -36,7 +37,7 @@
 
         devShell = pkgs: {
           packages = with pkgs; [
-            llvmPackages_21.clang-tools
+            llvmPackages_latest.clang-tools
             clangd-tidy
             git
             cmake
@@ -53,9 +54,15 @@
           stdenv = lib.mkForce (llvmStdenv pkgs);
         };
 
-        formatters = { llvmPackages_21, cmake-format, nodePackages, yapf, ... }:
+        formatters =
+          { llvmPackages_latest
+          , cmake-format
+          , nodePackages
+          , yapf
+          , ...
+          }:
           let
-            fmt-c = "${llvmPackages_21.clang-unwrapped}/bin/clang-format -i";
+            fmt-c = "${llvmPackages_latest.clang-unwrapped}/bin/clang-format -i";
             fmt-cmake = "${cmake-format}/bin/cmake-format -i";
             fmt-yaml =
               "${nodePackages.prettier}/bin/prettier --write --parser yaml";
