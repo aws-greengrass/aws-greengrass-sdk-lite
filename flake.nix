@@ -78,11 +78,11 @@
           };
 
         pname = "ggl-sdk";
-        package = { stdenv, pkg-config, cmake, ninja, static ? true }:
+        package = { stdenv, cmake, ninja, static ? true }:
           stdenv.mkDerivation {
             name = "ggl-sdk";
             src = filteredSrc;
-            nativeBuildInputs = [ pkg-config cmake ninja ];
+            nativeBuildInputs = [ cmake ninja ];
             cmakeBuildType = "MinSizeRel";
             cmakeFlags = [ "-DENABLE_WERROR=1" ]
               ++ lib.optional (!static) "-DBUILD_SHARED_LIBS=1";
@@ -100,10 +100,10 @@
 
         checks =
           let
-            clangBuildDir = { pkgs, pkg-config, clang-tools, cmake, ... }:
+            clangBuildDir = { pkgs, clang-tools, cmake, ... }:
               (llvmStdenv pkgs).mkDerivation {
                 name = "clang-cmake-build-dir";
-                nativeBuildInputs = [ pkg-config clang-tools ];
+                nativeBuildInputs = [ clang-tools ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
                     -D CMAKE_BUILD_TYPE=Debug
@@ -144,11 +144,11 @@
                 grep -v '^ggl_\|^ggipc_' syms && exit 1 || true
               '';
 
-            cbmc-contracts = { stdenv, pkg-config, cmake, cbmc, python3, ... }:
+            cbmc-contracts = { stdenv, cmake, cbmc, python3, ... }:
               stdenv.mkDerivation {
                 name = "check-cbmc-contracts";
                 src = filteredSrc;
-                nativeBuildInputs = [ pkg-config cbmc python3 ];
+                nativeBuildInputs = [ cbmc python3 ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B build -D CMAKE_BUILD_TYPE=Debug \
                     -D GGL_LOG_LEVEL=TRACE
