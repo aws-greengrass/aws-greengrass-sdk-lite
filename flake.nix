@@ -106,6 +106,23 @@
                 nativeBuildInputs = [ clang-tools ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
+                    -D CMAKE_BUILD_TYPE=Debug -D BUILD_CPP=OFF
+                  rm $out/CMakeFiles/CMakeConfigureLog.yaml
+                '';
+                dontUnpack = true;
+                dontPatch = true;
+                dontConfigure = true;
+                dontInstall = true;
+                dontFixup = true;
+                allowSubstitutes = false;
+              };
+
+            clangBuildDirCpp = { pkgs, clang-tools, cmake, ... }:
+              (llvmStdenv pkgs).mkDerivation {
+                name = "clang-cmake-build-dir";
+                nativeBuildInputs = [ clang-tools ];
+                buildPhase = ''
+                  ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
                     -D CMAKE_BUILD_TYPE=Debug
                   rm $out/CMakeFiles/CMakeConfigureLog.yaml
                 '';
@@ -130,8 +147,20 @@
               cd ${filteredSrc}
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
-              clangd-tidy -j$(nproc) -p ${clangBuildDir pkgs} --color=always \
-                $(fd . src -e c -e h -e cpp -e hpp)
+              clangd-tidy -j$(nproc) --color=always \
+                -p ${clangBuildDir pkgs} \
+                $(fd . src include priv_include -e c -e h)
+            '';
+
+            clang-tidy-cpp = pkgs: ''
+              set -eo pipefail
+              cd ${filteredSrc}
+              PATH=${lib.makeBinPath
+                (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
+              clangd-tidy -j$(nproc) --color=always \
+                -p ${clangBuildDirCpp pkgs} \
+                $(fd . cpp/src cpp/include cpp/priv_include \
+                  -e c -e h -e cpp -e hpp)
             '';
 
             namespacing = pkgs:
@@ -169,7 +198,7 @@
               white=$(printf "\e[1;37m")
               red=$(printf "\e[1;31m")
               clear=$(printf "\e[0m")
-              iwyu_tool.py -o clang -j $(nproc) -p ${clangBuildDir pkgs} \
+              iwyu_tool.py -o clang -j $(nproc) -p ${clangBuildDirCpp pkgs} \
                 $(fd . ${filteredSrc}/ -e c -e cpp) -- \
                 -Xiwyu --error -Xiwyu --check_also="${filteredSrc}/*" \
                 -Xiwyu --mapping_file=${./.}/misc/iwyu_mappings.yml |\

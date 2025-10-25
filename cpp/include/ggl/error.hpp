@@ -13,6 +13,7 @@
 
 extern "C" {
 /// GGL error codes, representing class of error.
+// NOLINTNEXTLINE(performance-enum-size)
 typedef enum [[nodiscard]] GglError {
     /// Success
     GGL_ERR_OK = 0,

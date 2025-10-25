@@ -15,6 +15,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
+  option(BUILD_CPP "Build C++ library" ON)
+
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
   include(GNUInstallDirs)
@@ -211,4 +213,6 @@ if(PROJECT_IS_TOP_LEVEL)
   endif()
 endif()
 
-add_subdirectory(cpp)
+if(BUILD_CPP)
+  add_subdirectory(cpp)
+endif()

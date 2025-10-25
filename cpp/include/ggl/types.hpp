@@ -45,6 +45,7 @@ typedef struct {
 } GglArena;
 
 /// Type tag for `GglObject`.
+// NOLINTNEXTLINE(performance-enum-size)
 typedef enum {
     GGL_TYPE_NULL = 0,
     GGL_TYPE_BOOLEAN,
@@ -59,6 +60,7 @@ typedef struct {
     uint32_t val;
 } GgIpcSubscriptionHandle;
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum class GglComponentState {
     RUNNING,
     ERRORED
