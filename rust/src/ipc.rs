@@ -12,7 +12,7 @@ use std::{
 use crate::{
     c,
     error::{Error, Result},
-    object::{self, Kv, Mutable, Object, RefKind, Shared},
+    object::{KvRef, ObjectRef},
 };
 
 static INIT: OnceLock<()> = OnceLock::new();
@@ -37,7 +37,7 @@ pub enum Qos {
 
 #[derive(Debug, Clone, Copy)]
 pub enum SubscribeToTopicPayload<'a> {
-    Json(&'a [Kv<'a, Shared>]),
+    Json(&'a [KvRef<'a>]),
     Binary(&'a [u8]),
 }
 
@@ -60,7 +60,7 @@ impl Sdk {
 
     /// # Errors
     /// Returns error if already connected or connection fails.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc)]
     pub fn connect_with_token(
         &self,
         socket_path: &str,
@@ -90,10 +90,10 @@ impl Sdk {
 
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_topic_json<'a, R: RefKind<'a>>(
+    pub fn publish_to_topic_json(
         &self,
         topic: &str,
-        payload: &[Kv<'a, R>],
+        payload: &[KvRef<'_>],
     ) -> Result<()> {
         let topic_buf = c::GglBuffer {
             data: topic.as_ptr().cast_mut(),
@@ -158,7 +158,7 @@ impl Sdk {
                     let map = unsafe { c::ggl_obj_into_map(payload) };
                     SubscribeToTopicPayload::Json(unsafe {
                         slice::from_raw_parts(
-                            map.pairs as *const Kv<Shared>,
+                            map.pairs as *const KvRef,
                             map.len,
                         )
                     })
@@ -285,7 +285,7 @@ impl Sdk {
         key_path: &[&str],
         component_name: Option<&str>,
         result_mem: &'a mut [mem::MaybeUninit<u8>],
-    ) -> Result<Object<'a, Mutable>> {
+    ) -> Result<ObjectRef<'a>> {
         let bufs: Box<[c::GglBuffer]> = key_path
             .iter()
             .map(|k| c::GglBuffer {
@@ -375,11 +375,11 @@ impl Sdk {
 
     /// # Errors
     /// Returns error if config update fails.
-    pub fn update_config<'a, R: RefKind<'a>>(
+    pub fn update_config(
         &self,
         key_path: &[&str],
         timestamp: Option<std::time::SystemTime>,
-        value_to_merge: &object::Object<'a, R>,
+        value_to_merge: &ObjectRef<'_>,
     ) -> Result<()> {
         let bufs: Box<[c::GglBuffer]> = key_path
             .iter()
@@ -397,7 +397,7 @@ impl Sdk {
         let timespec = timestamp.map(|t| {
             let duration =
                 t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
-            #[allow(clippy::cast_possible_wrap)]
+            #[expect(clippy::cast_possible_wrap)]
             c::timespec {
                 tv_sec: duration.as_secs() as i64,
                 tv_nsec: i64::from(duration.subsec_nanos()),
@@ -509,41 +509,31 @@ impl Sdk {
     pub fn call<
         'a,
         'b,
-        R: RefKind<'a>,
-        F: FnOnce(
-            result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-        ) -> Result<()>,
+        F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
-        params: &[Kv<'a, R>],
+        params: &[KvRef<'a>],
         mut callback: F,
     ) -> Result<()> {
         extern "C" fn result_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             result: c::GglMap,
         ) -> c::GglError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
-                slice::from_raw_parts(
-                    result.pairs as *const Kv<Shared>,
-                    result.len,
-                )
+                slice::from_raw_parts(result.pairs as *const KvRef, result.len)
             };
             cb(Ok(result_slice)).into()
         }
 
         extern "C" fn error_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             error_code: c::GglBuffer,
@@ -592,49 +582,38 @@ impl Sdk {
 
     /// # Errors
     /// Returns error if subscription fails.
-    #[allow(clippy::too_many_lines)]
     pub fn subscribe<
         'a,
         'b,
         'c,
-        R: RefKind<'a>,
-        F: FnOnce(
-            result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-        ) -> Result<()>,
-        G: FnMut(usize, &str, &'b [Kv<'b, Shared>]) -> Result<()> + 'c,
+        F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+        G: FnMut(usize, &str, &'b [KvRef<'b>]) -> Result<()> + 'c,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
-        params: &[Kv<'a, R>],
+        params: &[KvRef<'a>],
         mut response_callback: F,
         sub_callback: G,
         aux_ctx: usize,
     ) -> Result<Subscription<'c, G>> {
         extern "C" fn result_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             result: c::GglMap,
         ) -> c::GglError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
-                slice::from_raw_parts(
-                    result.pairs as *const Kv<Shared>,
-                    result.len,
-                )
+                slice::from_raw_parts(result.pairs as *const KvRef, result.len)
             };
             cb(Ok(result_slice)).into()
         }
 
         extern "C" fn error_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             error_code: c::GglBuffer,
@@ -659,7 +638,7 @@ impl Sdk {
         extern "C" fn sub_trampoline<
             'b,
             'c,
-            G: FnMut(usize, &str, &'b [Kv<'b, Shared>]) -> Result<()> + 'c,
+            G: FnMut(usize, &str, &'b [KvRef<'b>]) -> Result<()> + 'c,
         >(
             ctx: *mut ffi::c_void,
             aux_ctx: *mut ffi::c_void,
@@ -677,7 +656,7 @@ impl Sdk {
             })
             .unwrap();
             let map = unsafe {
-                slice::from_raw_parts(data.pairs as *const Kv<Shared>, data.len)
+                slice::from_raw_parts(data.pairs.cast::<KvRef>(), data.len)
             };
             cb(aux, smt, map).into()
         }

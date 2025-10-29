@@ -12,4 +12,4 @@ pub mod object;
 
 pub use error::{Error, Result};
 pub use ipc::Sdk;
-pub use object::{Kv, MapExt, Object};
+pub use object::{Kv, KvRef, MapExt, Object, ObjectRef};

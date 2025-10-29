@@ -255,6 +255,9 @@
                 cargoLock.lockFile = ./rust/Cargo.lock;
                 cargoRoot = "rust";
                 buildAndTestSubdir = "rust";
+                preCheck = ''
+                  export RUSTDOCFLAGS="-C link-arg=-lggl-sdk"
+                '';
                 postCheck = ''
                   pushd rust
                   cargo clippy --profile $cargoCheckType -- --deny warnings

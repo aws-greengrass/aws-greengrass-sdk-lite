@@ -2,103 +2,222 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{marker::PhantomData, ops::Deref, ptr::NonNull, str};
+use std::{
+    borrow::Borrow,
+    fmt,
+    marker::PhantomData,
+    mem::ManuallyDrop,
+    ptr::{self, NonNull},
+    slice, str,
+};
 
 use crate::c;
 
-pub trait RefKind<'a>: 'static {
-    type Ref<T: ?Sized + 'a>: Deref<Target = T>;
-
-    /// # Safety
-    /// The pointer must follow all validity rules
-    unsafe fn from_raw<T: ?Sized>(ptr: NonNull<T>) -> Self::Ref<T>;
-    fn into_raw<T: ?Sized>(r: Self::Ref<T>) -> NonNull<T>;
+#[repr(transparent)]
+pub struct Object {
+    c: c::GglObject,
 }
-
-pub trait MutRefKind<'a>: RefKind<'a> {}
-
-#[derive(Debug)]
-pub struct Shared {}
-impl<'a> RefKind<'a> for Shared {
-    type Ref<T: ?Sized + 'a> = &'a T;
-
-    unsafe fn from_raw<T: ?Sized>(ptr: NonNull<T>) -> &'a T {
-        unsafe { ptr.as_ref() }
-    }
-
-    fn into_raw<T: ?Sized>(r: &'a T) -> NonNull<T> {
-        NonNull::from(r)
-    }
-}
-
-#[derive(Debug)]
-pub struct Mutable {}
-impl<'a> RefKind<'a> for Mutable {
-    type Ref<T: ?Sized + 'a> = &'a mut T;
-
-    unsafe fn from_raw<T: ?Sized>(mut ptr: NonNull<T>) -> &'a mut T {
-        unsafe { ptr.as_mut() }
-    }
-
-    fn into_raw<T: ?Sized>(r: &'a mut T) -> NonNull<T> {
-        NonNull::from(r)
-    }
-}
-impl MutRefKind<'_> for Mutable {}
-
-#[derive(Debug)]
-pub struct Owned {}
-impl<'a> RefKind<'a> for Owned {
-    type Ref<T: ?Sized + 'a> = Box<T>;
-
-    unsafe fn from_raw<T: ?Sized>(ptr: NonNull<T>) -> Box<T> {
-        unsafe { Box::from_raw(ptr.as_ptr()) }
-    }
-
-    fn into_raw<T: ?Sized>(r: Box<T>) -> NonNull<T> {
-        unsafe { NonNull::new_unchecked(Box::into_raw(r)) }
-    }
-}
-impl MutRefKind<'_> for Owned {}
 
 #[repr(transparent)]
-pub struct Object<'a, R: RefKind<'a> = Owned> {
+pub struct ObjectRef<'a> {
     c: c::GglObject,
-    phantom: PhantomData<UnpackedObject<'a, R>>,
+    phantom: PhantomData<UnpackedObject<'a>>,
 }
 
-impl<'a, R: RefKind<'a>> std::fmt::Debug for Object<'a, R> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<'a> AsRef<ObjectRef<'a>> for Object {
+    fn as_ref(&self) -> &ObjectRef<'a> {
+        self.borrow()
+    }
+}
+
+impl<'a> Borrow<ObjectRef<'a>> for Object {
+    fn borrow(&self) -> &ObjectRef<'a> {
+        unsafe {
+            (&raw const *self)
+                .cast::<ObjectRef>()
+                .as_ref()
+                .unwrap_unchecked()
+        }
+    }
+}
+
+impl fmt::Debug for Object {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_ref().fmt(f)
+    }
+}
+
+impl fmt::Debug for ObjectRef<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.unpack().fmt(f)
     }
 }
 
 #[derive(Debug)]
 #[repr(u8)]
-pub enum UnpackedObject<'a, R: RefKind<'a> = Owned> {
+pub enum UnpackedObject<'a> {
     Null = 0,
     Bool(bool) = 1,
     I64(i64) = 2,
     F64(f64) = 3,
-    Buf(R::Ref<str>) = 4,
-    List(R::Ref<[Object<'a, R>]>) = 5,
-    Map(R::Ref<[Kv<'a, R>]>) = 6,
+    Buf(&'a str) = 4,
+    List(&'a [ObjectRef<'a>]) = 5,
+    Map(&'a [KvRef<'a>]) = 6,
 }
 
-fn slice_from_c_raw_parts<T>(ptr: *mut T, len: usize) -> NonNull<[T]> {
-    let ptr = NonNull::new(ptr).unwrap_or_else(|| {
-        assert_eq!(len, 0, "null pointer with non-zero length");
-        NonNull::dangling()
-    });
-    NonNull::slice_from_raw_parts(ptr, len)
+impl Object {
+    pub const NULL: Self = Self { c: c::GGL_OBJ_NULL };
+
+    /// Create a boolean object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Object, UnpackedObject};
+    ///
+    /// let obj = Object::bool(true);
+    /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::Bool(true)));
+    /// ```
+    #[must_use]
+    pub fn bool(b: bool) -> Self {
+        Self {
+            c: unsafe { c::ggl_obj_bool(b) },
+        }
+    }
+
+    /// Create an i64 object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Object, UnpackedObject};
+    ///
+    /// let obj = Object::i64(42);
+    /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::I64(42)));
+    /// ```
+    #[must_use]
+    pub fn i64(i: i64) -> Self {
+        Self {
+            c: unsafe { c::ggl_obj_i64(i) },
+        }
+    }
+
+    /// Create an f64 object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Object, UnpackedObject};
+    ///
+    /// let obj = Object::f64(3.14);
+    /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::F64(f) if (f - 3.14).abs() < f64::EPSILON));
+    /// ```
+    #[must_use]
+    pub fn f64(f: f64) -> Self {
+        Self {
+            c: unsafe { c::ggl_obj_f64(f) },
+        }
+    }
+
+    /// Create a string buffer object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Object, UnpackedObject};
+    ///
+    /// let obj = Object::buf("hello");
+    /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::Buf("hello")));
+    /// ```
+    #[must_use]
+    pub fn buf(buf: impl Into<Box<str>>) -> Self {
+        let s = buf.into();
+        let len = s.len();
+        let ptr = Box::into_raw(s);
+        Self {
+            c: unsafe {
+                c::ggl_obj_buf(c::GglBuffer {
+                    data: (*ptr).as_ptr().cast_mut(),
+                    len,
+                })
+            },
+        }
+    }
+
+    /// Create a list object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Object, UnpackedObject};
+    ///
+    /// let obj = Object::list([Object::i64(1), Object::i64(2)]);
+    /// if let UnpackedObject::List(items) = obj.as_ref().unpack() {
+    ///     assert_eq!(items.len(), 2);
+    /// }
+    /// ```
+    #[must_use]
+    pub fn list(list: impl Into<Box<[Object]>>) -> Self {
+        let ptr = Box::into_raw(list.into());
+        Self {
+            c: unsafe {
+                c::ggl_obj_list(c::GglList {
+                    items: (*ptr).as_ptr().cast_mut().cast::<c::GglObject>(),
+                    len: ptr.len(),
+                })
+            },
+        }
+    }
+
+    /// Create a map object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Kv, MapExt, Object, UnpackedObject};
+    ///
+    /// let obj = Object::map([
+    ///     Kv::new("key1", Object::i64(42)),
+    ///     Kv::new("key2", Object::buf("value")),
+    /// ]);
+    /// if let UnpackedObject::Map(pairs) = obj.as_ref().unpack() {
+    ///     assert_eq!(pairs.len(), 2);
+    ///     assert!(matches!(
+    ///         pairs.map_get("key1").unwrap().unpack(),
+    ///         UnpackedObject::I64(42)
+    ///     ));
+    /// }
+    /// ```
+    #[must_use]
+    pub fn map(map: impl Into<Box<[Kv]>>) -> Self {
+        let ptr = Box::into_raw(map.into());
+        Self {
+            c: unsafe {
+                c::ggl_obj_map(c::GglMap {
+                    pairs: (*ptr).as_ptr().cast_mut().cast::<c::GglKV>(),
+                    len: ptr.len(),
+                })
+            },
+        }
+    }
 }
 
-impl<'a, R: RefKind<'a>> Object<'a, R> {
+impl<'a> ObjectRef<'a> {
     pub const NULL: Self = Self {
         c: c::GGL_OBJ_NULL,
         phantom: PhantomData,
     };
 
+    /// Create a boolean reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{ObjectRef, UnpackedObject};
+    ///
+    /// let obj = ObjectRef::bool(false);
+    /// assert!(matches!(obj.unpack(), UnpackedObject::Bool(false)));
+    /// ```
     #[must_use]
     pub fn bool(b: bool) -> Self {
         Self {
@@ -123,49 +242,90 @@ impl<'a, R: RefKind<'a>> Object<'a, R> {
         }
     }
 
+    /// Create a borrowed string buffer reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{ObjectRef, UnpackedObject};
+    ///
+    /// let s = "borrowed";
+    /// let obj = ObjectRef::buf(s);
+    /// assert!(matches!(obj.unpack(), UnpackedObject::Buf("borrowed")));
+    /// ```
     #[must_use]
-    pub fn buf(buf: impl Into<R::Ref<str>>) -> Self {
-        let ptr = R::into_raw(buf.into());
+    pub fn buf(buf: impl Into<&'a str>) -> Self {
+        let s = buf.into();
         Self {
             c: unsafe {
                 c::ggl_obj_buf(c::GglBuffer {
-                    data: ptr.as_ptr().cast::<u8>(),
-                    len: ptr.as_ref().len(),
+                    data: s.as_ptr().cast_mut(),
+                    len: s.len(),
                 })
             },
             phantom: PhantomData,
         }
     }
 
+    /// Create a borrowed list reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{ObjectRef, UnpackedObject};
+    ///
+    /// let items = [ObjectRef::i64(1), ObjectRef::i64(2)];
+    /// let obj = ObjectRef::list(&items[..]);
+    /// if let UnpackedObject::List(list) = obj.unpack() {
+    ///     assert_eq!(list.len(), 2);
+    /// }
+    /// ```
     #[must_use]
-    pub fn list(list: impl Into<R::Ref<[Object<'a, R>]>>) -> Self {
-        let ptr = R::into_raw(list.into());
+    pub fn list(list: impl Into<&'a [ObjectRef<'a>]>) -> Self {
+        let slice = list.into();
         Self {
             c: unsafe {
                 c::ggl_obj_list(c::GglList {
-                    items: ptr.as_ptr().cast::<c::GglObject>(),
-                    len: ptr.len(),
+                    items: slice.as_ptr().cast_mut().cast::<c::GglObject>(),
+                    len: slice.len(),
                 })
             },
             phantom: PhantomData,
         }
     }
 
+    /// Create a borrowed map reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{KvRef, ObjectRef, UnpackedObject};
+    ///
+    /// let pairs = [KvRef::new("k", ObjectRef::i64(1))];
+    /// let obj = ObjectRef::map(&pairs[..]);
+    /// if let UnpackedObject::Map(m) = obj.unpack() {
+    ///     assert_eq!(m.len(), 1);
+    /// }
+    /// ```
     #[must_use]
-    pub fn map(map: impl Into<R::Ref<[Kv<'a, R>]>>) -> Self {
-        let ptr = R::into_raw(map.into());
+    pub fn map(map: impl Into<&'a [KvRef<'a>]>) -> Self {
+        let slice = map.into();
         Self {
             c: unsafe {
                 c::ggl_obj_map(c::GglMap {
-                    pairs: ptr.as_ptr().cast::<c::GglKV>(),
-                    len: ptr.len(),
+                    pairs: slice.as_ptr().cast_mut().cast::<c::GglKV>(),
+                    len: slice.len(),
                 })
             },
             phantom: PhantomData,
         }
     }
+}
 
-    pub fn to_owned<'b>(&self) -> Object<'b, Owned> {
+impl ToOwned for ObjectRef<'_> {
+    type Owned = Object;
+
+    fn to_owned(&self) -> Object {
         use UnpackedObject::*;
         match self.unpack() {
             Null => Object::NULL,
@@ -175,118 +335,299 @@ impl<'a, R: RefKind<'a>> Object<'a, R> {
             Buf(s) => Object::buf(s.to_owned().into_boxed_str()),
             List(items) => {
                 let owned: Box<[Object]> =
-                    items.iter().map(Object::to_owned).collect();
+                    items.iter().map(ObjectRef::to_owned).collect();
                 Object::list(owned)
             }
             Map(pairs) => {
-                let owned: Box<[Kv]> = pairs.iter().map(Kv::to_owned).collect();
+                let owned: Box<[Kv]> =
+                    pairs.iter().map(KvRef::to_owned).collect();
                 Object::map(owned)
             }
         }
     }
 }
 
-unsafe fn unpack_base<'a, R: RefKind<'a>>(
-    obj: c::GglObject,
-) -> UnpackedObject<'a, R> {
-    use c::GglObjectType::*;
-    use UnpackedObject::*;
+unsafe fn slice_from_c<'a, T>(ptr: *const T, len: usize) -> &'a [T] {
+    let ptr = NonNull::new(ptr.cast_mut()).unwrap_or_else(|| {
+        assert_eq!(len, 0, "null pointer with non-zero length");
+        NonNull::dangling()
+    });
+    unsafe { NonNull::slice_from_raw_parts(ptr, len).as_ref() }
+}
 
-    unsafe {
-        match c::ggl_obj_type(obj) {
-            GGL_TYPE_NULL => Null,
-            GGL_TYPE_BOOLEAN => Bool(c::ggl_obj_into_bool(obj)),
-            GGL_TYPE_I64 => I64(c::ggl_obj_into_i64(obj)),
-            GGL_TYPE_F64 => F64(c::ggl_obj_into_f64(obj)),
-            GGL_TYPE_BUF => {
-                let buf = c::ggl_obj_into_buf(obj);
-                let mut ptr = slice_from_c_raw_parts(buf.data, buf.len);
-                Buf(R::from_raw(
-                    str::from_utf8_mut(ptr.as_mut()).unwrap().into(),
-                ))
-            }
-            GGL_TYPE_LIST => {
-                let list = c::ggl_obj_into_list(obj);
-                List(R::from_raw(slice_from_c_raw_parts(
-                    list.items.cast::<Object<'a, R>>(),
-                    list.len,
-                )))
-            }
-            GGL_TYPE_MAP => {
-                let map = c::ggl_obj_into_map(obj);
-                Map(R::from_raw(slice_from_c_raw_parts(
-                    map.pairs.cast::<Kv<'a, R>>(),
-                    map.len,
-                )))
+impl<'a> ObjectRef<'a> {
+    /// Unpack the object to inspect its value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    ///
+    /// let obj = Object::i64(42);
+    /// match obj.as_ref().unpack() {
+    ///     UnpackedObject::Null => println!("null"),
+    ///     UnpackedObject::Bool(b) => println!("bool: {}", b),
+    ///     UnpackedObject::I64(n) => assert_eq!(n, 42),
+    ///     UnpackedObject::F64(f) => println!("float: {}", f),
+    ///     UnpackedObject::Buf(s) => println!("string: {}", s),
+    ///     UnpackedObject::List(items) => println!("list of {} items", items.len()),
+    ///     UnpackedObject::Map(pairs) => println!("map with {} pairs", pairs.len()),
+    /// }
+    ///
+    /// let list = Object::list([Object::i64(1), Object::buf("two")]);
+    /// if let UnpackedObject::List(items) = list.as_ref().unpack() {
+    ///     assert_eq!(items.len(), 2);
+    /// }
+    ///
+    /// let map = Object::map([Kv::new("key", Object::bool(true))]);
+    /// if let UnpackedObject::Map(pairs) = map.as_ref().unpack() {
+    ///     assert_eq!(pairs[0].key(), "key");
+    /// }
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the buffer is not valid UTF-8.
+    #[must_use]
+    pub fn unpack(&self) -> UnpackedObject<'_> {
+        use c::GglObjectType::*;
+        use UnpackedObject::*;
+
+        unsafe {
+            match c::ggl_obj_type(self.c) {
+                GGL_TYPE_NULL => Null,
+                GGL_TYPE_BOOLEAN => Bool(c::ggl_obj_into_bool(self.c)),
+                GGL_TYPE_I64 => I64(c::ggl_obj_into_i64(self.c)),
+                GGL_TYPE_F64 => F64(c::ggl_obj_into_f64(self.c)),
+                GGL_TYPE_BUF => {
+                    let buf = c::ggl_obj_into_buf(self.c);
+                    let ptr = slice_from_c(buf.data, buf.len);
+                    Buf(str::from_utf8(ptr).unwrap())
+                }
+                GGL_TYPE_LIST => {
+                    let list = c::ggl_obj_into_list(self.c);
+                    List(slice_from_c(
+                        list.items.cast::<ObjectRef<'a>>(),
+                        list.len,
+                    ))
+                }
+                GGL_TYPE_MAP => {
+                    let map = c::ggl_obj_into_map(self.c);
+                    Map(slice_from_c(map.pairs.cast::<KvRef<'a>>(), map.len))
+                }
             }
         }
     }
 }
 
-impl<'a, R: RefKind<'a>> Object<'a, R> {
-    // Transmuting to Shared is fine since it borrows and no modifications can
-    // be made.
-    #[must_use]
-    pub fn unpack(&self) -> UnpackedObject<'_, Shared> {
-        unsafe { unpack_base(self.c) }
-    }
-}
-
-impl Object<'_, Mutable> {
-    // Cannot transmute from Owned to Mutable since a different child could be
-    // swapped in which is not from a Box
-    #[must_use]
-    pub fn unpack_mut(&mut self) -> UnpackedObject<'_, Mutable> {
-        unsafe { unpack_base(self.c) }
-    }
-}
-
-impl<'a> Object<'a, Owned> {
-    #[must_use]
-    pub fn unpack_owned(self) -> UnpackedObject<'a, Owned> {
-        let this = std::mem::ManuallyDrop::new(self);
-        unsafe { unpack_base(this.c) }
-    }
-}
-
-impl Clone for Object<'_, Owned> {
+impl Clone for Object {
     fn clone(&self) -> Self {
-        self.to_owned()
+        self.as_ref().to_owned()
     }
 }
 
-impl<'a, R: RefKind<'a>> Drop for Object<'a, R> {
+impl Drop for Object {
     fn drop(&mut self) {
-        let _: UnpackedObject<'a, R> = unsafe { unpack_base(self.c) };
+        use c::GglObjectType::*;
+        unsafe {
+            match c::ggl_obj_type(self.c) {
+                GGL_TYPE_BUF => {
+                    let buf = c::ggl_obj_into_buf(self.c);
+                    let _ = Box::from_raw(ptr::slice_from_raw_parts_mut(
+                        buf.data, buf.len,
+                    ));
+                }
+                GGL_TYPE_LIST => {
+                    let list = c::ggl_obj_into_list(self.c);
+                    let _ = Box::from_raw(ptr::slice_from_raw_parts_mut(
+                        list.items.cast::<Object>(),
+                        list.len,
+                    ));
+                }
+                GGL_TYPE_MAP => {
+                    let map = c::ggl_obj_into_map(self.c);
+                    let _ = Box::from_raw(ptr::slice_from_raw_parts_mut(
+                        map.pairs.cast::<Kv>(),
+                        map.len,
+                    ));
+                }
+                _ => {}
+            }
+        }
     }
 }
 
-impl<'a, R: RefKind<'a>> Default for Object<'a, R> {
+impl Default for Object {
+    fn default() -> Self {
+        Self::NULL
+    }
+}
+
+impl Default for ObjectRef<'_> {
     fn default() -> Self {
         Self::NULL
     }
 }
 
 #[repr(transparent)]
-pub struct Kv<'a, R: RefKind<'a> = Owned> {
+pub struct Kv {
     c: c::GglKV,
-    phantom_key: PhantomData<R::Ref<str>>,
-    phantom_value: PhantomData<Object<'a, R>>,
 }
 
-impl<'a, R: RefKind<'a>> std::fmt::Debug for Kv<'a, R> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Kv")
+#[repr(transparent)]
+pub struct KvRef<'a> {
+    c: c::GglKV,
+    phantom_key: PhantomData<&'a str>,
+    phantom_value: PhantomData<ObjectRef<'a>>,
+}
+
+impl<'a> AsRef<KvRef<'a>> for Kv {
+    fn as_ref(&self) -> &KvRef<'a> {
+        self.borrow()
+    }
+}
+
+impl<'a> Borrow<KvRef<'a>> for Kv {
+    fn borrow(&self) -> &KvRef<'a> {
+        unsafe {
+            (&raw const *self)
+                .cast::<KvRef>()
+                .as_ref()
+                .unwrap_unchecked()
+        }
+    }
+}
+
+impl fmt::Debug for Kv {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("KvRef")
             .field("key", &self.key())
             .field("val", self.val())
             .finish()
     }
 }
 
-impl<'a, R: RefKind<'a>> Kv<'a, R> {
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn new(key: impl Into<R::Ref<str>>, value: Object<'a, R>) -> Self {
-        let s = &*key.into();
+impl fmt::Debug for KvRef<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("KvRef")
+            .field("key", &self.key())
+            .field("val", self.val())
+            .finish()
+    }
+}
+
+impl Kv {
+    /// Create a key-value pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Kv, Object};
+    ///
+    /// let kv = Kv::new("name", Object::buf("Alice"));
+    /// assert_eq!(kv.key(), "name");
+    /// ```
+    pub fn new(key: impl Into<Box<str>>, value: Object) -> Self {
+        let key = key.into();
+        let len = key.len();
+        let ptr = Box::into_raw(key);
+        let value = ManuallyDrop::new(value);
+        Self {
+            c: unsafe {
+                c::ggl_kv(
+                    c::GglBuffer {
+                        data: (*ptr).as_ptr().cast_mut(),
+                        len,
+                    },
+                    value.c,
+                )
+            },
+        }
+    }
+
+    /// # Panics
+    /// Panics if the key is not valid UTF-8.
+    #[must_use]
+    pub fn key(&self) -> &str {
+        let buf = unsafe { c::ggl_kv_key(self.c) };
+        unsafe {
+            str::from_utf8(slice::from_raw_parts(buf.data, buf.len)).unwrap()
+        }
+    }
+
+    /// Replace the held key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Kv, Object};
+    ///
+    /// let mut kv = Kv::new("old", Object::i64(1));
+    /// kv.set_key("new");
+    /// assert_eq!(kv.key(), "new");
+    /// ```
+    pub fn set_key(&mut self, key: impl Into<Box<str>>) {
+        let s = key.into();
+        let len = s.len();
+        let ptr = Box::into_raw(s);
+        unsafe {
+            let old = c::ggl_kv_key(self.c);
+            let _ =
+                Box::from_raw(ptr::slice_from_raw_parts_mut(old.data, old.len));
+            c::ggl_kv_set_key(
+                &raw mut self.c,
+                c::GglBuffer {
+                    data: (*ptr).as_ptr().cast_mut(),
+                    len,
+                },
+            );
+        }
+    }
+
+    #[must_use]
+    pub fn val(&self) -> &Object {
+        unsafe {
+            c::ggl_kv_val((&raw const self.c).cast_mut())
+                .cast::<Object>()
+                .as_ref()
+                .unwrap_unchecked()
+        }
+    }
+
+    /// Get mutable reference to the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    ///
+    /// let mut kv = Kv::new("count", Object::i64(1));
+    /// *kv.val_mut() = Object::i64(2);
+    /// assert!(matches!(kv.val().as_ref().unpack(), UnpackedObject::I64(2)));
+    /// ```
+    pub fn val_mut(&mut self) -> &mut Object {
+        unsafe {
+            c::ggl_kv_val(&raw mut self.c)
+                .cast::<Object>()
+                .as_mut()
+                .unwrap_unchecked()
+        }
+    }
+}
+
+impl<'a> KvRef<'a> {
+    /// Create a borrowed key-value pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{KvRef, ObjectRef};
+    ///
+    /// let kv = KvRef::new("key", ObjectRef::i64(10));
+    /// assert_eq!(kv.key(), "key");
+    /// ```
+    #[expect(clippy::needless_pass_by_value)]
+    pub fn new(key: impl Into<&'a str>, value: ObjectRef<'a>) -> Self {
+        let s = key.into();
         Self {
             c: unsafe {
                 c::ggl_kv(
@@ -308,38 +649,35 @@ impl<'a, R: RefKind<'a>> Kv<'a, R> {
     pub fn key(&self) -> &str {
         let buf = unsafe { c::ggl_kv_key(self.c) };
         unsafe {
-            str::from_utf8(std::slice::from_raw_parts(buf.data, buf.len))
-                .unwrap()
+            str::from_utf8(slice::from_raw_parts(buf.data, buf.len)).unwrap()
         }
     }
 
-    pub fn set_key(&mut self, key: impl Into<R::Ref<str>>) {
-        let s = &*key.into();
-        unsafe {
-            c::ggl_kv_set_key(
-                &raw mut self.c,
-                c::GglBuffer {
-                    data: s.as_ptr().cast_mut(),
-                    len: s.len(),
-                },
-            );
-        }
-    }
-
+    /// Get a reference to the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    ///
+    /// let kv = Kv::new("key", Object::i64(100));
+    /// assert!(matches!(kv.val().as_ref().unpack(), UnpackedObject::I64(100)));
+    /// ```
     #[must_use]
-    pub fn val(&self) -> &Object<'a, R> {
+    pub fn val(&self) -> &Object {
         unsafe {
-            &*(c::ggl_kv_val((&raw const self.c).cast_mut())
-                as *const Object<'a, R>)
+            c::ggl_kv_val((&raw const self.c).cast_mut())
+                .cast::<Object>()
+                .as_ref()
+                .unwrap_unchecked()
         }
     }
+}
 
-    pub fn val_mut(&mut self) -> &mut Object<'a, R> {
-        unsafe { &mut *c::ggl_kv_val(&raw mut self.c).cast::<Object<'a, R>>() }
-    }
+impl ToOwned for KvRef<'_> {
+    type Owned = Kv;
 
-    #[must_use]
-    pub fn to_owned<'b>(&self) -> Kv<'b, Owned> {
+    fn to_owned(&self) -> Kv {
         Kv::new(
             self.key().to_owned().into_boxed_str(),
             self.val().to_owned(),
@@ -347,62 +685,59 @@ impl<'a, R: RefKind<'a>> Kv<'a, R> {
     }
 }
 
-impl Clone for Kv<'_, Owned> {
+impl Clone for Kv {
     fn clone(&self) -> Self {
-        self.to_owned()
+        self.as_ref().to_owned()
     }
 }
 
-impl<'a, R: MutRefKind<'a>> Kv<'a, R> {
-    /// # Panics
-    /// Panics if the key is not valid UTF-8.
-    pub fn key_mut(&mut self) -> &mut str {
-        let buf = unsafe { c::ggl_kv_key(self.c) };
+impl Drop for Kv {
+    fn drop(&mut self) {
         unsafe {
-            str::from_utf8_mut(std::slice::from_raw_parts_mut(
-                buf.data, buf.len,
-            ))
-            .unwrap()
+            let key = c::ggl_kv_key(self.c);
+            let _ =
+                Box::from_raw(ptr::slice_from_raw_parts_mut(key.data, key.len));
+            ptr::drop_in_place(c::ggl_kv_val(&raw mut self.c).cast::<Object>());
         }
     }
 }
 
-pub trait MapExt<'a, R: RefKind<'a>> {
-    fn map_get(&self, key: &str) -> Option<&Object<'a, R>>;
-    fn map_get_mut(&mut self, key: &str) -> Option<&mut Object<'a, R>>;
+pub trait MapExt {
+    fn map_get<'a>(&self, key: impl Into<&'a str>) -> Option<&ObjectRef<'_>>;
 }
 
-#[allow(clippy::needless_pass_by_value)]
-fn map_get_ref<'a, 'b: 'a, ArgRef: RefKind<'a>, ObjRef: RefKind<'b>>(
-    map: ArgRef::Ref<[Kv<'b, ObjRef>]>,
-    key: &str,
-) -> Option<ArgRef::Ref<Object<'b, ObjRef>>> {
-    let map = c::GglMap {
-        pairs: map.as_ptr() as *mut c::GglKV,
-        len: map.len(),
-    };
-    let key = c::GglBuffer {
-        data: key.as_ptr().cast_mut(),
-        len: key.len(),
-    };
-    let mut result: *mut c::GglObject = std::ptr::null_mut();
-    if unsafe { c::ggl_map_get(map, key, &raw mut result) } {
-        Some(unsafe {
-            ArgRef::from_raw(
-                NonNull::new(result.cast::<Object<'b, ObjRef>>()).unwrap(),
-            )
-        })
-    } else {
-        None
-    }
-}
-
-impl<'a, R: RefKind<'a>> MapExt<'a, R> for [Kv<'a, R>] {
-    fn map_get(&self, key: &str) -> Option<&Object<'a, R>> {
-        map_get_ref::<Shared, _>(self, key)
-    }
-
-    fn map_get_mut(&mut self, key: &str) -> Option<&mut Object<'a, R>> {
-        map_get_ref::<Mutable, _>(self, key)
+impl MapExt for [KvRef<'_>] {
+    /// Get a value from a map by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{KvRef, MapExt, ObjectRef, UnpackedObject};
+    ///
+    /// let pairs = [
+    ///     KvRef::new("a", ObjectRef::i64(1)),
+    ///     KvRef::new("b", ObjectRef::i64(2)),
+    /// ];
+    /// let val = pairs.map_get("b").unwrap();
+    /// assert!(matches!(val.unpack(), UnpackedObject::I64(2)));
+    /// ```
+    fn map_get<'b>(&self, key: impl Into<&'b str>) -> Option<&ObjectRef<'_>> {
+        let k = key.into();
+        let map = c::GglMap {
+            pairs: self.as_ptr().cast_mut().cast::<c::GglKV>(),
+            len: self.len(),
+        };
+        let key = c::GglBuffer {
+            data: k.as_ptr().cast_mut(),
+            len: k.len(),
+        };
+        let mut result: *mut c::GglObject = ptr::null_mut();
+        if unsafe { c::ggl_map_get(map, key, &raw mut result) } {
+            Some(unsafe {
+                NonNull::new(result.cast::<ObjectRef>()).unwrap().as_ref()
+            })
+        } else {
+            None
+        }
     }
 }
