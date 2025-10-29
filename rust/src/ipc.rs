@@ -42,11 +42,19 @@ pub enum SubscribeToTopicPayload<'a> {
 }
 
 impl Sdk {
+    /// Initialize the SDK.
+    ///
+    /// Must be called before using any IPC operations.
     pub fn init() -> Self {
         INIT.get_or_init(|| unsafe { c::ggl_sdk_init() });
         Self {}
     }
 
+    /// Connect to the AWS IoT Greengrass Core IPC service.
+    ///
+    /// Uses `SVCUID` and `AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT`
+    /// environment variables set by the Greengrass nucleus.
+    ///
     /// # Errors
     /// Returns error if environment variables are missing, already connected, or connection fails.
     pub fn connect(&self) -> Result<()> {
@@ -58,6 +66,8 @@ impl Sdk {
         self.connect_with_token(&socket_path, &svcuid)
     }
 
+    /// Connect to the AWS IoT Greengrass Core IPC service with explicit credentials.
+    ///
     /// # Errors
     /// Returns error if already connected or connection fails.
     #[expect(clippy::missing_panics_doc)]
@@ -88,6 +98,13 @@ impl Sdk {
         Ok(())
     }
 
+    /// Publish a JSON message to a local pub/sub topic.
+    ///
+    /// Sends messages to other Greengrass components subscribed to the topic.
+    /// Requires `aws.greengrass#PublishToTopic` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
+    ///
     /// # Errors
     /// Returns error if publish fails.
     pub fn publish_to_topic_json(
@@ -109,6 +126,13 @@ impl Sdk {
         })
     }
 
+    /// Publish a binary message to a local pub/sub topic.
+    ///
+    /// Sends messages to other Greengrass components subscribed to the topic.
+    /// Requires `aws.greengrass#PublishToTopic` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
+    ///
     /// # Errors
     /// Returns error if publish fails.
     pub fn publish_to_topic_binary(
@@ -130,6 +154,13 @@ impl Sdk {
         })
     }
 
+    /// Subscribe to messages on a local pub/sub topic.
+    ///
+    /// Receives messages from other Greengrass components publishing to the topic.
+    /// Requires `aws.greengrass#SubscribeToTopic` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-subscribetotopic>
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe_to_topic<
@@ -203,6 +234,13 @@ impl Sdk {
         })
     }
 
+    /// Publish an MQTT message to AWS IoT Core.
+    ///
+    /// Sends messages to AWS IoT Core MQTT broker with specified QoS.
+    /// Requires `aws.greengrass#PublishToIoTCore` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-publishtoiotcore>
+    ///
     /// # Errors
     /// Returns error if publish fails.
     pub fn publish_to_iot_core(
@@ -225,6 +263,13 @@ impl Sdk {
         })
     }
 
+    /// Subscribe to MQTT messages from AWS IoT Core.
+    ///
+    /// Receives messages from AWS IoT Core MQTT broker on matching topics.
+    /// Requires `aws.greengrass#SubscribeToIoTCore` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-subscribetoiotcore>
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe_to_iot_core<'a, F: FnMut(&str, &[u8]) + 'a>(
@@ -278,6 +323,13 @@ impl Sdk {
         })
     }
 
+    /// Get component configuration value.
+    ///
+    /// Retrieves configuration for the specified key path. Pass empty slice for complete config.
+    /// Requires `aws.greengrass#GetConfiguration` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration>
+    ///
     /// # Errors
     /// Returns error if config retrieval fails.
     pub fn get_config<'a>(
@@ -325,6 +377,13 @@ impl Sdk {
         Ok(unsafe { ptr::read((&raw const obj).cast()) })
     }
 
+    /// Get component configuration value as a string.
+    ///
+    /// Retrieves string configuration for the specified key path.
+    /// Requires `aws.greengrass#GetConfiguration` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration>
+    ///
     /// # Errors
     /// Returns error if config retrieval fails.
     ///
@@ -373,6 +432,13 @@ impl Sdk {
         .unwrap())
     }
 
+    /// Update component configuration.
+    ///
+    /// Merges the provided value into the component's configuration at the key path.
+    /// Requires `aws.greengrass#UpdateConfiguration` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-updateconfiguration>
+    ///
     /// # Errors
     /// Returns error if config update fails.
     pub fn update_config(
@@ -413,6 +479,13 @@ impl Sdk {
         })
     }
 
+    /// Restart a Greengrass component.
+    ///
+    /// Requests the nucleus to restart the specified component.
+    /// Requires appropriate lifecycle management authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html>
+    ///
     /// # Errors
     /// Returns error if restart fails.
     pub fn restart_component(&self, component_name: &str) -> Result<()> {
@@ -424,6 +497,13 @@ impl Sdk {
         Result::from(unsafe { c::ggipc_restart_component(component_buf) })
     }
 
+    /// Subscribe to component configuration updates.
+    ///
+    /// Receives notifications when configuration changes for the specified key path.
+    /// Requires `aws.greengrass#SubscribeToConfigurationUpdate` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-subscribetoconfigurationupdate>
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe_to_configuration_update<
@@ -504,6 +584,10 @@ impl Sdk {
         })
     }
 
+    /// Make a generic IPC call.
+    ///
+    /// Low-level interface for invoking IPC operations not covered by specific methods.
+    ///
     /// # Errors
     /// Returns error if IPC call fails.
     pub fn call<
@@ -580,6 +664,10 @@ impl Sdk {
         })
     }
 
+    /// Subscribe to a generic IPC stream.
+    ///
+    /// Low-level interface for subscribing to IPC operations not covered by specific methods.
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe<
