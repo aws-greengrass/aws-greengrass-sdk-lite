@@ -24,7 +24,7 @@ typedef struct {
     size_t len;
 } GglBuffer;
 
-/// An array of `GglBuffer`
+/// An array of `GglBuffer`.
 typedef struct {
     GglBuffer *bufs;
     size_t len;
@@ -68,7 +68,7 @@ bool cbmc_buffer_restrict(GglBuffer *buf) {
 }
 #endif
 
-/// Convert null-terminated string to buffer
+/// Convert null-terminated string to buffer.
 PURE NULL_TERMINATED_STRING_ARG(1)
 GglBuffer ggl_buffer_from_null_term(char str[static 1]);
 
@@ -122,7 +122,7 @@ ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) CBMC_CONTRACT(
     )),
 );
 
-/// Parse an integer from a string
+/// Parse an integer from a string.
 ACCESS(write_only, 2)
 GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) CBMC_CONTRACT(
     requires(cbmc_buffer_restrict(&str)),
@@ -131,6 +131,9 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) CBMC_CONTRACT(
     assigns(*value)
 );
 
+/// Copy source buffer into target buffer.
+/// Returns GGL_ERR_NOMEM if target does not have source.len bytes.
+/// On success, updates `target->len` to source.len and returns GGL_ERR_OK.
 GglError ggl_buf_copy(GglBuffer source, GglBuffer *target);
 
 #endif

@@ -18,6 +18,8 @@
          name = &name[1])
 // NOLINTEND(bugprone-macro-parentheses)
 
+/// Check that all elements in a list are of the specified type.
+/// Returns GGL_ERR_OK if all elements match `type`, GGL_ERR_PARSE otherwise.
 PURE
 GglError ggl_list_type_check(GglList list, GglObjectType type);
 

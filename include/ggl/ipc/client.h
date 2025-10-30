@@ -20,7 +20,7 @@ struct timespec;
 #define GGL_IPC_MAX_STREAMS 16
 #endif
 
-/// Maximum time IPC functions will wait for server response
+/// Maximum time IPC functions will wait for server response.
 #ifndef GGL_IPC_RESPONSE_TIMEOUT
 #define GGL_IPC_RESPONSE_TIMEOUT 10
 #endif
@@ -39,12 +39,12 @@ GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 
 // Subscription management
 
-/// Handle for referring to a subscripion created by an IPC call
+/// Handle for referring to a subscripion created by an IPC call.
 typedef struct {
     uint32_t val;
 } GgIpcSubscriptionHandle;
 
-/// Close a subscription returned by an IPC call
+/// Close a subscription returned by an IPC call.
 void ggipc_close_subscription(GgIpcSubscriptionHandle handle);
 
 // IPC calls

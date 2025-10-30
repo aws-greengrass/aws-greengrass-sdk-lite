@@ -35,22 +35,23 @@ bool ggl_map_get(GglMap map, GglBuffer key, GglObject **result);
 ACCESS(write_only, 3)
 bool ggl_map_get_path(GglMap map, GglBufList path, GglObject **result);
 
-/// Construct a GglKV
+/// Construct a GglKV.
 CONST
 GglKV ggl_kv(GglBuffer key, GglObject val);
 
-/// Get a GglKV's key
+/// Get a GglKV's key.
 CONST
 GglBuffer ggl_kv_key(GglKV kv);
 
-/// Set a GglKV's key
+/// Set a GglKV's key.
 ACCESS(write_only, 1)
 void ggl_kv_set_key(GglKV *kv, GglBuffer key);
 
-/// Get a GglKV's value
+/// Get a GglKV's value.
 CONST ACCESS(none, 1)
 GglObject *ggl_kv_val(GglKV *kv);
 
+/// Entry in a map validation schema.
 typedef struct {
     GglBuffer key;
     GglPresence required;
@@ -58,6 +59,7 @@ typedef struct {
     GglObject **value;
 } GglMapSchemaEntry;
 
+/// Schema for validating map structure and types.
 typedef struct {
     const GglMapSchemaEntry *entries;
     size_t entry_count;
@@ -70,6 +72,11 @@ typedef struct {
             / (sizeof(GglMapSchemaEntry)) \
     }
 
+/// Validate a map against a schema.
+/// Checks for required keys, validates types, and extracts values.
+/// Sets `entry->value` pointers for found keys (or NULL if not found).
+/// Returns GGL_ERR_OK on success, GGL_ERR_NOENTRY if required key missing,
+/// or GGL_ERR_PARSE if type mismatch or MISSING key is present.
 GglError ggl_map_validate(GglMap map, GglMapSchema schema);
 
 #endif
