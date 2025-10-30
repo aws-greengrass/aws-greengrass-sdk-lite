@@ -11,5 +11,5 @@ pub mod ipc;
 pub mod object;
 
 pub use error::{Error, Result};
-pub use ipc::Sdk;
+pub use ipc::{Qos, Sdk};
 pub use object::{Kv, KvRef, MapExt, Object, ObjectRef};

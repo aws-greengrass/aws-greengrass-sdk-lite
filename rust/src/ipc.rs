@@ -105,6 +105,23 @@ impl Sdk {
     ///
     /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
     ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::{Sdk, object::{Kv, Object}};
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let payload = [
+    ///     Kv::new("temperature", Object::f64(72.5)),
+    ///     Kv::new("humidity", Object::i64(45)),
+    /// ];
+    /// let refs: &[_] = todo!("Fix slice conversion ergonomics");
+    /// sdk.publish_to_topic_json("sensor/data", &refs)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if publish fails.
     pub fn publish_to_topic_json(
@@ -132,6 +149,19 @@ impl Sdk {
     /// Requires `aws.greengrass#PublishToTopic` authorization.
     ///
     /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::Sdk;
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let data = b"binary payload data";
+    /// sdk.publish_to_topic_binary("sensor/raw", data)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
     ///
     /// # Errors
     /// Returns error if publish fails.
@@ -240,6 +270,19 @@ impl Sdk {
     /// Requires `aws.greengrass#PublishToIoTCore` authorization.
     ///
     /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-publishtoiotcore>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::{Sdk, Qos};
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let payload = b"telemetry data";
+    /// sdk.publish_to_iot_core("device/telemetry", payload, Qos::AtMostOnce)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
     ///
     /// # Errors
     /// Returns error if publish fails.
@@ -439,6 +482,19 @@ impl Sdk {
     ///
     /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-updateconfiguration>
     ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::{Sdk, object::Object};
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let new_value = Object::i64(100);
+    /// sdk.update_config(&["maxRetries"], None, &new_value.as_ref())?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if config update fails.
     pub fn update_config(
@@ -485,6 +541,18 @@ impl Sdk {
     /// Requires appropriate lifecycle management authorization.
     ///
     /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::Sdk;
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// sdk.restart_component("com.example.MyComponent")?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
     ///
     /// # Errors
     /// Returns error if restart fails.
