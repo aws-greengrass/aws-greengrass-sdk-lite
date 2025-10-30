@@ -28,10 +28,13 @@ struct timespec;
 // Connection APIs
 
 /// Connect to the Greengrass Nucleus from a component.
+/// Uses SVCUID and AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT
+/// environment variables.
 /// Not thread-safe due to use of getenv.
 GglError ggipc_connect(void);
 
 /// Connect to a GG-IPC socket with a given SVCUID token.
+/// Thread-safe alternative to ggipc_connect that does not call getenv.
 GglError ggipc_connect_with_token(GglBuffer socket_path, GglBuffer auth_token);
 
 // Subscription management
@@ -46,15 +49,26 @@ void ggipc_close_subscription(GgIpcSubscriptionHandle handle);
 
 // IPC calls
 
-/// Publish a message to a local topic in JSON format
+/// Publish a JSON message to a local pub/sub topic.
+/// Sends messages to other Greengrass components subscribed to the topic.
+/// Requires aws.greengrass#PublishToTopic authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
 GglError ggipc_publish_to_topic_json(GglBuffer topic, GglMap payload);
 
-/// Publish a message to a local topic in binary format
+/// Publish a binary message to a local pub/sub topic.
+/// Sends messages to other Greengrass components subscribed to the topic.
+/// Requires aws.greengrass#PublishToTopic authorization.
 /// Usage may incur memory overhead over using `ggipc_publish_to_topic_b64`
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
 GglError ggipc_publish_to_topic_binary(GglBuffer topic, GglBuffer payload);
 
-/// Publish a message to a local topic in binary format
+/// Publish a binary message to a local pub/sub topic.
 /// Payload must be already base64 encoded.
+/// Requires aws.greengrass#PublishToTopic authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
 GglError ggipc_publish_to_topic_binary_b64(
     GglBuffer topic, GglBuffer b64_payload
 );
@@ -66,8 +80,12 @@ typedef void GgIpcSubscribeToTopicCallback(
     GgIpcSubscriptionHandle handle
 );
 
-/// Subscribe to messages on a local topic
+/// Subscribe to messages on a local pub/sub topic.
+/// Receives messages from other Greengrass components publishing to the topic.
 /// Payload will be a map for json messages and a buffer for binary messages.
+/// Requires aws.greengrass#SubscribeToTopic authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-subscribetotopic>
 NONNULL(2)
 GglError ggipc_subscribe_to_topic(
     GglBuffer topic,
@@ -76,14 +94,21 @@ GglError ggipc_subscribe_to_topic(
     GgIpcSubscriptionHandle *handle
 );
 
-/// Publish an MQTT message to AWS IoT Core on a topic
+/// Publish an MQTT message to AWS IoT Core.
+/// Sends messages to AWS IoT Core MQTT broker with specified QoS.
+/// Requires aws.greengrass#PublishToIoTCore authorization.
 /// Usage may incur memory overhead over using `ggipc_publish_to_iot_core_b64`
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-publishtoiotcore>
 GglError ggipc_publish_to_iot_core(
     GglBuffer topic_name, GglBuffer payload, uint8_t qos
 );
 
-/// Publish an MQTT message to AWS IoT Core on a topic
+/// Publish an MQTT message to AWS IoT Core.
 /// Payload must be already base64 encoded.
+/// Requires aws.greengrass#PublishToIoTCore authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-publishtoiotcore>
 GglError ggipc_publish_to_iot_core_b64(
     GglBuffer topic_name, GglBuffer b64_payload, uint8_t qos
 );
@@ -95,7 +120,11 @@ typedef void GgIpcSubscribeToIotCoreCallback(
     GgIpcSubscriptionHandle handle
 );
 
-/// Subscribe to MQTT messages from AWS IoT Core on a topic or topic filter
+/// Subscribe to MQTT messages from AWS IoT Core.
+/// Receives messages from AWS IoT Core MQTT broker on matching topics.
+/// Requires aws.greengrass#SubscribeToIoTCore authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-subscribetoiotcore>
 NONNULL(3)
 GglError ggipc_subscribe_to_iot_core(
     GglBuffer topic_filter,
@@ -105,7 +134,12 @@ GglError ggipc_subscribe_to_iot_core(
     GgIpcSubscriptionHandle *handle
 );
 
-/// Get a configuration value for a component on the core device
+/// Get component configuration value.
+/// Retrieves configuration for the specified key path.
+/// Pass empty list for complete config.
+/// Requires aws.greengrass#GetConfiguration authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration>
 ACCESS(read_only, 2) ACCESS(read_write, 3) ACCESS(write_only, 4)
 GglError ggipc_get_config(
     GglBufList key_path,
@@ -114,16 +148,22 @@ GglError ggipc_get_config(
     GglObject *value
 );
 
-/// Get a string-typed configuration value for a component on the core device
+/// Get component configuration value as a string.
 /// `value` must point to a buffer large enough to hold the result, and will be
 /// updated to the result string.
 /// Alternative API to ggipc_get_config for string type values.
+/// Requires aws.greengrass#GetConfiguration authorization.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration>
 ACCESS(read_only, 2) ACCESS(read_write, 3)
 GglError ggipc_get_config_str(
     GglBufList key_path, const GglBuffer *component_name, GglBuffer *value
 );
 
-/// Update a configuration value for this component on the core device
+/// Update component configuration.
+/// Merges the provided value into the component's configuration at the key
+/// path. Requires aws.greengrass#UpdateConfiguration authorization. See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-updateconfiguration>
 ACCESS(read_only, 2)
 GglError ggipc_update_config(
     GglBufList key_path,
@@ -137,10 +177,16 @@ typedef enum ENUM_EXTENSIBILITY(closed) {
     GGL_COMPONENT_STATE_ERRORED
 } GglComponentState;
 
-/// Update the state of this component
+/// Update the state of this component.
+/// Reports component state to the Greengrass nucleus.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html
 GglError ggipc_update_state(GglComponentState state);
 
-/// Restart a component on the core device
+/// Restart a Greengrass component.
+/// Requests the nucleus to restart the specified component.
+/// See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html
 GglError ggipc_restart_component(GglBuffer component_name);
 
 typedef void GgIpcSubscribeToConfigurationUpdateCallback(
@@ -150,8 +196,11 @@ typedef void GgIpcSubscribeToConfigurationUpdateCallback(
     GgIpcSubscriptionHandle handle
 );
 
-/// Subscribe to configuration updates for a component
-/// Pass NULL for component_name to refer to current component.
+/// Subscribe to component configuration updates.
+/// Receives notifications when configuration changes for the specified key
+/// path. Pass NULL for component_name to refer to current component. Requires
+/// aws.greengrass#SubscribeToConfigurationUpdate authorization. See:
+/// <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-subscribetoconfigurationupdate>
 ACCESS(read_only, 1) NONNULL(3)
 GglError ggipc_subscribe_to_configuration_update(
     const GglBuffer *component_name,
