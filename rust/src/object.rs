@@ -7,6 +7,7 @@ use std::{
     fmt,
     marker::PhantomData,
     mem::ManuallyDrop,
+    ops::Deref,
     ptr::{self, NonNull},
     slice, str,
 };
@@ -61,8 +62,8 @@ pub enum UnpackedObject<'a> {
     I64(i64) = 2,
     F64(f64) = 3,
     Buf(&'a str) = 4,
-    List(&'a [ObjectRef<'a>]) = 5,
-    Map(&'a [KvRef<'a>]) = 6,
+    List(ListRef<'a>) = 5,
+    Map(MapRef<'a>) = 6,
 }
 
 impl Object {
@@ -174,7 +175,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, MapExt, Object, UnpackedObject};
+    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
     ///
     /// let obj = Object::map([
     ///     Kv::new("key1", Object::i64(42)),
@@ -183,7 +184,7 @@ impl Object {
     /// if let UnpackedObject::Map(pairs) = obj.as_ref().unpack() {
     ///     assert_eq!(pairs.len(), 2);
     ///     assert!(matches!(
-    ///         pairs.map_get("key1").unwrap().unpack(),
+    ///         pairs.get("key1").unwrap().unpack(),
     ///         UnpackedObject::I64(42)
     ///     ));
     /// }
@@ -405,14 +406,17 @@ impl<'a> ObjectRef<'a> {
                 }
                 GGL_TYPE_LIST => {
                     let list = c::ggl_obj_into_list(self.c);
-                    List(slice_from_c(
+                    List(ListRef(slice_from_c(
                         list.items.cast::<ObjectRef<'a>>(),
                         list.len,
-                    ))
+                    )))
                 }
                 GGL_TYPE_MAP => {
                     let map = c::ggl_obj_into_map(self.c);
-                    Map(slice_from_c(map.pairs.cast::<KvRef<'a>>(), map.len))
+                    Map(MapRef(slice_from_c(
+                        map.pairs.cast::<KvRef<'a>>(),
+                        map.len,
+                    )))
                 }
             }
         }
@@ -702,42 +706,185 @@ impl Drop for Kv {
     }
 }
 
-pub trait MapExt {
-    fn map_get<'a>(&self, key: impl Into<&'a str>) -> Option<&ObjectRef<'_>>;
-}
+#[derive(Debug, Clone)]
+pub struct Map(pub Box<[Kv]>);
 
-impl MapExt for [KvRef<'_>] {
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct MapRef<'a>(pub &'a [KvRef<'a>]);
+
+#[derive(Debug, Clone)]
+pub struct List(pub Box<[Object]>);
+
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct ListRef<'a>(pub &'a [ObjectRef<'a>]);
+
+impl Map {
     /// Get a value from a map by key.
     ///
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{KvRef, MapExt, ObjectRef, UnpackedObject};
+    /// use ggl_sdk::object::{Kv, Map, Object, UnpackedObject};
+    ///
+    /// let map = Map(Box::new([
+    ///     Kv::new("a", Object::i64(1)),
+    ///     Kv::new("b", Object::i64(2)),
+    /// ]));
+    /// let val = map.get("b").unwrap();
+    /// assert!(matches!(val.unpack(), UnpackedObject::I64(2)));
+    /// ```
+    #[must_use]
+    pub fn get<'b>(&self, key: impl Into<&'b str>) -> Option<&ObjectRef<'_>> {
+        self.as_ref().get(key)
+    }
+}
+
+impl MapRef<'_> {
+    /// Get a value from a map by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::object::{KvRef, MapRef, ObjectRef, UnpackedObject};
     ///
     /// let pairs = [
     ///     KvRef::new("a", ObjectRef::i64(1)),
     ///     KvRef::new("b", ObjectRef::i64(2)),
     /// ];
-    /// let val = pairs.map_get("b").unwrap();
+    /// let map: MapRef = pairs.as_slice().into();
+    /// let val = map.get("b").unwrap();
     /// assert!(matches!(val.unpack(), UnpackedObject::I64(2)));
     /// ```
-    fn map_get<'b>(&self, key: impl Into<&'b str>) -> Option<&ObjectRef<'_>> {
-        let k = key.into();
+    #[must_use]
+    pub fn get<'b>(&self, key: impl Into<&'b str>) -> Option<&ObjectRef<'_>> {
+        let key = key.into();
         let map = c::GglMap {
-            pairs: self.as_ptr().cast_mut().cast::<c::GglKV>(),
-            len: self.len(),
+            pairs: self.0.as_ptr().cast_mut().cast::<c::GglKV>(),
+            len: self.0.len(),
         };
-        let key = c::GglBuffer {
-            data: k.as_ptr().cast_mut(),
-            len: k.len(),
+        let key_buf = c::GglBuffer {
+            data: key.as_ptr().cast_mut(),
+            len: key.len(),
         };
         let mut result: *mut c::GglObject = ptr::null_mut();
-        if unsafe { c::ggl_map_get(map, key, &raw mut result) } {
+        if unsafe { c::ggl_map_get(map, key_buf, &raw mut result) } {
             Some(unsafe {
-                NonNull::new(result.cast::<ObjectRef>()).unwrap().as_ref()
+                NonNull::new(result.cast::<ObjectRef>())
+                    .unwrap_unchecked()
+                    .as_ref()
             })
         } else {
             None
         }
+    }
+}
+
+impl<'a> From<&'a [KvRef<'a>]> for MapRef<'a> {
+    fn from(slice: &'a [KvRef<'a>]) -> Self {
+        MapRef(slice)
+    }
+}
+
+impl<'a> From<&'a [Kv]> for MapRef<'a> {
+    fn from(slice: &'a [Kv]) -> Self {
+        unsafe {
+            MapRef(slice::from_raw_parts(
+                slice.as_ptr().cast::<KvRef>(),
+                slice.len(),
+            ))
+        }
+    }
+}
+
+impl<'a, const N: usize> From<&'a [Kv; N]> for MapRef<'a> {
+    fn from(array: &'a [Kv; N]) -> Self {
+        Self::from(&array[..])
+    }
+}
+
+impl<'a> From<&'a [ObjectRef<'a>]> for ListRef<'a> {
+    fn from(slice: &'a [ObjectRef<'a>]) -> Self {
+        ListRef(slice)
+    }
+}
+
+impl<'a> From<&'a [Object]> for ListRef<'a> {
+    fn from(slice: &'a [Object]) -> Self {
+        unsafe {
+            ListRef(slice::from_raw_parts(
+                slice.as_ptr().cast::<ObjectRef>(),
+                slice.len(),
+            ))
+        }
+    }
+}
+
+impl<'a, const N: usize> From<&'a [Object; N]> for ListRef<'a> {
+    fn from(array: &'a [Object; N]) -> Self {
+        Self::from(&array[..])
+    }
+}
+
+impl<'a> AsRef<MapRef<'a>> for Map {
+    fn as_ref(&self) -> &MapRef<'a> {
+        self.borrow()
+    }
+}
+
+impl<'a> Borrow<MapRef<'a>> for Map {
+    fn borrow(&self) -> &MapRef<'a> {
+        unsafe {
+            (&raw const self.0)
+                .cast::<MapRef>()
+                .as_ref()
+                .unwrap_unchecked()
+        }
+    }
+}
+
+impl<'a> AsRef<ListRef<'a>> for List {
+    fn as_ref(&self) -> &ListRef<'a> {
+        self.borrow()
+    }
+}
+
+impl<'a> Borrow<ListRef<'a>> for List {
+    fn borrow(&self) -> &ListRef<'a> {
+        unsafe {
+            (&raw const self.0)
+                .cast::<ListRef>()
+                .as_ref()
+                .unwrap_unchecked()
+        }
+    }
+}
+
+impl Deref for Map {
+    type Target = [Kv];
+    fn deref(&self) -> &[Kv] {
+        &self.0
+    }
+}
+
+impl<'a> Deref for MapRef<'a> {
+    type Target = [KvRef<'a>];
+    fn deref(&self) -> &[KvRef<'a>] {
+        self.0
+    }
+}
+
+impl Deref for List {
+    type Target = [Object];
+    fn deref(&self) -> &[Object] {
+        &self.0
+    }
+}
+
+impl<'a> Deref for ListRef<'a> {
+    type Target = [ObjectRef<'a>];
+    fn deref(&self) -> &[ObjectRef<'a>] {
+        self.0
     }
 }

@@ -12,7 +12,7 @@ use std::{
 use crate::{
     c,
     error::{Error, Result},
-    object::{KvRef, ObjectRef},
+    object::{KvRef, MapRef, ObjectRef},
 };
 
 static INIT: OnceLock<()> = OnceLock::new();
@@ -37,7 +37,7 @@ pub enum Qos {
 
 #[derive(Debug, Clone, Copy)]
 pub enum SubscribeToTopicPayload<'a> {
-    Json(&'a [KvRef<'a>]),
+    Json(MapRef<'a>),
     Binary(&'a [u8]),
 }
 
@@ -108,7 +108,7 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::{Sdk, object::{Kv, Object}};
+    /// use ggl_sdk::{Sdk, Kv, Object};
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
@@ -117,25 +117,25 @@ impl Sdk {
     ///     Kv::new("temperature", Object::f64(72.5)),
     ///     Kv::new("humidity", Object::i64(45)),
     /// ];
-    /// let refs: &[_] = todo!("Fix slice conversion ergonomics");
-    /// sdk.publish_to_topic_json("sensor/data", &refs)?;
+    /// sdk.publish_to_topic_json("sensor/data", &payload)?;
     /// # Ok::<(), ggl_sdk::Error>(())
     /// ```
     ///
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_topic_json(
+    pub fn publish_to_topic_json<'a>(
         &self,
         topic: &str,
-        payload: &[KvRef<'_>],
+        payload: impl Into<MapRef<'a>>,
     ) -> Result<()> {
+        let payload = payload.into();
         let topic_buf = c::GglBuffer {
             data: topic.as_ptr().cast_mut(),
             len: topic.len(),
         };
         let payload_map = c::GglMap {
-            pairs: payload.as_ptr() as *mut c::GglKV,
-            len: payload.len(),
+            pairs: payload.0.as_ptr() as *mut c::GglKV,
+            len: payload.0.len(),
         };
 
         Result::from(unsafe {
@@ -217,12 +217,12 @@ impl Sdk {
             let unpacked = match unsafe { c::ggl_obj_type(payload) } {
                 c::GglObjectType::GGL_TYPE_MAP => {
                     let map = unsafe { c::ggl_obj_into_map(payload) };
-                    SubscribeToTopicPayload::Json(unsafe {
+                    SubscribeToTopicPayload::Json(MapRef(unsafe {
                         slice::from_raw_parts(
                             map.pairs as *const KvRef,
                             map.len,
                         )
-                    })
+                    }))
                 }
                 c::GglObjectType::GGL_TYPE_BUF => {
                     let buf = unsafe { c::ggl_obj_into_buf(payload) };
