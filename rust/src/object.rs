@@ -466,9 +466,111 @@ impl Default for Object {
     }
 }
 
+impl From<bool> for Object {
+    fn from(b: bool) -> Self {
+        Self::bool(b)
+    }
+}
+
+impl From<i64> for Object {
+    fn from(i: i64) -> Self {
+        Self::i64(i)
+    }
+}
+
+impl From<f64> for Object {
+    fn from(f: f64) -> Self {
+        Self::f64(f)
+    }
+}
+
+impl From<Box<str>> for Object {
+    fn from(s: Box<str>) -> Self {
+        Self::buf(s)
+    }
+}
+
+impl From<String> for Object {
+    fn from(s: String) -> Self {
+        Self::buf(s.into_boxed_str())
+    }
+}
+
+impl From<Box<[Object]>> for Object {
+    fn from(list: Box<[Object]>) -> Self {
+        Self::list(list)
+    }
+}
+
+impl From<Box<[Kv]>> for Object {
+    fn from(map: Box<[Kv]>) -> Self {
+        Self::map(map)
+    }
+}
+
 impl Default for ObjectRef<'_> {
     fn default() -> Self {
         Self::NULL
+    }
+}
+
+impl From<bool> for ObjectRef<'_> {
+    fn from(b: bool) -> Self {
+        Self::bool(b)
+    }
+}
+
+impl From<i64> for ObjectRef<'_> {
+    fn from(i: i64) -> Self {
+        Self::i64(i)
+    }
+}
+
+impl From<f64> for ObjectRef<'_> {
+    fn from(f: f64) -> Self {
+        Self::f64(f)
+    }
+}
+
+impl<'a> From<&'a str> for ObjectRef<'a> {
+    fn from(s: &'a str) -> Self {
+        Self::buf(s)
+    }
+}
+
+impl<'a> From<&'a [ObjectRef<'a>]> for ObjectRef<'a> {
+    fn from(list: &'a [ObjectRef<'a>]) -> Self {
+        Self::list(list)
+    }
+}
+
+impl<'a> From<&'a [KvRef<'a>]> for ObjectRef<'a> {
+    fn from(map: &'a [KvRef<'a>]) -> Self {
+        Self::map(map)
+    }
+}
+
+impl<'a> From<MapRef<'a>> for ObjectRef<'a> {
+    fn from(map: MapRef<'a>) -> Self {
+        Self::map(map.0)
+    }
+}
+
+impl<'a> From<ListRef<'a>> for ObjectRef<'a> {
+    fn from(list: ListRef<'a>) -> Self {
+        Self::list(list.0)
+    }
+}
+
+impl From<Map> for Object {
+    fn from(map: Map) -> Self {
+        Self::map(map.0)
+    }
+}
+
+impl From<List> for Object {
+    fn from(list: List) -> Self {
+        Self::list(list.0)
     }
 }
 
@@ -703,6 +805,30 @@ impl Drop for Kv {
                 Box::from_raw(ptr::slice_from_raw_parts_mut(key.data, key.len));
             ptr::drop_in_place(c::ggl_kv_val(&raw mut self.c).cast::<Object>());
         }
+    }
+}
+
+impl From<Map> for Box<[Kv]> {
+    fn from(map: Map) -> Self {
+        map.0
+    }
+}
+
+impl From<List> for Box<[Object]> {
+    fn from(list: List) -> Self {
+        list.0
+    }
+}
+
+impl<'a> From<MapRef<'a>> for &'a [KvRef<'a>] {
+    fn from(map: MapRef<'a>) -> Self {
+        map.0
+    }
+}
+
+impl<'a> From<ListRef<'a>> for &'a [ObjectRef<'a>] {
+    fn from(list: ListRef<'a>) -> Self {
+        list.0
     }
 }
 
