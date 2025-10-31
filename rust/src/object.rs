@@ -14,11 +14,13 @@ use std::{
 
 use crate::c;
 
+/// A generic object.
 #[repr(transparent)]
 pub struct Object {
     c: c::GglObject,
 }
 
+/// A borrowed generic object.
 #[repr(transparent)]
 pub struct ObjectRef<'a> {
     c: c::GglObject,
@@ -54,19 +56,28 @@ impl fmt::Debug for ObjectRef<'_> {
     }
 }
 
+/// Unpacked object value.
 #[derive(Debug)]
 #[repr(u8)]
 pub enum UnpackedObject<'a> {
+    /// Null value.
     Null = 0,
+    /// Boolean value.
     Bool(bool) = 1,
+    /// Signed 64-bit integer.
     I64(i64) = 2,
+    /// 64-bit floating point.
     F64(f64) = 3,
+    /// UTF-8 string buffer.
     Buf(&'a str) = 4,
+    /// List of objects.
     List(ListRef<'a>) = 5,
+    /// Map of key-value pairs.
     Map(MapRef<'a>) = 6,
 }
 
 impl Object {
+    /// Null object constant.
     pub const NULL: Self = Self { c: c::GGL_OBJ_NULL };
 
     /// Create a boolean object.
@@ -204,6 +215,7 @@ impl Object {
 }
 
 impl<'a> ObjectRef<'a> {
+    /// Null object reference constant.
     pub const NULL: Self = Self {
         c: c::GGL_OBJ_NULL,
         phantom: PhantomData,
@@ -227,6 +239,7 @@ impl<'a> ObjectRef<'a> {
         }
     }
 
+    /// Create a signed integer reference.
     #[must_use]
     pub fn i64(i: i64) -> Self {
         Self {
@@ -235,6 +248,7 @@ impl<'a> ObjectRef<'a> {
         }
     }
 
+    /// Create a floating point reference.
     #[must_use]
     pub fn f64(f: f64) -> Self {
         Self {
@@ -580,11 +594,13 @@ impl From<List> for Object {
     }
 }
 
+/// A key-value pair used for maps.
 #[repr(transparent)]
 pub struct Kv {
     c: c::GglKV,
 }
 
+/// A borrowed key-value pair.
 #[repr(transparent)]
 pub struct KvRef<'a> {
     c: c::GglKV,
@@ -695,6 +711,7 @@ impl Kv {
         }
     }
 
+    /// Get the value of the key-value pair.
     #[must_use]
     pub fn val(&self) -> &Object {
         unsafe {
@@ -838,16 +855,20 @@ impl<'a> From<ListRef<'a>> for &'a [ObjectRef<'a>] {
     }
 }
 
+/// A map of UTF-8 strings to objects.
 #[derive(Debug, Clone)]
 pub struct Map(pub Box<[Kv]>);
 
+/// A borrowed map of UTF-8 strings to objects.
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub struct MapRef<'a>(pub &'a [KvRef<'a>]);
 
+/// An array of objects.
 #[derive(Debug, Clone)]
 pub struct List(pub Box<[Object]>);
 
+/// A borrowed array of objects.
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub struct ListRef<'a>(pub &'a [ObjectRef<'a>]);
