@@ -550,6 +550,12 @@ impl<'a> From<&'a [KvRef<'a>]> for ObjectRef<'a> {
     }
 }
 
+impl<'a> From<&'a ObjectRef<'a>> for ObjectRef<'a> {
+    fn from(obj: &'a ObjectRef<'a>) -> Self {
+        unsafe { ptr::read(obj) }
+    }
+}
+
 impl<'a> From<MapRef<'a>> for ObjectRef<'a> {
     fn from(map: MapRef<'a>) -> Self {
         Self::map(map.0)

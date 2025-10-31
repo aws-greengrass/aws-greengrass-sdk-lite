@@ -125,22 +125,24 @@ impl Sdk {
     /// Returns error if publish fails.
     pub fn publish_to_topic_json<'a>(
         &self,
-        topic: &str,
+        topic: impl Into<&'a str>,
         payload: impl Into<MapRef<'a>>,
     ) -> Result<()> {
-        let payload = payload.into();
-        let topic_buf = c::GglBuffer {
-            data: topic.as_ptr().cast_mut(),
-            len: topic.len(),
-        };
-        let payload_map = c::GglMap {
-            pairs: payload.0.as_ptr() as *mut c::GglKV,
-            len: payload.0.len(),
-        };
+        fn inner(topic: &str, payload: &MapRef<'_>) -> Result<()> {
+            let topic_buf = c::GglBuffer {
+                data: topic.as_ptr().cast_mut(),
+                len: topic.len(),
+            };
+            let payload_map = c::GglMap {
+                pairs: payload.0.as_ptr() as *mut c::GglKV,
+                len: payload.0.len(),
+            };
 
-        Result::from(unsafe {
-            c::ggipc_publish_to_topic_json(topic_buf, payload_map)
-        })
+            Result::from(unsafe {
+                c::ggipc_publish_to_topic_json(topic_buf, payload_map)
+            })
+        }
+        inner(topic.into(), &payload.into())
     }
 
     /// Publish a binary message to a local pub/sub topic.
@@ -165,23 +167,26 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_topic_binary(
+    pub fn publish_to_topic_binary<'a>(
         &self,
-        topic: &str,
-        payload: &[u8],
+        topic: impl Into<&'a str>,
+        payload: impl AsRef<[u8]>,
     ) -> Result<()> {
-        let topic_buf = c::GglBuffer {
-            data: topic.as_ptr().cast_mut(),
-            len: topic.len(),
-        };
-        let payload_buf = c::GglBuffer {
-            data: payload.as_ptr().cast_mut(),
-            len: payload.len(),
-        };
+        fn inner(topic: &str, payload: &[u8]) -> Result<()> {
+            let topic_buf = c::GglBuffer {
+                data: topic.as_ptr().cast_mut(),
+                len: topic.len(),
+            };
+            let payload_buf = c::GglBuffer {
+                data: payload.as_ptr().cast_mut(),
+                len: payload.len(),
+            };
 
-        Result::from(unsafe {
-            c::ggipc_publish_to_topic_binary(topic_buf, payload_buf)
-        })
+            Result::from(unsafe {
+                c::ggipc_publish_to_topic_binary(topic_buf, payload_buf)
+            })
+        }
+        inner(topic.into(), payload.as_ref())
     }
 
     /// Subscribe to messages on a local pub/sub topic.
@@ -198,7 +203,7 @@ impl Sdk {
         F: FnMut(&str, SubscribeToTopicPayload) + 'a,
     >(
         &self,
-        topic: &str,
+        topic: impl Into<&'a str>,
         callback: F,
     ) -> Result<Subscription<'a, F>> {
         extern "C" fn trampoline<F: FnMut(&str, SubscribeToTopicPayload)>(
@@ -236,6 +241,7 @@ impl Sdk {
             cb(topic_str, unpacked);
         }
 
+        let topic = topic.into();
         let topic_buf = c::GglBuffer {
             data: topic.as_ptr().cast_mut(),
             len: topic.len(),
@@ -286,24 +292,27 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_iot_core(
+    pub fn publish_to_iot_core<'a>(
         &self,
-        topic: &str,
-        payload: &[u8],
+        topic: impl Into<&'a str>,
+        payload: impl AsRef<[u8]>,
         qos: Qos,
     ) -> Result<()> {
-        let topic_buf = c::GglBuffer {
-            data: topic.as_ptr().cast_mut(),
-            len: topic.len(),
-        };
-        let payload_buf = c::GglBuffer {
-            data: payload.as_ptr().cast_mut(),
-            len: payload.len(),
-        };
+        fn inner(topic: &str, payload: &[u8], qos: Qos) -> Result<()> {
+            let topic_buf = c::GglBuffer {
+                data: topic.as_ptr().cast_mut(),
+                len: topic.len(),
+            };
+            let payload_buf = c::GglBuffer {
+                data: payload.as_ptr().cast_mut(),
+                len: payload.len(),
+            };
 
-        Result::from(unsafe {
-            c::ggipc_publish_to_iot_core(topic_buf, payload_buf, qos as u8)
-        })
+            Result::from(unsafe {
+                c::ggipc_publish_to_iot_core(topic_buf, payload_buf, qos as u8)
+            })
+        }
+        inner(topic.into(), payload.as_ref(), qos)
     }
 
     /// Subscribe to MQTT messages from AWS IoT Core.
@@ -317,7 +326,7 @@ impl Sdk {
     /// Returns error if subscription fails.
     pub fn subscribe_to_iot_core<'a, F: FnMut(&str, &[u8]) + 'a>(
         &self,
-        topic_filter: &str,
+        topic_filter: impl Into<&'a str>,
         qos: Qos,
         callback: F,
     ) -> Result<Subscription<'a, F>> {
@@ -337,6 +346,7 @@ impl Sdk {
             cb(topic_str, payload_bytes);
         }
 
+        let topic_filter = topic_filter.into();
         let topic_buf = c::GglBuffer {
             data: topic_filter.as_ptr().cast_mut(),
             len: topic_filter.len(),
@@ -485,24 +495,24 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::{Sdk, object::Object};
+    /// use ggl_sdk::Sdk;
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
     ///
-    /// let new_value = Object::i64(100);
-    /// sdk.update_config(&["maxRetries"], None, &new_value.as_ref())?;
+    /// sdk.update_config(&["maxRetries"], None, 100_i64)?;
     /// # Ok::<(), ggl_sdk::Error>(())
     /// ```
     ///
     /// # Errors
     /// Returns error if config update fails.
-    pub fn update_config(
+    pub fn update_config<'a>(
         &self,
         key_path: &[&str],
         timestamp: Option<std::time::SystemTime>,
-        value_to_merge: &ObjectRef<'_>,
+        value_to_merge: impl Into<ObjectRef<'a>>,
     ) -> Result<()> {
+        let value_to_merge = value_to_merge.into();
         let bufs: Box<[c::GglBuffer]> = key_path
             .iter()
             .map(|k| c::GglBuffer {
@@ -530,7 +540,7 @@ impl Sdk {
             c::ggipc_update_config(
                 key_path_list,
                 timespec.as_ref().map_or(ptr::null(), ptr::from_ref),
-                *ptr::from_ref(value_to_merge).cast::<c::GglObject>(),
+                *ptr::from_ref(&value_to_merge).cast::<c::GglObject>(),
             )
         })
     }
@@ -556,13 +566,19 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if restart fails.
-    pub fn restart_component(&self, component_name: &str) -> Result<()> {
-        let component_buf = c::GglBuffer {
-            data: component_name.as_ptr().cast_mut(),
-            len: component_name.len(),
-        };
+    pub fn restart_component<'a>(
+        &self,
+        component_name: impl Into<&'a str>,
+    ) -> Result<()> {
+        fn inner(component_name: &str) -> Result<()> {
+            let component_buf = c::GglBuffer {
+                data: component_name.as_ptr().cast_mut(),
+                len: component_name.len(),
+            };
 
-        Result::from(unsafe { c::ggipc_restart_component(component_buf) })
+            Result::from(unsafe { c::ggipc_restart_component(component_buf) })
+        }
+        inner(component_name.into())
     }
 
     /// Subscribe to component configuration updates.
