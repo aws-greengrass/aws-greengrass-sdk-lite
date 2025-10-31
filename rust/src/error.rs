@@ -6,24 +6,41 @@ use crate::c;
 use c::GglError::*;
 use std::fmt;
 
+/// GGL error codes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Error {
+    /// Generic failure
     Failure = GGL_ERR_FAILURE as u32,
+    /// Failure, can be retried
     Retry = GGL_ERR_RETRY as u32,
+    /// Request cannot be handled at the time
     Busy = GGL_ERR_BUSY as u32,
+    /// System is in irrecoverably broken state
     Fatal = GGL_ERR_FATAL as u32,
+    /// Request is invalid or malformed
     Invalid = GGL_ERR_INVALID as u32,
+    /// Request is unsupported
     Unsupported = GGL_ERR_UNSUPPORTED as u32,
+    /// Request data invalid
     Parse = GGL_ERR_PARSE as u32,
+    /// Request or data outside of allowable range
     Range = GGL_ERR_RANGE as u32,
+    /// Insufficient memory
     Nomem = GGL_ERR_NOMEM as u32,
+    /// No connection
     Noconn = GGL_ERR_NOCONN as u32,
+    /// No more data available
     Nodata = GGL_ERR_NODATA as u32,
+    /// Unknown entry or target requested
     Noentry = GGL_ERR_NOENTRY as u32,
+    /// Invalid or missing configuration
     Config = GGL_ERR_CONFIG as u32,
+    /// Received remote error
     Remote = GGL_ERR_REMOTE as u32,
+    /// Expected non-ok status
     Expected = GGL_ERR_EXPECTED as u32,
+    /// Request timed out
     Timeout = GGL_ERR_TIMEOUT as u32,
 }
 
@@ -40,6 +57,7 @@ impl fmt::Display for Error {
     }
 }
 
+/// Result type alias using SDK Error.
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl From<Error> for c::GglError {

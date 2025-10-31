@@ -48,6 +48,8 @@ typedef enum NODISCARD GglError {
     GGL_ERR_TIMEOUT,
 } GglError;
 
+/// Convert a GglError to a string representation.
+/// Returns a static string describing the error.
 CONST
 const char *ggl_strerror(GglError err) CBMC_CONTRACT(
     requires(cbmc_enum_valid(err)), ensures(cbmc_restrict(cbmc_return))

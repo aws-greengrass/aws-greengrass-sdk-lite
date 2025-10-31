@@ -230,9 +230,12 @@
             '';
 
             build-rust-crate = { rustPlatform, cmake, clippy, ... }:
+              let
+                meta = (fromTOML (builtins.readFile ./rust/Cargo.toml)).package;
+              in
               rustPlatform.buildRustPackage {
-                pname = "ggl-sdk-rs";
-                version = "0.0.2";
+                pname = "${meta.name}-rs";
+                inherit (meta) version;
                 nativeBuildInputs = [
                   rustPlatform.bindgenHook
                   cmake
@@ -252,6 +255,9 @@
                 cargoLock.lockFile = ./rust/Cargo.lock;
                 cargoRoot = "rust";
                 buildAndTestSubdir = "rust";
+                preCheck = ''
+                  export RUSTDOCFLAGS="-C link-arg=-lggl-sdk"
+                '';
                 postCheck = ''
                   pushd rust
                   cargo clippy --profile $cargoCheckType -- --deny warnings

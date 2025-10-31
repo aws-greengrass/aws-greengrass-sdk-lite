@@ -12,12 +12,13 @@ use std::{
 use crate::{
     c,
     error::{Error, Result},
-    object::{self, Kv, Mutable, Object, RefKind, Shared},
+    object::{KvRef, MapRef, ObjectRef},
 };
 
 static INIT: OnceLock<()> = OnceLock::new();
 static CONNECTED: Mutex<bool> = Mutex::new(false);
 
+/// AWS IoT Greengrass IPC SDK client.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct Sdk {}
@@ -28,25 +29,39 @@ pub struct IpcError<'a> {
     pub message: &'a str,
 }
 
+/// MQTT Quality of Service level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Qos {
+    /// At most once delivery (QoS 0)
     AtMostOnce = 0,
+    /// At least once delivery (QoS 1)
     AtLeastOnce = 1,
 }
 
+/// Payload received from a topic subscription.
 #[derive(Debug, Clone, Copy)]
 pub enum SubscribeToTopicPayload<'a> {
-    Json(&'a [Kv<'a, Shared>]),
+    /// JSON payload
+    Json(MapRef<'a>),
+    /// Binary payload
     Binary(&'a [u8]),
 }
 
 impl Sdk {
+    /// Initialize the SDK.
+    ///
+    /// Must be called before using any IPC operations.
     pub fn init() -> Self {
         INIT.get_or_init(|| unsafe { c::ggl_sdk_init() });
         Self {}
     }
 
+    /// Connect to the AWS IoT Greengrass Core IPC service.
+    ///
+    /// Uses `SVCUID` and `AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT`
+    /// environment variables set by the Greengrass nucleus.
+    ///
     /// # Errors
     /// Returns error if environment variables are missing, already connected, or connection fails.
     pub fn connect(&self) -> Result<()> {
@@ -58,9 +73,11 @@ impl Sdk {
         self.connect_with_token(&socket_path, &svcuid)
     }
 
+    /// Connect to the AWS IoT Greengrass Core IPC service with explicit credentials.
+    ///
     /// # Errors
     /// Returns error if already connected or connection fails.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc)]
     pub fn connect_with_token(
         &self,
         socket_path: &str,
@@ -88,48 +105,104 @@ impl Sdk {
         Ok(())
     }
 
+    /// Publish a JSON message to a local pub/sub topic.
+    ///
+    /// Sends messages to other Greengrass components subscribed to the topic.
+    /// Requires `aws.greengrass#PublishToTopic` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::{Sdk, Kv, Object};
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let payload = [
+    ///     Kv::new("temperature", Object::f64(72.5)),
+    ///     Kv::new("humidity", Object::i64(45)),
+    /// ];
+    /// sdk.publish_to_topic_json("sensor/data", &payload)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_topic_json<'a, R: RefKind<'a>>(
+    pub fn publish_to_topic_json<'a>(
         &self,
-        topic: &str,
-        payload: &[Kv<'a, R>],
+        topic: impl Into<&'a str>,
+        payload: impl Into<MapRef<'a>>,
     ) -> Result<()> {
-        let topic_buf = c::GglBuffer {
-            data: topic.as_ptr().cast_mut(),
-            len: topic.len(),
-        };
-        let payload_map = c::GglMap {
-            pairs: payload.as_ptr() as *mut c::GglKV,
-            len: payload.len(),
-        };
+        fn inner(topic: &str, payload: &MapRef<'_>) -> Result<()> {
+            let topic_buf = c::GglBuffer {
+                data: topic.as_ptr().cast_mut(),
+                len: topic.len(),
+            };
+            let payload_map = c::GglMap {
+                pairs: payload.0.as_ptr() as *mut c::GglKV,
+                len: payload.0.len(),
+            };
 
-        Result::from(unsafe {
-            c::ggipc_publish_to_topic_json(topic_buf, payload_map)
-        })
+            Result::from(unsafe {
+                c::ggipc_publish_to_topic_json(topic_buf, payload_map)
+            })
+        }
+        inner(topic.into(), &payload.into())
     }
 
+    /// Publish a binary message to a local pub/sub topic.
+    ///
+    /// Sends messages to other Greengrass components subscribed to the topic.
+    /// Requires `aws.greengrass#PublishToTopic` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-publishtotopic>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::Sdk;
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let data = b"binary payload data";
+    /// sdk.publish_to_topic_binary("sensor/raw", data)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_topic_binary(
+    pub fn publish_to_topic_binary<'a>(
         &self,
-        topic: &str,
-        payload: &[u8],
+        topic: impl Into<&'a str>,
+        payload: impl AsRef<[u8]>,
     ) -> Result<()> {
-        let topic_buf = c::GglBuffer {
-            data: topic.as_ptr().cast_mut(),
-            len: topic.len(),
-        };
-        let payload_buf = c::GglBuffer {
-            data: payload.as_ptr().cast_mut(),
-            len: payload.len(),
-        };
+        fn inner(topic: &str, payload: &[u8]) -> Result<()> {
+            let topic_buf = c::GglBuffer {
+                data: topic.as_ptr().cast_mut(),
+                len: topic.len(),
+            };
+            let payload_buf = c::GglBuffer {
+                data: payload.as_ptr().cast_mut(),
+                len: payload.len(),
+            };
 
-        Result::from(unsafe {
-            c::ggipc_publish_to_topic_binary(topic_buf, payload_buf)
-        })
+            Result::from(unsafe {
+                c::ggipc_publish_to_topic_binary(topic_buf, payload_buf)
+            })
+        }
+        inner(topic.into(), payload.as_ref())
     }
 
+    /// Subscribe to messages on a local pub/sub topic.
+    ///
+    /// Receives messages from other Greengrass components publishing to the topic.
+    /// Requires `aws.greengrass#SubscribeToTopic` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-publish-subscribe.html#ipc-operation-subscribetotopic>
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe_to_topic<
@@ -137,7 +210,7 @@ impl Sdk {
         F: FnMut(&str, SubscribeToTopicPayload) + 'a,
     >(
         &self,
-        topic: &str,
+        topic: impl Into<&'a str>,
         callback: F,
     ) -> Result<Subscription<'a, F>> {
         extern "C" fn trampoline<F: FnMut(&str, SubscribeToTopicPayload)>(
@@ -156,12 +229,12 @@ impl Sdk {
             let unpacked = match unsafe { c::ggl_obj_type(payload) } {
                 c::GglObjectType::GGL_TYPE_MAP => {
                     let map = unsafe { c::ggl_obj_into_map(payload) };
-                    SubscribeToTopicPayload::Json(unsafe {
+                    SubscribeToTopicPayload::Json(MapRef(unsafe {
                         slice::from_raw_parts(
-                            map.pairs as *const Kv<Shared>,
+                            map.pairs as *const KvRef,
                             map.len,
                         )
-                    })
+                    }))
                 }
                 c::GglObjectType::GGL_TYPE_BUF => {
                     let buf = unsafe { c::ggl_obj_into_buf(payload) };
@@ -175,6 +248,7 @@ impl Sdk {
             cb(topic_str, unpacked);
         }
 
+        let topic = topic.into();
         let topic_buf = c::GglBuffer {
             data: topic.as_ptr().cast_mut(),
             len: topic.len(),
@@ -203,33 +277,63 @@ impl Sdk {
         })
     }
 
+    /// Publish an MQTT message to AWS IoT Core.
+    ///
+    /// Sends messages to AWS IoT Core MQTT broker with specified QoS.
+    /// Requires `aws.greengrass#PublishToIoTCore` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-publishtoiotcore>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::{Sdk, Qos};
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// let payload = b"telemetry data";
+    /// sdk.publish_to_iot_core("device/telemetry", payload, Qos::AtMostOnce)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if publish fails.
-    pub fn publish_to_iot_core(
+    pub fn publish_to_iot_core<'a>(
         &self,
-        topic: &str,
-        payload: &[u8],
+        topic: impl Into<&'a str>,
+        payload: impl AsRef<[u8]>,
         qos: Qos,
     ) -> Result<()> {
-        let topic_buf = c::GglBuffer {
-            data: topic.as_ptr().cast_mut(),
-            len: topic.len(),
-        };
-        let payload_buf = c::GglBuffer {
-            data: payload.as_ptr().cast_mut(),
-            len: payload.len(),
-        };
+        fn inner(topic: &str, payload: &[u8], qos: Qos) -> Result<()> {
+            let topic_buf = c::GglBuffer {
+                data: topic.as_ptr().cast_mut(),
+                len: topic.len(),
+            };
+            let payload_buf = c::GglBuffer {
+                data: payload.as_ptr().cast_mut(),
+                len: payload.len(),
+            };
 
-        Result::from(unsafe {
-            c::ggipc_publish_to_iot_core(topic_buf, payload_buf, qos as u8)
-        })
+            Result::from(unsafe {
+                c::ggipc_publish_to_iot_core(topic_buf, payload_buf, qos as u8)
+            })
+        }
+        inner(topic.into(), payload.as_ref(), qos)
     }
 
+    /// Subscribe to MQTT messages from AWS IoT Core.
+    ///
+    /// Receives messages from AWS IoT Core MQTT broker on matching topics.
+    /// Requires `aws.greengrass#SubscribeToIoTCore` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-iot-core-mqtt.html#ipc-operation-subscribetoiotcore>
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe_to_iot_core<'a, F: FnMut(&str, &[u8]) + 'a>(
         &self,
-        topic_filter: &str,
+        topic_filter: impl Into<&'a str>,
         qos: Qos,
         callback: F,
     ) -> Result<Subscription<'a, F>> {
@@ -249,6 +353,7 @@ impl Sdk {
             cb(topic_str, payload_bytes);
         }
 
+        let topic_filter = topic_filter.into();
         let topic_buf = c::GglBuffer {
             data: topic_filter.as_ptr().cast_mut(),
             len: topic_filter.len(),
@@ -278,6 +383,13 @@ impl Sdk {
         })
     }
 
+    /// Get component configuration value.
+    ///
+    /// Retrieves configuration for the specified key path. Pass empty slice for complete config.
+    /// Requires `aws.greengrass#GetConfiguration` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration>
+    ///
     /// # Errors
     /// Returns error if config retrieval fails.
     pub fn get_config<'a>(
@@ -285,7 +397,7 @@ impl Sdk {
         key_path: &[&str],
         component_name: Option<&str>,
         result_mem: &'a mut [mem::MaybeUninit<u8>],
-    ) -> Result<Object<'a, Mutable>> {
+    ) -> Result<ObjectRef<'a>> {
         let bufs: Box<[c::GglBuffer]> = key_path
             .iter()
             .map(|k| c::GglBuffer {
@@ -325,6 +437,13 @@ impl Sdk {
         Ok(unsafe { ptr::read((&raw const obj).cast()) })
     }
 
+    /// Get component configuration value as a string.
+    ///
+    /// Retrieves string configuration for the specified key path.
+    /// Requires `aws.greengrass#GetConfiguration` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-getconfiguration>
+    ///
     /// # Errors
     /// Returns error if config retrieval fails.
     ///
@@ -373,14 +492,34 @@ impl Sdk {
         .unwrap())
     }
 
+    /// Update component configuration.
+    ///
+    /// Merges the provided value into the component's configuration at the key path.
+    /// Requires `aws.greengrass#UpdateConfiguration` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-updateconfiguration>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::Sdk;
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// sdk.update_config(&["maxRetries"], None, 100_i64)?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if config update fails.
-    pub fn update_config<'a, R: RefKind<'a>>(
+    pub fn update_config<'a>(
         &self,
         key_path: &[&str],
         timestamp: Option<std::time::SystemTime>,
-        value_to_merge: &object::Object<'a, R>,
+        value_to_merge: impl Into<ObjectRef<'a>>,
     ) -> Result<()> {
+        let value_to_merge = value_to_merge.into();
         let bufs: Box<[c::GglBuffer]> = key_path
             .iter()
             .map(|k| c::GglBuffer {
@@ -397,7 +536,7 @@ impl Sdk {
         let timespec = timestamp.map(|t| {
             let duration =
                 t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
-            #[allow(clippy::cast_possible_wrap)]
+            #[expect(clippy::cast_possible_wrap)]
             c::timespec {
                 tv_sec: duration.as_secs() as i64,
                 tv_nsec: i64::from(duration.subsec_nanos()),
@@ -408,22 +547,54 @@ impl Sdk {
             c::ggipc_update_config(
                 key_path_list,
                 timespec.as_ref().map_or(ptr::null(), ptr::from_ref),
-                *ptr::from_ref(value_to_merge).cast::<c::GglObject>(),
+                *ptr::from_ref(&value_to_merge).cast::<c::GglObject>(),
             )
         })
     }
 
+    /// Restart a Greengrass component.
+    ///
+    /// Requests the nucleus to restart the specified component.
+    /// Requires appropriate lifecycle management authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html>
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ggl_sdk::Sdk;
+    ///
+    /// let sdk = Sdk::init();
+    /// sdk.connect()?;
+    ///
+    /// sdk.restart_component("com.example.MyComponent")?;
+    /// # Ok::<(), ggl_sdk::Error>(())
+    /// ```
+    ///
     /// # Errors
     /// Returns error if restart fails.
-    pub fn restart_component(&self, component_name: &str) -> Result<()> {
-        let component_buf = c::GglBuffer {
-            data: component_name.as_ptr().cast_mut(),
-            len: component_name.len(),
-        };
+    pub fn restart_component<'a>(
+        &self,
+        component_name: impl Into<&'a str>,
+    ) -> Result<()> {
+        fn inner(component_name: &str) -> Result<()> {
+            let component_buf = c::GglBuffer {
+                data: component_name.as_ptr().cast_mut(),
+                len: component_name.len(),
+            };
 
-        Result::from(unsafe { c::ggipc_restart_component(component_buf) })
+            Result::from(unsafe { c::ggipc_restart_component(component_buf) })
+        }
+        inner(component_name.into())
     }
 
+    /// Subscribe to component configuration updates.
+    ///
+    /// Receives notifications when configuration changes for the specified key path.
+    /// Requires `aws.greengrass#SubscribeToConfigurationUpdate` authorization.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-configuration.html#ipc-operation-subscribetoconfigurationupdate>
+    ///
     /// # Errors
     /// Returns error if subscription fails.
     pub fn subscribe_to_configuration_update<
@@ -504,46 +675,40 @@ impl Sdk {
         })
     }
 
+    /// Make a generic IPC call.
+    ///
+    /// Low-level interface for invoking IPC operations not covered by specific methods.
+    ///
     /// # Errors
     /// Returns error if IPC call fails.
     pub fn call<
         'a,
         'b,
-        R: RefKind<'a>,
-        F: FnOnce(
-            result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-        ) -> Result<()>,
+        F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
-        params: &[Kv<'a, R>],
+        params: &[KvRef<'a>],
         mut callback: F,
     ) -> Result<()> {
         extern "C" fn result_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             result: c::GglMap,
         ) -> c::GglError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
-                slice::from_raw_parts(
-                    result.pairs as *const Kv<Shared>,
-                    result.len,
-                )
+                slice::from_raw_parts(result.pairs as *const KvRef, result.len)
             };
             cb(Ok(result_slice)).into()
         }
 
         extern "C" fn error_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             error_code: c::GglBuffer,
@@ -590,51 +755,44 @@ impl Sdk {
         })
     }
 
+    /// Subscribe to a generic IPC stream.
+    ///
+    /// Low-level interface for subscribing to IPC operations not covered by specific methods.
+    ///
     /// # Errors
     /// Returns error if subscription fails.
-    #[allow(clippy::too_many_lines)]
     pub fn subscribe<
         'a,
         'b,
         'c,
-        R: RefKind<'a>,
-        F: FnOnce(
-            result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-        ) -> Result<()>,
-        G: FnMut(usize, &str, &'b [Kv<'b, Shared>]) -> Result<()> + 'c,
+        F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+        G: FnMut(usize, &str, &'b [KvRef<'b>]) -> Result<()> + 'c,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
-        params: &[Kv<'a, R>],
+        params: &[KvRef<'a>],
         mut response_callback: F,
         sub_callback: G,
         aux_ctx: usize,
     ) -> Result<Subscription<'c, G>> {
         extern "C" fn result_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             result: c::GglMap,
         ) -> c::GglError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
-                slice::from_raw_parts(
-                    result.pairs as *const Kv<Shared>,
-                    result.len,
-                )
+                slice::from_raw_parts(result.pairs as *const KvRef, result.len)
             };
             cb(Ok(result_slice)).into()
         }
 
         extern "C" fn error_trampoline<
             'b,
-            F: FnOnce(
-                result::Result<&'b [Kv<'b, Shared>], IpcError<'b>>,
-            ) -> Result<()>,
+            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             error_code: c::GglBuffer,
@@ -659,7 +817,7 @@ impl Sdk {
         extern "C" fn sub_trampoline<
             'b,
             'c,
-            G: FnMut(usize, &str, &'b [Kv<'b, Shared>]) -> Result<()> + 'c,
+            G: FnMut(usize, &str, &'b [KvRef<'b>]) -> Result<()> + 'c,
         >(
             ctx: *mut ffi::c_void,
             aux_ctx: *mut ffi::c_void,
@@ -677,7 +835,7 @@ impl Sdk {
             })
             .unwrap();
             let map = unsafe {
-                slice::from_raw_parts(data.pairs as *const Kv<Shared>, data.len)
+                slice::from_raw_parts(data.pairs.cast::<KvRef>(), data.len)
             };
             cb(aux, smt, map).into()
         }
@@ -724,6 +882,7 @@ impl Sdk {
     }
 }
 
+/// Handle for an active IPC subscription.
 #[derive(Debug)]
 pub struct Subscription<'a, T> {
     handle: c::GgIpcSubscriptionHandle,

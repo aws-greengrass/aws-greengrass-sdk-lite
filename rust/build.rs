@@ -2,6 +2,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+//! Build script for ggl-sdk.
+
 use std::env;
 use std::path::PathBuf;
 

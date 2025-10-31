@@ -14,11 +14,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/// Maximum depth of an object
+/// Maximum depth of an object.
 /// i.e. `5` has depth 1, `{"a":5}` is depth 2, and `[{"a":5}]` is 3.
 #define GGL_MAX_OBJECT_DEPTH (15U)
 
-/// Maximum subobject count for an object
+/// Maximum subobject count for an object.
 /// Subobject count calculation:
 ///   subobject_count(non-list/map object) = 0
 ///   subobject_count(list) = len + sum({item: subobject_count(item)})
@@ -75,7 +75,7 @@ typedef struct {
         .len = (sizeof((GglKV[]) { __VA_ARGS__ })) / (sizeof(GglKV)) \
     }
 
-/// Get type of an GglObject
+/// Get type of an GglObject.
 CONST
 GglObjectType ggl_obj_type(GglObject obj);
 
@@ -135,8 +135,10 @@ GglObject ggl_obj_list(GglList value);
 CONST
 GglList ggl_obj_into_list(GglObject list);
 
-/// Calculates the memory required to claim this object with
-/// ggl_arena_claim_obj.
+/// Calculate max memory needed to claim an object.
+/// This is the max memory used by ggl_arena_claim_obj on this object.
+/// On success, sets `size` to the calculated memory requirement.
+/// Returns GGL_ERR_OK on success.
 ACCESS(write_only, 2) REPRODUCIBLE
 GglError ggl_obj_mem_usage(GglObject obj, size_t *size);
 
