@@ -6,10 +6,12 @@
 #![allow(clippy::enum_glob_use)]
 
 mod c;
-pub mod error;
-pub mod ipc;
-pub mod object;
+mod error;
+mod ipc;
+mod object;
 
 pub use error::{Error, Result};
-pub use ipc::{Qos, Sdk};
-pub use object::{Kv, KvRef, List, ListRef, Map, MapRef, Object, ObjectRef};
+pub use ipc::{Qos, Sdk, SubscribeToTopicPayload, Subscription};
+pub use object::{
+    Kv, KvRef, List, ListRef, Map, MapRef, Object, ObjectRef, UnpackedObject,
+};

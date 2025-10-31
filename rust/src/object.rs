@@ -74,7 +74,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Object, UnpackedObject};
+    /// use ggl_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::bool(true);
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::Bool(true)));
@@ -91,7 +91,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Object, UnpackedObject};
+    /// use ggl_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::i64(42);
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::I64(42)));
@@ -108,7 +108,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Object, UnpackedObject};
+    /// use ggl_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::f64(3.14);
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::F64(f) if (f - 3.14).abs() < f64::EPSILON));
@@ -125,7 +125,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Object, UnpackedObject};
+    /// use ggl_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::buf("hello");
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::Buf("hello")));
@@ -150,7 +150,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Object, UnpackedObject};
+    /// use ggl_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::list([Object::i64(1), Object::i64(2)]);
     /// if let UnpackedObject::List(items) = obj.as_ref().unpack() {
@@ -175,7 +175,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    /// use ggl_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let obj = Object::map([
     ///     Kv::new("key1", Object::i64(42)),
@@ -214,7 +214,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{ObjectRef, UnpackedObject};
+    /// use ggl_sdk::{ObjectRef, UnpackedObject};
     ///
     /// let obj = ObjectRef::bool(false);
     /// assert!(matches!(obj.unpack(), UnpackedObject::Bool(false)));
@@ -248,7 +248,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{ObjectRef, UnpackedObject};
+    /// use ggl_sdk::{ObjectRef, UnpackedObject};
     ///
     /// let s = "borrowed";
     /// let obj = ObjectRef::buf(s);
@@ -273,7 +273,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{ObjectRef, UnpackedObject};
+    /// use ggl_sdk::{ObjectRef, UnpackedObject};
     ///
     /// let items = [ObjectRef::i64(1), ObjectRef::i64(2)];
     /// let obj = ObjectRef::list(&items[..]);
@@ -300,7 +300,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{KvRef, ObjectRef, UnpackedObject};
+    /// use ggl_sdk::{KvRef, ObjectRef, UnpackedObject};
     ///
     /// let pairs = [KvRef::new("k", ObjectRef::i64(1))];
     /// let obj = ObjectRef::map(&pairs[..]);
@@ -362,7 +362,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    /// use ggl_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let obj = Object::i64(42);
     /// match obj.as_ref().unpack() {
@@ -633,7 +633,7 @@ impl Kv {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Object};
+    /// use ggl_sdk::{Kv, Object};
     ///
     /// let kv = Kv::new("name", Object::buf("Alice"));
     /// assert_eq!(kv.key(), "name");
@@ -671,7 +671,7 @@ impl Kv {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Object};
+    /// use ggl_sdk::{Kv, Object};
     ///
     /// let mut kv = Kv::new("old", Object::i64(1));
     /// kv.set_key("new");
@@ -710,7 +710,7 @@ impl Kv {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    /// use ggl_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let mut kv = Kv::new("count", Object::i64(1));
     /// *kv.val_mut() = Object::i64(2);
@@ -732,7 +732,7 @@ impl<'a> KvRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{KvRef, ObjectRef};
+    /// use ggl_sdk::{KvRef, ObjectRef};
     ///
     /// let kv = KvRef::new("key", ObjectRef::i64(10));
     /// assert_eq!(kv.key(), "key");
@@ -770,7 +770,7 @@ impl<'a> KvRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Object, UnpackedObject};
+    /// use ggl_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let kv = Kv::new("key", Object::i64(100));
     /// assert!(matches!(kv.val().as_ref().unpack(), UnpackedObject::I64(100)));
@@ -858,7 +858,7 @@ impl Map {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{Kv, Map, Object, UnpackedObject};
+    /// use ggl_sdk::{Kv, Map, Object, UnpackedObject};
     ///
     /// let map = Map(Box::new([
     ///     Kv::new("a", Object::i64(1)),
@@ -879,7 +879,7 @@ impl MapRef<'_> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::object::{KvRef, MapRef, ObjectRef, UnpackedObject};
+    /// use ggl_sdk::{KvRef, MapRef, ObjectRef, UnpackedObject};
     ///
     /// let pairs = [
     ///     KvRef::new("a", ObjectRef::i64(1)),
