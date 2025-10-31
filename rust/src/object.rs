@@ -21,6 +21,7 @@ pub struct Object {
 }
 
 /// A borrowed generic object.
+#[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct ObjectRef<'a> {
     c: c::GglObject,
@@ -337,10 +338,10 @@ impl<'a> ObjectRef<'a> {
     }
 }
 
-impl ToOwned for ObjectRef<'_> {
-    type Owned = Object;
-
-    fn to_owned(&self) -> Object {
+impl ObjectRef<'_> {
+    /// Convert to an owned Object.
+    #[must_use]
+    pub fn to_owned(&self) -> Object {
         use UnpackedObject::*;
         match self.unpack() {
             Null => Object::NULL,
@@ -601,6 +602,7 @@ pub struct Kv {
 }
 
 /// A borrowed key-value pair.
+#[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct KvRef<'a> {
     c: c::GglKV,
@@ -754,7 +756,6 @@ impl<'a> KvRef<'a> {
     /// let kv = KvRef::new("key", ObjectRef::i64(10));
     /// assert_eq!(kv.key(), "key");
     /// ```
-    #[expect(clippy::needless_pass_by_value)]
     pub fn new(key: impl Into<&'a str>, value: ObjectRef<'a>) -> Self {
         let s = key.into();
         Self {
@@ -803,10 +804,10 @@ impl<'a> KvRef<'a> {
     }
 }
 
-impl ToOwned for KvRef<'_> {
-    type Owned = Kv;
-
-    fn to_owned(&self) -> Kv {
+impl KvRef<'_> {
+    /// Convert to an owned Kv.
+    #[must_use]
+    pub fn to_owned(&self) -> Kv {
         Kv::new(
             self.key().to_owned().into_boxed_str(),
             self.val().to_owned(),
@@ -895,6 +896,12 @@ impl Map {
 }
 
 impl MapRef<'_> {
+    /// Convert to an owned Map.
+    #[must_use]
+    pub fn to_owned(&self) -> Map {
+        Map(self.0.iter().map(KvRef::to_owned).collect())
+    }
+
     /// Get a value from a map by key.
     ///
     /// # Examples
@@ -954,6 +961,14 @@ impl<'a> From<&'a [Kv]> for MapRef<'a> {
 impl<'a, const N: usize> From<&'a [Kv; N]> for MapRef<'a> {
     fn from(array: &'a [Kv; N]) -> Self {
         Self::from(&array[..])
+    }
+}
+
+impl ListRef<'_> {
+    /// Convert to an owned List.
+    #[must_use]
+    pub fn to_owned(&self) -> List {
+        List(self.0.iter().map(ObjectRef::to_owned).collect())
     }
 }
 
