@@ -18,6 +18,7 @@ use crate::{
 static INIT: OnceLock<()> = OnceLock::new();
 static CONNECTED: Mutex<bool> = Mutex::new(false);
 
+/// AWS IoT Greengrass IPC SDK client.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct Sdk {}
@@ -28,16 +29,22 @@ pub struct IpcError<'a> {
     pub message: &'a str,
 }
 
+/// MQTT Quality of Service level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Qos {
+    /// At most once delivery (QoS 0)
     AtMostOnce = 0,
+    /// At least once delivery (QoS 1)
     AtLeastOnce = 1,
 }
 
+/// Payload received from a topic subscription.
 #[derive(Debug, Clone, Copy)]
 pub enum SubscribeToTopicPayload<'a> {
+    /// JSON payload
     Json(MapRef<'a>),
+    /// Binary payload
     Binary(&'a [u8]),
 }
 
@@ -875,6 +882,7 @@ impl Sdk {
     }
 }
 
+/// Handle for an active IPC subscription.
 #[derive(Debug)]
 pub struct Subscription<'a, T> {
     handle: c::GgIpcSubscriptionHandle,

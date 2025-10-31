@@ -2,7 +2,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#![warn(clippy::pedantic, clippy::cargo)]
+//! Lightweight AWS IoT Greengrass SDK for making IPC calls.
+
+#![warn(missing_docs, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::enum_glob_use)]
 
 mod c;
