@@ -1,6 +1,7 @@
 ALLOCN
 bufs
 cbmc
+condvar
 coverity
 dfcc
 EPOLLIN

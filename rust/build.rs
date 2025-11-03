@@ -15,12 +15,47 @@ fn main() {
 
     let dst = cmake::Config::new(&project_root)
         .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
+        .define("CMAKE_INTERPROCEDURAL_OPTIMIZATION", "OFF")
         .define("BUILD_CPP", "OFF")
         .build_target("ggl-sdk")
         .build();
 
-    println!("cargo:rustc-link-search=native={}/build", dst.display());
-    println!("cargo:rustc-link-lib=static=ggl-sdk");
+    // Extract object files from the archive and include them
+    let archive_path = format!("{}/build/libggl-sdk.a", dst.display());
+    let extract_dir = PathBuf::from(&out_dir).join("extracted");
+    std::fs::create_dir_all(&extract_dir)
+        .expect("Failed to create extract directory");
+
+    // Use AR environment variable or fallback to "ar"
+    let ar_cmd = env::var("AR").unwrap_or_else(|_| "ar".to_string());
+
+    // Extract the archive
+    let output = std::process::Command::new(&ar_cmd)
+        .args(["x", &archive_path])
+        .current_dir(&extract_dir)
+        .output()
+        .expect("Failed to extract archive");
+
+    if !output.status.success() {
+        panic!(
+            "Failed to extract archive: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    // Find all .o files and add them to cc::Build
+    let mut build = cc::Build::new();
+    for entry in std::fs::read_dir(&extract_dir)
+        .expect("Failed to read extract directory")
+    {
+        let entry = entry.expect("Failed to read directory entry");
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) == Some("o") {
+            build.object(&path);
+        }
+    }
+
+    build.compile("ggl-sdk");
 
     let wrapper_path = PathBuf::from(&out_dir).join("bindgen_wrapper");
     let bindings = bindgen::Builder::default()
