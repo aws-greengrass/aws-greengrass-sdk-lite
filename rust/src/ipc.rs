@@ -39,6 +39,15 @@ pub enum Qos {
     AtLeastOnce = 1,
 }
 
+/// Component lifecycle state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ComponentState {
+    /// Component is running
+    Running,
+    /// Component encountered an error
+    Errored,
+}
+
 /// Payload received from a topic subscription.
 #[derive(Debug, Clone, Copy)]
 pub enum SubscribeToTopicPayload<'a> {
@@ -550,6 +559,26 @@ impl Sdk {
                 *ptr::from_ref(&value_to_merge).cast::<c::GglObject>(),
             )
         })
+    }
+
+    /// Update component state.
+    ///
+    /// Reports component state to the Greengrass nucleus.
+    ///
+    /// See: <https://docs.aws.amazon.com/greengrass/v2/developerguide/ipc-component-lifecycle.html#ipc-operation-updatestate>
+    ///
+    /// # Errors
+    /// Returns error if state update fails.
+    pub fn update_state(&self, state: ComponentState) -> Result<()> {
+        let c_state = match state {
+            ComponentState::Running => {
+                c::GglComponentState::GGL_COMPONENT_STATE_RUNNING
+            }
+            ComponentState::Errored => {
+                c::GglComponentState::GGL_COMPONENT_STATE_ERRORED
+            }
+        };
+        Result::from(unsafe { c::ggipc_update_state(c_state) })
     }
 
     /// Restart a Greengrass component.

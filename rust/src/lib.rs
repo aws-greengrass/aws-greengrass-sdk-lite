@@ -13,7 +13,9 @@ mod ipc;
 mod object;
 
 pub use error::{Error, Result};
-pub use ipc::{Qos, Sdk, SubscribeToTopicPayload, Subscription};
+pub use ipc::{
+    ComponentState, Qos, Sdk, SubscribeToTopicPayload, Subscription,
+};
 pub use object::{
     Kv, KvRef, List, ListRef, Map, MapRef, Object, ObjectRef, UnpackedObject,
 };
