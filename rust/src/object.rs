@@ -803,16 +803,16 @@ impl<'a> KvRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Object, UnpackedObject};
+    /// use ggl_sdk::{KvRef, ObjectRef, UnpackedObject};
     ///
-    /// let kv = Kv::new("key", Object::i64(100));
-    /// assert!(matches!(kv.val().as_ref().unpack(), UnpackedObject::I64(100)));
+    /// let kv = KvRef::new("key", ObjectRef::i64(100));
+    /// assert!(matches!(kv.val().unpack(), UnpackedObject::I64(100)));
     /// ```
     #[must_use]
-    pub fn val(&self) -> &Object {
+    pub fn val(&self) -> &ObjectRef<'a> {
         unsafe {
             c::ggl_kv_val((&raw const self.c).cast_mut())
-                .cast::<Object>()
+                .cast::<ObjectRef>()
                 .as_ref()
                 .unwrap_unchecked()
         }
