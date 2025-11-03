@@ -213,6 +213,21 @@ impl Object {
             },
         }
     }
+
+    /// Unpack the object into its value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ggl_sdk::{Object, UnpackedObject};
+    ///
+    /// let obj = Object::i64(42);
+    /// assert!(matches!(obj.unpack(), UnpackedObject::I64(42)));
+    /// ```
+    #[must_use]
+    pub fn unpack(&self) -> UnpackedObject<'_> {
+        self.as_ref().unpack()
+    }
 }
 
 impl<'a> ObjectRef<'a> {
