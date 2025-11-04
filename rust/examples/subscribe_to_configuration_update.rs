@@ -1,8 +1,4 @@
-use std::{
-    mem::MaybeUninit,
-    sync::{Arc, Condvar, Mutex},
-    thread,
-};
+use std::{mem::MaybeUninit, sync::mpsc};
 
 use ggl_sdk::Sdk;
 
@@ -11,8 +7,7 @@ fn main() {
     sdk.connect().expect("Failed to connect to IPC");
     println!("Connected to Greengrass IPC");
 
-    let pair = Arc::new((Mutex::new(false), Condvar::new()));
-    let pair_clone = Arc::clone(&pair);
+    let (tx, rx) = mpsc::sync_channel(1);
 
     let _sub = sdk
         .subscribe_to_configuration_update(
@@ -30,10 +25,7 @@ fn main() {
                 }
                 println!("]");
 
-                let (lock, cvar) = &*pair_clone;
-                let mut updated = lock.lock().unwrap();
-                *updated = true;
-                cvar.notify_one();
+                let _ = tx.try_send(());
             },
         )
         .expect("Failed to subscribe to configuration updates");
@@ -44,13 +36,7 @@ fn main() {
     let mut buf = [MaybeUninit::uninit(); 500];
 
     loop {
-        let (lock, cvar) = &*pair;
-        let mut updated = lock.lock().unwrap();
-        while !*updated {
-            updated = cvar.wait(updated).unwrap();
-        }
-        *updated = false;
-        drop(updated);
+        rx.recv().unwrap();
 
         match sdk.get_config_str(&["test_str"], None, &mut buf) {
             Ok(config) => {
@@ -61,7 +47,5 @@ fn main() {
             }
             Err(e) => eprintln!("Failed to get configuration: {e:?}"),
         }
-
-        thread::yield_now();
     }
 }
