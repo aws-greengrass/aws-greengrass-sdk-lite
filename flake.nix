@@ -49,6 +49,7 @@
             unity-test
             rustc
             rustPlatform.bindgenHook
+            llvmPackages_latest.clang
             clippy
             rustfmt
             rust-analyzer-unwrapped
@@ -246,7 +247,12 @@
               ${pkgs.coreutils}/bin/sort -cuf misc/dictionary.txt
             '';
 
-            build-rust-crate = { rustPlatform, cmake, clippy, ... }:
+            build-rust-crate =
+              { rustPlatform
+              , clippy
+              , llvmPackages_latest
+              , ...
+              }:
               let
                 meta = (fromTOML (builtins.readFile ./rust/Cargo.toml)).package;
               in
@@ -255,8 +261,8 @@
                 inherit (meta) version;
                 nativeBuildInputs = [
                   rustPlatform.bindgenHook
-                  cmake
                   clippy
+                  llvmPackages_latest.clang
                 ];
                 dontUseCmakeConfigure = true;
                 src = lib.fileset.toSource {

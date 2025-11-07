@@ -6,7 +6,10 @@ coverity
 dfcc
 epollfd
 EPOLLIN
+ffat
 fileb
+flto
+fstrict
 ggipc
 greengrassv2
 idents
@@ -26,6 +29,7 @@ noentry
 NOLINTNEXTLINE
 nomem
 nsec
+pthread
 repr
 rustc
 strs

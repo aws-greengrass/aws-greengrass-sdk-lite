@@ -12,7 +12,6 @@ categories = ["api-bindings"]
 [build-dependencies]
 bindgen = "0.72"
 cc = "1"
-cmake = "0.1"
 
 [profile.release]
 strip = true

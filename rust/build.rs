@@ -8,54 +8,28 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    let out_dir = env::var("OUT_DIR").unwrap();
+    unsafe {
+        env::set_var("SOURCE_DATE_EPOCH", "0");
+    }
+
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let project_root =
         PathBuf::from(&manifest_dir).parent().unwrap().to_path_buf();
+    let out_dir = env::var("OUT_DIR").unwrap();
 
-    let dst = cmake::Config::new(&project_root)
-        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
-        .define("CMAKE_INTERPROCEDURAL_OPTIMIZATION", "OFF")
-        .define("BUILD_CPP", "OFF")
-        .build_target("ggl-sdk")
-        .build();
-
-    // Extract object files from the archive and include them
-    let archive_path = format!("{}/build/libggl-sdk.a", dst.display());
-    let extract_dir = PathBuf::from(&out_dir).join("extracted");
-    std::fs::create_dir_all(&extract_dir)
-        .expect("Failed to create extract directory");
-
-    // Use AR environment variable or fallback to "ar"
-    let ar_cmd = env::var("AR").unwrap_or_else(|_| "ar".to_string());
-
-    // Extract the archive
-    let output = std::process::Command::new(&ar_cmd)
-        .args(["x", &archive_path])
-        .current_dir(&extract_dir)
-        .output()
-        .expect("Failed to extract archive");
-
-    if !output.status.success() {
-        panic!(
-            "Failed to extract archive: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
-
-    // Find all .o files and add them to cc::Build
-    let mut build = cc::Build::new();
-    for entry in std::fs::read_dir(&extract_dir)
-        .expect("Failed to read extract directory")
-    {
-        let entry = entry.expect("Failed to read directory entry");
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) == Some("o") {
-            build.object(&path);
+    let mut src_files = Vec::new();
+    let mut dirs = vec![project_root.join("src")];
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path.extension().and_then(|s| s.to_str()) == Some("c") {
+                src_files.push(path);
+            }
         }
     }
-
-    build.compile("ggl-sdk");
 
     let wrapper_path = PathBuf::from(&out_dir).join("bindgen_wrapper");
     let bindings = bindgen::Builder::default()
@@ -87,15 +61,40 @@ fn main() {
         .write_to_file(&out_path)
         .expect("Failed to write bindings");
 
-    cc::Build::new()
+    let mut build = cc::Build::new();
+    for file in &src_files {
+        build.flag(format!("-frandom-seed={}", file.display()));
+    }
+
+    build
+        .compiler("clang")
+        .files(&src_files)
         .file(wrapper_path.with_extension("c"))
         .include(project_root.join("include"))
+        .include(project_root.join("priv_include"))
         .include(&manifest_dir)
-        .compile("bindgen_wrapper");
+        .flag("-pthread")
+        .flag("-fno-strict-aliasing")
+        .flag("-std=gnu11")
+        .flag("-Wno-missing-braces")
+        .flag("-fno-semantic-interposition")
+        .flag("-fno-unwind-tables")
+        .flag("-fno-asynchronous-unwind-tables")
+        .flag("-fstrict-flex-arrays=3")
+        .define("_GNU_SOURCE", None)
+        .define("GGL_MODULE", "\"ggl-sdk\"")
+        .define("GGL_LOG_LEVEL", "GGL_LOG_DEBUG");
+
+    if env::var("PROFILE").unwrap() == "release" {
+        build.flag("-Oz");
+        build.flag("-flto");
+        build.flag("-ffat-lto-objects");
+    }
+
+    build.compile("ggl-sdk");
 
     println!("cargo:rerun-if-changed=wrapper.h");
-    println!("cargo:rerun-if-changed=../../CMakeLists.txt");
-    println!("cargo:rerun-if-changed=../../src");
-    println!("cargo:rerun-if-changed=../../include");
-    println!("cargo:rerun-if-changed=../../priv_include");
+    println!("cargo:rerun-if-changed=../src");
+    println!("cargo:rerun-if-changed=../include");
+    println!("cargo:rerun-if-changed=../priv_include");
 }
