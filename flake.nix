@@ -48,7 +48,7 @@
             pkg-config
             unity-test
             rustc
-            rustPlatform.bindgenHook
+            rust-bindgen
             llvmPackages_latest.clang
             clippy
             rustfmt
@@ -67,6 +67,11 @@
           imports = [ (config.devShell pkgs) ];
           stdenv = lib.mkForce (llvmStdenv pkgs);
         };
+
+        apps.rust-bindgen = pkgs: ''
+          export PATH=${lib.makeBinPath (with pkgs; [ rust-bindgen rustfmt ])}:$PATH
+          ${./. + "/misc/run_bindgen.sh"}
+        '';
 
         formatters =
           { llvmPackages_latest
@@ -260,7 +265,6 @@
                 pname = "${meta.name}-rs";
                 inherit (meta) version;
                 nativeBuildInputs = [
-                  rustPlatform.bindgenHook
                   clippy
                   llvmPackages_latest.clang
                 ];
@@ -284,6 +288,11 @@
                   popd
                 '';
               };
+            bindgen = { lib, rust-bindgen, rustfmt, diffutils, ... }: ''
+              export PATH=${lib.makeBinPath [ rust-bindgen rustfmt ]}:$PATH
+              ${./. + "/misc/run_bindgen.sh"}
+              ${diffutils}/bin/diff -qr ${./.} .
+            '';
           };
 
         withOverlays = final: prev: {

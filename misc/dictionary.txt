@@ -1,8 +1,10 @@
 ALLOCN
 bufs
 cbmc
+clippy
 condvar
 coverity
+cstr
 dfcc
 epollfd
 EPOLLIN
@@ -10,6 +12,7 @@ ffat
 fileb
 flto
 fstrict
+getenv
 ggipc
 greengrassv2
 idents
@@ -34,3 +37,4 @@ repr
 rustc
 strs
 svcuid
+syscall

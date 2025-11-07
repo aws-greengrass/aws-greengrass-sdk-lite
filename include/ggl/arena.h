@@ -29,7 +29,7 @@ typedef struct {
 } GglArenaState;
 
 /// Obtain an initialized `GglAlloc` backed by `buf`.
-static inline GglArena ggl_arena_init(GglBuffer buf) {
+inline GglArena ggl_arena_init(GglBuffer buf) {
     return (GglArena) { .mem = buf.data,
                         .capacity = buf.len <= UINT32_MAX ? (uint32_t) buf.len
                                                           : UINT32_MAX };

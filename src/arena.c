@@ -15,6 +15,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// NOLINTNEXTLINE(readability-redundant-declaration)
+extern inline typeof(ggl_arena_init) ggl_arena_init;
+
 void *ggl_arena_alloc(GglArena *arena, size_t size, size_t alignment) {
     if (arena == NULL) {
         GGL_LOGD("Attempted allocation with NULL arena.");

@@ -10,7 +10,6 @@ keywords = ["aws", "greengrass", "iot"]
 categories = ["api-bindings"]
 
 [build-dependencies]
-bindgen = "0.72"
 cc = "1"
 
 [profile.release]
