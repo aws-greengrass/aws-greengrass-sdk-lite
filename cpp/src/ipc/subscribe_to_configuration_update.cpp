@@ -1,9 +1,9 @@
-#include <ggl/buffer.hpp>
-#include <ggl/error.hpp>
-#include <ggl/ipc/client.hpp>
-#include <ggl/ipc/client_c_api.hpp>
-#include <ggl/ipc/subscription.hpp>
-#include <ggl/types.hpp>
+#include <gg/buffer.hpp>
+#include <gg/error.hpp>
+#include <gg/ipc/client.hpp>
+#include <gg/ipc/client_c_api.hpp>
+#include <gg/ipc/subscription.hpp>
+#include <gg/types.hpp>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -13,13 +13,13 @@
 #include <string_view>
 #include <system_error>
 
-namespace ggl::ipc {
+namespace gg::ipc {
 extern "C" {
 namespace {
     void subscribe_to_configuration_update_callback(
         void *ctx,
-        GglBuffer component_name,
-        GglList key_path,
+        GgBuffer component_name,
+        GgList key_path,
         GgIpcSubscriptionHandle handle
     ) noexcept try {
         Subscription locked { handle };
@@ -51,20 +51,20 @@ std::error_code Client::subscribe_to_configuration_update(
     ConfigurationUpdateCallback &callback,
     Subscription *handle
 ) noexcept {
-    ggl::Buffer component_name_buf {
+    gg::Buffer component_name_buf {
         component_name.value_or(std::string_view {})
     };
 
     GgIpcSubscriptionHandle raw_handle;
-    GglError ret = ggipc_subscribe_to_configuration_update(
+    GgError ret = ggipc_subscribe_to_configuration_update(
         component_name.has_value() ? &component_name_buf : nullptr,
-        GglBufList { .bufs = const_cast<ggl::Buffer *>(key_path.data()),
-                     .len = key_path.size() },
+        GgBufList { .bufs = const_cast<gg::Buffer *>(key_path.data()),
+                    .len = key_path.size() },
         subscribe_to_configuration_update_callback,
         &callback,
         (handle != nullptr) ? &raw_handle : nullptr
     );
-    if ((handle != nullptr) && (ret == GGL_ERR_OK)) {
+    if ((handle != nullptr) && (ret == GG_ERR_OK)) {
         handle->reset(raw_handle);
     }
     return ret;

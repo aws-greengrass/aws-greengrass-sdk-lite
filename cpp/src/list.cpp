@@ -2,10 +2,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/list.hpp>
-#include <ggl/object.hpp>
+#include <gg/list.hpp>
+#include <gg/object.hpp>
 
-namespace ggl {
+namespace gg {
 
 List::reference List::operator[](size_type pos) const noexcept {
     return data()[pos];

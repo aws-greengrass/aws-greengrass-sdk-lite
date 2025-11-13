@@ -1,5 +1,5 @@
 [package]
-name = "ggl-sdk"
+name = "gg-sdk"
 version = "0.0.2"
 edition = "2024"
 license = "Apache-2.0"

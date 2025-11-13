@@ -3,44 +3,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <assert.h>
-#include <ggl/error.h>
+#include <gg/error.h>
 #include <stdbool.h>
 
-const char *ggl_strerror(GglError err) {
+const char *gg_strerror(GgError err) {
     switch (err) {
-    case GGL_ERR_OK:
+    case GG_ERR_OK:
         return "OK";
-    case GGL_ERR_FAILURE:
+    case GG_ERR_FAILURE:
         return "FAILURE";
-    case GGL_ERR_RETRY:
+    case GG_ERR_RETRY:
         return "RETRY";
-    case GGL_ERR_BUSY:
+    case GG_ERR_BUSY:
         return "BUSY";
-    case GGL_ERR_FATAL:
+    case GG_ERR_FATAL:
         return "FATAL";
-    case GGL_ERR_INVALID:
+    case GG_ERR_INVALID:
         return "INVALID";
-    case GGL_ERR_UNSUPPORTED:
+    case GG_ERR_UNSUPPORTED:
         return "UNSUPPORTED";
-    case GGL_ERR_PARSE:
+    case GG_ERR_PARSE:
         return "PARSE";
-    case GGL_ERR_RANGE:
+    case GG_ERR_RANGE:
         return "RANGE";
-    case GGL_ERR_NOMEM:
+    case GG_ERR_NOMEM:
         return "NOMEM";
-    case GGL_ERR_NOCONN:
+    case GG_ERR_NOCONN:
         return "NOCONN";
-    case GGL_ERR_NODATA:
+    case GG_ERR_NODATA:
         return "NODATA";
-    case GGL_ERR_NOENTRY:
+    case GG_ERR_NOENTRY:
         return "NOENTRY";
-    case GGL_ERR_CONFIG:
+    case GG_ERR_CONFIG:
         return "CONFIG";
-    case GGL_ERR_REMOTE:
+    case GG_ERR_REMOTE:
         return "REMOTE";
-    case GGL_ERR_EXPECTED:
+    case GG_ERR_EXPECTED:
         return "EXPECTED";
-    case GGL_ERR_TIMEOUT:
+    case GG_ERR_TIMEOUT:
         return "TIMEOUT";
     }
 

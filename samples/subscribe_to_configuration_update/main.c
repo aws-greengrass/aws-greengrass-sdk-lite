@@ -2,11 +2,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/ipc/client.h>
-#include <ggl/object.h>
-#include <ggl/sdk.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/ipc/client.h>
+#include <gg/object.h>
+#include <gg/sdk.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdbool.h>
@@ -20,8 +20,8 @@ static bool config_updated = false;
 
 static void config_update_handler(
     void *ctx,
-    GglBuffer component_name,
-    GglList key_path,
+    GgBuffer component_name,
+    GgList key_path,
     GgIpcSubscriptionHandle handle
 ) {
     (void) ctx;
@@ -36,9 +36,9 @@ static void config_update_handler(
         if (i > 0) {
             printf(", ");
         }
-        GglObject *obj = &key_path.items[i];
-        if (ggl_obj_type(*obj) == GGL_TYPE_BUF) {
-            GglBuffer key = ggl_obj_into_buf(*obj);
+        GgObject *obj = &key_path.items[i];
+        if (gg_obj_type(*obj) == GG_TYPE_BUF) {
+            GgBuffer key = gg_obj_into_buf(*obj);
             printf("\"%.*s\"", (int) key.len, key.data);
         }
     }
@@ -53,10 +53,10 @@ static void config_update_handler(
 int main(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    ggl_sdk_init();
+    gg_sdk_init();
 
-    GglError ret = ggipc_connect();
-    if (ret != GGL_ERR_OK) {
+    GgError ret = ggipc_connect();
+    if (ret != GG_ERR_OK) {
         fprintf(stderr, "Failed to connect to IPC: %d\n", ret);
         return EXIT_FAILURE;
     }
@@ -65,12 +65,12 @@ int main(void) {
 
     // A key with 0 elements means subscribe to all config updates for the
     // component
-    GglBufList key_path = GGL_BUF_LIST(GGL_STR("test_str"));
+    GgBufList key_path = GG_BUF_LIST(GG_STR("test_str"));
     ret = ggipc_subscribe_to_configuration_update(
         NULL, key_path, config_update_handler, NULL, NULL
     );
 
-    if (ret != GGL_ERR_OK) {
+    if (ret != GG_ERR_OK) {
         fprintf(
             stderr, "Failed to subscribe to configuration updates: %d\n", ret
         );
@@ -80,7 +80,7 @@ int main(void) {
     printf("Subscribed to configuration updates. Waiting for updates...\n");
 
     uint8_t prev_mem[500] = { 0 };
-    GglBuffer prev_value = GGL_BUF(prev_mem);
+    GgBuffer prev_value = GG_BUF(prev_mem);
 
     while (1) {
         pthread_mutex_lock(&config_mutex);
@@ -91,14 +91,14 @@ int main(void) {
         pthread_mutex_unlock(&config_mutex);
 
         uint8_t config_mem[500];
-        GglBuffer config = GGL_BUF(config_mem);
+        GgBuffer config = GG_BUF(config_mem);
         ret = ggipc_get_config_str(key_path, NULL, &config);
-        if (ret != GGL_ERR_OK) {
+        if (ret != GG_ERR_OK) {
             fprintf(stderr, "Failed to get configuration: %d\n", ret);
             continue;
         }
 
-        if (!ggl_buffer_eq(config, prev_value)) {
+        if (!gg_buffer_eq(config, prev_value)) {
             printf(
                 "Updated configuration value: %.*s\n",
                 (int) config.len,

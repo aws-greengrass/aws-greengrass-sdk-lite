@@ -17,14 +17,14 @@ use crate::c;
 /// A generic object.
 #[repr(transparent)]
 pub struct Object {
-    c: c::GglObject,
+    c: c::GgObject,
 }
 
 /// A borrowed generic object.
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct ObjectRef<'a> {
-    c: c::GglObject,
+    c: c::GgObject,
     phantom: PhantomData<UnpackedObject<'a>>,
 }
 
@@ -79,14 +79,14 @@ pub enum UnpackedObject<'a> {
 
 impl Object {
     /// Null object constant.
-    pub const NULL: Self = Self { c: c::GGL_OBJ_NULL };
+    pub const NULL: Self = Self { c: c::GG_OBJ_NULL };
 
     /// Create a boolean object.
     ///
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Object, UnpackedObject};
+    /// use gg_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::bool(true);
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::Bool(true)));
@@ -94,7 +94,7 @@ impl Object {
     #[must_use]
     pub fn bool(b: bool) -> Self {
         Self {
-            c: unsafe { c::ggl_obj_bool(b) },
+            c: unsafe { c::gg_obj_bool(b) },
         }
     }
 
@@ -103,7 +103,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Object, UnpackedObject};
+    /// use gg_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::i64(42);
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::I64(42)));
@@ -111,7 +111,7 @@ impl Object {
     #[must_use]
     pub fn i64(i: i64) -> Self {
         Self {
-            c: unsafe { c::ggl_obj_i64(i) },
+            c: unsafe { c::gg_obj_i64(i) },
         }
     }
 
@@ -120,7 +120,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Object, UnpackedObject};
+    /// use gg_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::f64(3.14);
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::F64(f) if (f - 3.14).abs() < f64::EPSILON));
@@ -128,7 +128,7 @@ impl Object {
     #[must_use]
     pub fn f64(f: f64) -> Self {
         Self {
-            c: unsafe { c::ggl_obj_f64(f) },
+            c: unsafe { c::gg_obj_f64(f) },
         }
     }
 
@@ -137,7 +137,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Object, UnpackedObject};
+    /// use gg_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::buf("hello");
     /// assert!(matches!(obj.as_ref().unpack(), UnpackedObject::Buf("hello")));
@@ -149,7 +149,7 @@ impl Object {
         let ptr = Box::into_raw(s);
         Self {
             c: unsafe {
-                c::ggl_obj_buf(c::GglBuffer {
+                c::gg_obj_buf(c::GgBuffer {
                     data: (*ptr).as_ptr().cast_mut(),
                     len,
                 })
@@ -162,7 +162,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Object, UnpackedObject};
+    /// use gg_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::list([Object::i64(1), Object::i64(2)]);
     /// if let UnpackedObject::List(items) = obj.as_ref().unpack() {
@@ -174,8 +174,8 @@ impl Object {
         let ptr = Box::into_raw(list.into());
         Self {
             c: unsafe {
-                c::ggl_obj_list(c::GglList {
-                    items: (*ptr).as_ptr().cast_mut().cast::<c::GglObject>(),
+                c::gg_obj_list(c::GgList {
+                    items: (*ptr).as_ptr().cast_mut().cast::<c::GgObject>(),
                     len: ptr.len(),
                 })
             },
@@ -187,7 +187,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Object, UnpackedObject};
+    /// use gg_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let obj = Object::map([
     ///     Kv::new("key1", Object::i64(42)),
@@ -206,8 +206,8 @@ impl Object {
         let ptr = Box::into_raw(map.into());
         Self {
             c: unsafe {
-                c::ggl_obj_map(c::GglMap {
-                    pairs: (*ptr).as_ptr().cast_mut().cast::<c::GglKV>(),
+                c::gg_obj_map(c::GgMap {
+                    pairs: (*ptr).as_ptr().cast_mut().cast::<c::GgKV>(),
                     len: ptr.len(),
                 })
             },
@@ -219,7 +219,7 @@ impl Object {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Object, UnpackedObject};
+    /// use gg_sdk::{Object, UnpackedObject};
     ///
     /// let obj = Object::i64(42);
     /// assert!(matches!(obj.unpack(), UnpackedObject::I64(42)));
@@ -233,7 +233,7 @@ impl Object {
 impl<'a> ObjectRef<'a> {
     /// Null object reference constant.
     pub const NULL: Self = Self {
-        c: c::GGL_OBJ_NULL,
+        c: c::GG_OBJ_NULL,
         phantom: PhantomData,
     };
 
@@ -242,7 +242,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{ObjectRef, UnpackedObject};
+    /// use gg_sdk::{ObjectRef, UnpackedObject};
     ///
     /// let obj = ObjectRef::bool(false);
     /// assert!(matches!(obj.unpack(), UnpackedObject::Bool(false)));
@@ -250,7 +250,7 @@ impl<'a> ObjectRef<'a> {
     #[must_use]
     pub fn bool(b: bool) -> Self {
         Self {
-            c: unsafe { c::ggl_obj_bool(b) },
+            c: unsafe { c::gg_obj_bool(b) },
             phantom: PhantomData,
         }
     }
@@ -259,7 +259,7 @@ impl<'a> ObjectRef<'a> {
     #[must_use]
     pub fn i64(i: i64) -> Self {
         Self {
-            c: unsafe { c::ggl_obj_i64(i) },
+            c: unsafe { c::gg_obj_i64(i) },
             phantom: PhantomData,
         }
     }
@@ -268,7 +268,7 @@ impl<'a> ObjectRef<'a> {
     #[must_use]
     pub fn f64(f: f64) -> Self {
         Self {
-            c: unsafe { c::ggl_obj_f64(f) },
+            c: unsafe { c::gg_obj_f64(f) },
             phantom: PhantomData,
         }
     }
@@ -278,7 +278,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{ObjectRef, UnpackedObject};
+    /// use gg_sdk::{ObjectRef, UnpackedObject};
     ///
     /// let s = "borrowed";
     /// let obj = ObjectRef::buf(s);
@@ -289,7 +289,7 @@ impl<'a> ObjectRef<'a> {
         let s = buf.into();
         Self {
             c: unsafe {
-                c::ggl_obj_buf(c::GglBuffer {
+                c::gg_obj_buf(c::GgBuffer {
                     data: s.as_ptr().cast_mut(),
                     len: s.len(),
                 })
@@ -303,7 +303,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{ObjectRef, UnpackedObject};
+    /// use gg_sdk::{ObjectRef, UnpackedObject};
     ///
     /// let items = [ObjectRef::i64(1), ObjectRef::i64(2)];
     /// let obj = ObjectRef::list(&items[..]);
@@ -316,8 +316,8 @@ impl<'a> ObjectRef<'a> {
         let slice = list.into();
         Self {
             c: unsafe {
-                c::ggl_obj_list(c::GglList {
-                    items: slice.as_ptr().cast_mut().cast::<c::GglObject>(),
+                c::gg_obj_list(c::GgList {
+                    items: slice.as_ptr().cast_mut().cast::<c::GgObject>(),
                     len: slice.len(),
                 })
             },
@@ -330,7 +330,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{KvRef, ObjectRef, UnpackedObject};
+    /// use gg_sdk::{KvRef, ObjectRef, UnpackedObject};
     ///
     /// let pairs = [KvRef::new("k", ObjectRef::i64(1))];
     /// let obj = ObjectRef::map(&pairs[..]);
@@ -343,8 +343,8 @@ impl<'a> ObjectRef<'a> {
         let slice = map.into();
         Self {
             c: unsafe {
-                c::ggl_obj_map(c::GglMap {
-                    pairs: slice.as_ptr().cast_mut().cast::<c::GglKV>(),
+                c::gg_obj_map(c::GgMap {
+                    pairs: slice.as_ptr().cast_mut().cast::<c::GgKV>(),
                     len: slice.len(),
                 })
             },
@@ -392,7 +392,7 @@ impl<'a> ObjectRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Object, UnpackedObject};
+    /// use gg_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let obj = Object::i64(42);
     /// match obj.as_ref().unpack() {
@@ -420,29 +420,29 @@ impl<'a> ObjectRef<'a> {
     /// Panics if the buffer is not valid UTF-8.
     #[must_use]
     pub fn unpack(&self) -> UnpackedObject<'_> {
-        use c::GglObjectType::*;
+        use c::GgObjectType::*;
         use UnpackedObject::*;
 
         unsafe {
-            match c::ggl_obj_type(self.c) {
-                GGL_TYPE_NULL => Null,
-                GGL_TYPE_BOOLEAN => Bool(c::ggl_obj_into_bool(self.c)),
-                GGL_TYPE_I64 => I64(c::ggl_obj_into_i64(self.c)),
-                GGL_TYPE_F64 => F64(c::ggl_obj_into_f64(self.c)),
-                GGL_TYPE_BUF => {
-                    let buf = c::ggl_obj_into_buf(self.c);
+            match c::gg_obj_type(self.c) {
+                GG_TYPE_NULL => Null,
+                GG_TYPE_BOOLEAN => Bool(c::gg_obj_into_bool(self.c)),
+                GG_TYPE_I64 => I64(c::gg_obj_into_i64(self.c)),
+                GG_TYPE_F64 => F64(c::gg_obj_into_f64(self.c)),
+                GG_TYPE_BUF => {
+                    let buf = c::gg_obj_into_buf(self.c);
                     let ptr = slice_from_c(buf.data, buf.len);
                     Buf(str::from_utf8(ptr).unwrap())
                 }
-                GGL_TYPE_LIST => {
-                    let list = c::ggl_obj_into_list(self.c);
+                GG_TYPE_LIST => {
+                    let list = c::gg_obj_into_list(self.c);
                     List(ListRef(slice_from_c(
                         list.items.cast::<ObjectRef<'a>>(),
                         list.len,
                     )))
                 }
-                GGL_TYPE_MAP => {
-                    let map = c::ggl_obj_into_map(self.c);
+                GG_TYPE_MAP => {
+                    let map = c::gg_obj_into_map(self.c);
                     Map(MapRef(slice_from_c(
                         map.pairs.cast::<KvRef<'a>>(),
                         map.len,
@@ -461,24 +461,24 @@ impl Clone for Object {
 
 impl Drop for Object {
     fn drop(&mut self) {
-        use c::GglObjectType::*;
+        use c::GgObjectType::*;
         unsafe {
-            match c::ggl_obj_type(self.c) {
-                GGL_TYPE_BUF => {
-                    let buf = c::ggl_obj_into_buf(self.c);
+            match c::gg_obj_type(self.c) {
+                GG_TYPE_BUF => {
+                    let buf = c::gg_obj_into_buf(self.c);
                     let _ = Box::from_raw(ptr::slice_from_raw_parts_mut(
                         buf.data, buf.len,
                     ));
                 }
-                GGL_TYPE_LIST => {
-                    let list = c::ggl_obj_into_list(self.c);
+                GG_TYPE_LIST => {
+                    let list = c::gg_obj_into_list(self.c);
                     let _ = Box::from_raw(ptr::slice_from_raw_parts_mut(
                         list.items.cast::<Object>(),
                         list.len,
                     ));
                 }
-                GGL_TYPE_MAP => {
-                    let map = c::ggl_obj_into_map(self.c);
+                GG_TYPE_MAP => {
+                    let map = c::gg_obj_into_map(self.c);
                     let _ = Box::from_raw(ptr::slice_from_raw_parts_mut(
                         map.pairs.cast::<Kv>(),
                         map.len,
@@ -613,14 +613,14 @@ impl From<List> for Object {
 /// A key-value pair used for maps.
 #[repr(transparent)]
 pub struct Kv {
-    c: c::GglKV,
+    c: c::GgKV,
 }
 
 /// A borrowed key-value pair.
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct KvRef<'a> {
-    c: c::GglKV,
+    c: c::GgKV,
     phantom_key: PhantomData<&'a str>,
     phantom_value: PhantomData<ObjectRef<'a>>,
 }
@@ -666,7 +666,7 @@ impl Kv {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Object};
+    /// use gg_sdk::{Kv, Object};
     ///
     /// let kv = Kv::new("name", Object::buf("Alice"));
     /// assert_eq!(kv.key(), "name");
@@ -678,8 +678,8 @@ impl Kv {
         let value = ManuallyDrop::new(value);
         Self {
             c: unsafe {
-                c::ggl_kv(
-                    c::GglBuffer {
+                c::gg_kv(
+                    c::GgBuffer {
                         data: (*ptr).as_ptr().cast_mut(),
                         len,
                     },
@@ -693,7 +693,7 @@ impl Kv {
     /// Panics if the key is not valid UTF-8.
     #[must_use]
     pub fn key(&self) -> &str {
-        let buf = unsafe { c::ggl_kv_key(self.c) };
+        let buf = unsafe { c::gg_kv_key(self.c) };
         unsafe {
             str::from_utf8(slice::from_raw_parts(buf.data, buf.len)).unwrap()
         }
@@ -704,7 +704,7 @@ impl Kv {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Object};
+    /// use gg_sdk::{Kv, Object};
     ///
     /// let mut kv = Kv::new("old", Object::i64(1));
     /// kv.set_key("new");
@@ -715,12 +715,12 @@ impl Kv {
         let len = s.len();
         let ptr = Box::into_raw(s);
         unsafe {
-            let old = c::ggl_kv_key(self.c);
+            let old = c::gg_kv_key(self.c);
             let _ =
                 Box::from_raw(ptr::slice_from_raw_parts_mut(old.data, old.len));
-            c::ggl_kv_set_key(
+            c::gg_kv_set_key(
                 &raw mut self.c,
-                c::GglBuffer {
+                c::GgBuffer {
                     data: (*ptr).as_ptr().cast_mut(),
                     len,
                 },
@@ -732,7 +732,7 @@ impl Kv {
     #[must_use]
     pub fn val(&self) -> &Object {
         unsafe {
-            c::ggl_kv_val((&raw const self.c).cast_mut())
+            c::gg_kv_val((&raw const self.c).cast_mut())
                 .cast::<Object>()
                 .as_ref()
                 .unwrap_unchecked()
@@ -744,7 +744,7 @@ impl Kv {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Object, UnpackedObject};
+    /// use gg_sdk::{Kv, Object, UnpackedObject};
     ///
     /// let mut kv = Kv::new("count", Object::i64(1));
     /// *kv.val_mut() = Object::i64(2);
@@ -752,7 +752,7 @@ impl Kv {
     /// ```
     pub fn val_mut(&mut self) -> &mut Object {
         unsafe {
-            c::ggl_kv_val(&raw mut self.c)
+            c::gg_kv_val(&raw mut self.c)
                 .cast::<Object>()
                 .as_mut()
                 .unwrap_unchecked()
@@ -766,7 +766,7 @@ impl<'a> KvRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{KvRef, ObjectRef};
+    /// use gg_sdk::{KvRef, ObjectRef};
     ///
     /// let kv = KvRef::new("key", ObjectRef::i64(10));
     /// assert_eq!(kv.key(), "key");
@@ -775,8 +775,8 @@ impl<'a> KvRef<'a> {
         let s = key.into();
         Self {
             c: unsafe {
-                c::ggl_kv(
-                    c::GglBuffer {
+                c::gg_kv(
+                    c::GgBuffer {
                         data: s.as_ptr().cast_mut(),
                         len: s.len(),
                     },
@@ -792,7 +792,7 @@ impl<'a> KvRef<'a> {
     /// Panics if the key is not valid UTF-8.
     #[must_use]
     pub fn key(&self) -> &str {
-        let buf = unsafe { c::ggl_kv_key(self.c) };
+        let buf = unsafe { c::gg_kv_key(self.c) };
         unsafe {
             str::from_utf8(slice::from_raw_parts(buf.data, buf.len)).unwrap()
         }
@@ -803,7 +803,7 @@ impl<'a> KvRef<'a> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{KvRef, ObjectRef, UnpackedObject};
+    /// use gg_sdk::{KvRef, ObjectRef, UnpackedObject};
     ///
     /// let kv = KvRef::new("key", ObjectRef::i64(100));
     /// assert!(matches!(kv.val().unpack(), UnpackedObject::I64(100)));
@@ -811,7 +811,7 @@ impl<'a> KvRef<'a> {
     #[must_use]
     pub fn val(&self) -> &ObjectRef<'a> {
         unsafe {
-            c::ggl_kv_val((&raw const self.c).cast_mut())
+            c::gg_kv_val((&raw const self.c).cast_mut())
                 .cast::<ObjectRef>()
                 .as_ref()
                 .unwrap_unchecked()
@@ -839,10 +839,10 @@ impl Clone for Kv {
 impl Drop for Kv {
     fn drop(&mut self) {
         unsafe {
-            let key = c::ggl_kv_key(self.c);
+            let key = c::gg_kv_key(self.c);
             let _ =
                 Box::from_raw(ptr::slice_from_raw_parts_mut(key.data, key.len));
-            ptr::drop_in_place(c::ggl_kv_val(&raw mut self.c).cast::<Object>());
+            ptr::drop_in_place(c::gg_kv_val(&raw mut self.c).cast::<Object>());
         }
     }
 }
@@ -895,7 +895,7 @@ impl Map {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{Kv, Map, Object, UnpackedObject};
+    /// use gg_sdk::{Kv, Map, Object, UnpackedObject};
     ///
     /// let map = Map(Box::new([
     ///     Kv::new("a", Object::i64(1)),
@@ -922,7 +922,7 @@ impl MapRef<'_> {
     /// # Examples
     ///
     /// ```
-    /// use ggl_sdk::{KvRef, MapRef, ObjectRef, UnpackedObject};
+    /// use gg_sdk::{KvRef, MapRef, ObjectRef, UnpackedObject};
     ///
     /// let pairs = [
     ///     KvRef::new("a", ObjectRef::i64(1)),
@@ -935,16 +935,16 @@ impl MapRef<'_> {
     #[must_use]
     pub fn get<'b>(&self, key: impl Into<&'b str>) -> Option<&ObjectRef<'_>> {
         let key = key.into();
-        let map = c::GglMap {
-            pairs: self.0.as_ptr().cast_mut().cast::<c::GglKV>(),
+        let map = c::GgMap {
+            pairs: self.0.as_ptr().cast_mut().cast::<c::GgKV>(),
             len: self.0.len(),
         };
-        let key_buf = c::GglBuffer {
+        let key_buf = c::GgBuffer {
             data: key.as_ptr().cast_mut(),
             len: key.len(),
         };
-        let mut result: *mut c::GglObject = ptr::null_mut();
-        if unsafe { c::ggl_map_get(map, key_buf, &raw mut result) } {
+        let mut result: *mut c::GgObject = ptr::null_mut();
+        if unsafe { c::gg_map_get(map, key_buf, &raw mut result) } {
             Some(unsafe {
                 NonNull::new(result.cast::<ObjectRef>())
                     .unwrap_unchecked()

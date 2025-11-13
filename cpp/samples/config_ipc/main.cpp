@@ -1,5 +1,5 @@
-#include <ggl/buffer.hpp>
-#include <ggl/ipc/client.hpp>
+#include <gg/buffer.hpp>
+#include <gg/ipc/client.hpp>
 #include <array>
 #include <chrono>
 #include <iostream>
@@ -12,7 +12,7 @@
 constexpr int publish_count = 10;
 
 int main() {
-    auto &client = ggl::ipc::Client::get();
+    auto &client = gg::ipc::Client::get();
 
     auto error = client.connect();
 
@@ -22,7 +22,7 @@ int main() {
     }
 
     const std::array TOPIC_CONFIG_KEY
-        = { ggl::Buffer { "config_ipc" }, ggl::Buffer { "topic" } };
+        = { gg::Buffer { "config_ipc" }, gg::Buffer { "topic" } };
 
     error = client.update_config(TOPIC_CONFIG_KEY, "/my/topic");
 
@@ -42,7 +42,7 @@ int main() {
 
     for (int i = 0; i < publish_count; ++i) {
         error = client.publish_to_topic(
-            topic, ggl::Buffer { "Hello from sample_config_ipc!" }
+            topic, gg::Buffer { "Hello from sample_config_ipc!" }
         );
 
         if (error) {

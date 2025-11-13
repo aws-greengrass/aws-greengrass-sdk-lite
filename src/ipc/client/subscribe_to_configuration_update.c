@@ -2,87 +2,85 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/flags.h>
-#include <ggl/ipc/client.h>
-#include <ggl/ipc/client_raw.h>
-#include <ggl/list.h>
-#include <ggl/log.h>
-#include <ggl/map.h>
-#include <ggl/object.h>
-#include <ggl/vector.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/flags.h>
+#include <gg/ipc/client.h>
+#include <gg/ipc/client_raw.h>
+#include <gg/list.h>
+#include <gg/log.h>
+#include <gg/map.h>
+#include <gg/object.h>
+#include <gg/vector.h>
 #include <stddef.h>
 
-static GglError subscribe_to_configuration_update_resp_handler(
+static GgError subscribe_to_configuration_update_resp_handler(
     void *ctx,
     void *aux_ctx,
     GgIpcSubscriptionHandle handle,
-    GglBuffer service_model_type,
-    GglMap data
+    GgBuffer service_model_type,
+    GgMap data
 ) {
     GgIpcSubscribeToConfigurationUpdateCallback *callback = ctx;
 
-    if (!ggl_buffer_eq(
+    if (!gg_buffer_eq(
             service_model_type,
-            GGL_STR("aws.greengrass#ConfigurationUpdateEvents")
+            GG_STR("aws.greengrass#ConfigurationUpdateEvents")
         )) {
-        GGL_LOGE("Unexpected service-model-type received.");
-        return GGL_ERR_INVALID;
+        GG_LOGE("Unexpected service-model-type received.");
+        return GG_ERR_INVALID;
     }
 
-    GglObject *config_update_event_obj;
-    GglError ret = ggl_map_validate(
+    GgObject *config_update_event_obj;
+    GgError ret = gg_map_validate(
         data,
-        GGL_MAP_SCHEMA(
-            { GGL_STR("configurationUpdateEvent"),
-              GGL_REQUIRED,
-              GGL_TYPE_MAP,
+        GG_MAP_SCHEMA(
+            { GG_STR("configurationUpdateEvent"),
+              GG_REQUIRED,
+              GG_TYPE_MAP,
               &config_update_event_obj },
         )
     );
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Received invalid configuration update response.");
-        return GGL_ERR_INVALID;
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("Received invalid configuration update response.");
+        return GG_ERR_INVALID;
     }
 
-    GglObject *component_name_obj;
-    GglObject *key_path_obj;
-    ret = ggl_map_validate(
-        ggl_obj_into_map(*config_update_event_obj),
-        GGL_MAP_SCHEMA(
-            { GGL_STR("componentName"),
-              GGL_REQUIRED,
-              GGL_TYPE_BUF,
+    GgObject *component_name_obj;
+    GgObject *key_path_obj;
+    ret = gg_map_validate(
+        gg_obj_into_map(*config_update_event_obj),
+        GG_MAP_SCHEMA(
+            { GG_STR("componentName"),
+              GG_REQUIRED,
+              GG_TYPE_BUF,
               &component_name_obj },
-            { GGL_STR("keyPath"), GGL_REQUIRED, GGL_TYPE_LIST, &key_path_obj },
+            { GG_STR("keyPath"), GG_REQUIRED, GG_TYPE_LIST, &key_path_obj },
         )
     );
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Received invalid configuration update event.");
-        return GGL_ERR_INVALID;
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("Received invalid configuration update event.");
+        return GG_ERR_INVALID;
     }
 
-    GglBuffer component_name = ggl_obj_into_buf(*component_name_obj);
-    GglList key_path = ggl_obj_into_list(*key_path_obj);
+    GgBuffer component_name = gg_obj_into_buf(*component_name_obj);
+    GgList key_path = gg_obj_into_list(*key_path_obj);
 
-    ret = ggl_list_type_check(key_path, GGL_TYPE_BUF);
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Key path must contain only buffers.");
-        return GGL_ERR_INVALID;
+    ret = gg_list_type_check(key_path, GG_TYPE_BUF);
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("Key path must contain only buffers.");
+        return GG_ERR_INVALID;
     }
 
     callback(aux_ctx, component_name, key_path, handle);
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError error_handler(
-    void *ctx, GglBuffer error_code, GglBuffer message
-) {
+static GgError error_handler(void *ctx, GgBuffer error_code, GgBuffer message) {
     (void) ctx;
 
-    GGL_LOGE(
+    GG_LOGE(
         "Received SubscribeToConfigurationUpdate error %.*s: %.*s.",
         (int) error_code.len,
         error_code.data,
@@ -90,48 +88,46 @@ static GglError error_handler(
         message.data
     );
 
-    if (ggl_buffer_eq(error_code, GGL_STR("ServiceError"))) {
-        return GGL_ERR_INVALID;
+    if (gg_buffer_eq(error_code, GG_STR("ServiceError"))) {
+        return GG_ERR_INVALID;
     }
-    if (ggl_buffer_eq(error_code, GGL_STR("ResourceNotFoundError"))) {
-        return GGL_ERR_NOENTRY;
+    if (gg_buffer_eq(error_code, GG_STR("ResourceNotFoundError"))) {
+        return GG_ERR_NOENTRY;
     }
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
-GglError ggipc_subscribe_to_configuration_update(
-    const GglBuffer *component_name,
-    GglBufList key_path,
+GgError ggipc_subscribe_to_configuration_update(
+    const GgBuffer *component_name,
+    GgBufList key_path,
     GgIpcSubscribeToConfigurationUpdateCallback *callback,
     void *ctx,
     GgIpcSubscriptionHandle *handle
 ) {
-    GglKVVec args = GGL_KV_VEC((GglKV[2]) { 0 });
+    GgKVVec args = GG_KV_VEC((GgKV[2]) { 0 });
 
     if (component_name != NULL) {
-        (void) ggl_kv_vec_push(
-            &args,
-            ggl_kv(GGL_STR("componentName"), ggl_obj_buf(*component_name))
+        (void) gg_kv_vec_push(
+            &args, gg_kv(GG_STR("componentName"), gg_obj_buf(*component_name))
         );
     }
 
-    GglObjVec path_vec
-        = GGL_OBJ_VEC((GglObject[GGL_MAX_OBJECT_DEPTH - 1]) { 0 });
-    GglError ret = GGL_ERR_OK;
+    GgObjVec path_vec = GG_OBJ_VEC((GgObject[GG_MAX_OBJECT_DEPTH - 1]) { 0 });
+    GgError ret = GG_ERR_OK;
     for (size_t i = 0; i < key_path.len; i++) {
-        ggl_obj_vec_chain_push(&ret, &path_vec, ggl_obj_buf(key_path.bufs[i]));
+        gg_obj_vec_chain_push(&ret, &path_vec, gg_obj_buf(key_path.bufs[i]));
     }
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Key path too long.");
-        return GGL_ERR_NOMEM;
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("Key path too long.");
+        return GG_ERR_NOMEM;
     }
-    (void) ggl_kv_vec_push(
-        &args, ggl_kv(GGL_STR("keyPath"), ggl_obj_list(path_vec.list))
+    (void) gg_kv_vec_push(
+        &args, gg_kv(GG_STR("keyPath"), gg_obj_list(path_vec.list))
     );
 
     return ggipc_subscribe(
-        GGL_STR("aws.greengrass#SubscribeToConfigurationUpdate"),
-        GGL_STR("aws.greengrass#SubscribeToConfigurationUpdateRequest"),
+        GG_STR("aws.greengrass#SubscribeToConfigurationUpdate"),
+        GG_STR("aws.greengrass#SubscribeToConfigurationUpdateRequest"),
         args.map,
         NULL,
         &error_handler,

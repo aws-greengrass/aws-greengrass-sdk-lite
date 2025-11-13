@@ -2,27 +2,27 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/error.h>
-#include <ggl/init.h>
-#include <ggl/log.h>
-#include <ggl/sdk.h>
+#include <gg/error.h>
+#include <gg/init.h>
+#include <gg/log.h>
+#include <gg/sdk.h>
 #include <stdlib.h>
 
-static GglInitEntry *init_list = NULL;
+static GgInitEntry *init_list = NULL;
 
-void ggl_register_init_fn(GglInitEntry entry[static 1]) {
+void gg_register_init_fn(GgInitEntry entry[static 1]) {
     entry->next = init_list;
     init_list = entry;
 }
 
-void ggl_sdk_init(void) {
-    GglInitEntry *list = init_list;
+void gg_sdk_init(void) {
+    GgInitEntry *list = init_list;
     init_list = NULL;
 
     while (list != NULL) {
-        GglError ret = list->fn();
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGE("Failed to initialize (%u).", (unsigned) ret);
+        GgError ret = list->fn();
+        if (ret != GG_ERR_OK) {
+            GG_LOGE("Failed to initialize (%u).", (unsigned) ret);
             _Exit(1);
         }
 

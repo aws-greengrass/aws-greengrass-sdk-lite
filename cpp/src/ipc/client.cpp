@@ -2,20 +2,20 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.hpp>
-#include <ggl/error.hpp>
-#include <ggl/ipc/client.hpp>
-#include <ggl/ipc/client_c_api.hpp>
-#include <ggl/map.hpp>
+#include <gg/buffer.hpp>
+#include <gg/error.hpp>
+#include <gg/ipc/client.hpp>
+#include <gg/ipc/client_c_api.hpp>
+#include <gg/map.hpp>
 #include <stdint.h>
 #include <cstdlib>
 #include <optional>
 #include <string_view>
 #include <system_error>
 
-enum class GglComponentState;
+enum class GgComponentState;
 
-namespace ggl::ipc {
+namespace gg::ipc {
 
 std::optional<AuthToken> AuthToken::from_environment() noexcept {
     // C++ std::getenv has stronger thread-safety guarantees than C's
@@ -31,14 +31,14 @@ std::optional<AuthToken> AuthToken::from_environment() noexcept {
 std::error_code Client::connect() noexcept {
     auto auth_token = AuthToken::from_environment();
     if (!auth_token.has_value()) {
-        return GGL_ERR_CONFIG;
+        return GG_ERR_CONFIG;
     }
 
     char *socket_path
         // NOLINTNEXTLINE(concurrency-mt-unsafe)
         = std::getenv("AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT");
     if (socket_path == nullptr) {
-        return GGL_ERR_CONFIG;
+        return GG_ERR_CONFIG;
     }
 
     return connect(socket_path, *auth_token);
@@ -56,7 +56,7 @@ std::error_code Client::connect(
 }
 
 std::error_code Client::update_component_state(
-    GglComponentState state
+    GgComponentState state
 ) noexcept {
     return ggipc_update_state(state);
 }

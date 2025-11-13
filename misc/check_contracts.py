@@ -102,7 +102,7 @@ for file in resolved_files:
         os.remove(output_file)
 
     command[0] = 'goto-cc'
-    # Remove this once the ggl/attr.h hack isn't needed anymore
+    # Remove this once the gg/attr.h hack isn't needed anymore
     command.extend(['-w'])
     command.extend(
         ['-D__CPROVER__=1', '-o', output_file, '--export-file-local-symbols'])

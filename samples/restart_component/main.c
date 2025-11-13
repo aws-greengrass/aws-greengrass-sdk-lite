@@ -1,9 +1,9 @@
 //! Sample component demonstrating how to use RestartComponent
 
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/ipc/client.h>
-#include <ggl/sdk.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/ipc/client.h>
+#include <gg/sdk.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,10 +11,10 @@
 int main(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    ggl_sdk_init();
+    gg_sdk_init();
 
-    GglError err = ggipc_connect();
-    if (err != GGL_ERR_OK) {
+    GgError err = ggipc_connect();
+    if (err != GG_ERR_OK) {
         fprintf(stderr, "Failed to connect to GG nucleus.\n");
         exit(1);
     }
@@ -30,9 +30,9 @@ int main(void) {
         "Restarting component 'aws-greengrass-sdk-lite.samples.restart_component'...\n"
     );
     err = ggipc_restart_component(
-        GGL_STR("aws-greengrass-sdk-lite.samples.restart_component")
+        GG_STR("aws-greengrass-sdk-lite.samples.restart_component")
     );
-    if (err != GGL_ERR_OK) {
+    if (err != GG_ERR_OK) {
         fprintf(stderr, "Failed to restart component.\n");
         exit(1);
     }

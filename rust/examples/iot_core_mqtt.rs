@@ -1,6 +1,6 @@
 use std::{thread, time::Duration};
 
-use ggl_sdk::{Qos, Sdk};
+use gg_sdk::{Qos, Sdk};
 
 fn main() {
     let sdk = Sdk::init();

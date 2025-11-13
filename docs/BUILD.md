@@ -46,11 +46,10 @@ cmake -B build -D CMAKE_BUILD_TYPE=MinSizeRel -D BUILD_SAMPLES=OFF
 make -C build -j$(nproc)
 ```
 
-The library will be available at `./build/libggl-sdk.a`.
+The library will be available at `./build/libgg-sdk.a`.
 
 ## Adding to a CMake project
 
 To include the SDK in your CMake project, you can obtain the repo with a git
 submodule or CMake FetchContent and then call `add_subdirectory` on it. A
-library target named `ggl-sdk` will be available in your project to link
-against.
+library target named `gg-sdk` will be available in your project to link against.

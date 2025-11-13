@@ -18,11 +18,11 @@ bindgen wrapper.h \
   --use-core \
   --generate-cstr \
   --sort-semantically \
-  --allowlist-function 'ggl_.*' \
+  --allowlist-function 'gg_.*' \
   --allowlist-function 'ggipc_.*' \
-  --allowlist-type 'Ggl.*' \
+  --allowlist-type 'Gg.*' \
   --allowlist-type 'GgIpc.*' \
-  --allowlist-var 'GGL_.*' \
+  --allowlist-var 'GG_.*' \
   --raw-line '// aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK' \
   --raw-line '// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.' \
   --raw-line '// SPDX-License-Identifier: Apache-2.0' \
@@ -35,5 +35,5 @@ bindgen wrapper.h \
   --raw-line '#![allow(dead_code)]' \
   --raw-line '#![allow(clippy::pedantic)]' \
   --raw-line "" \
-  --raw-line 'pub const GGL_OBJ_NULL: GglObject = GglObject { _private: [0; 11] };' \
+  --raw-line 'pub const GG_OBJ_NULL: GgObject = GgObject { _private: [0; 11] };' \
   -- -I../include

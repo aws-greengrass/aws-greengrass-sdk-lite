@@ -1,7 +1,7 @@
-#include <ggl/buffer.hpp>
-#include <ggl/ipc/client.hpp>
-#include <ggl/object.hpp>
-#include <ggl/types.hpp>
+#include <gg/buffer.hpp>
+#include <gg/ipc/client.hpp>
+#include <gg/object.hpp>
+#include <gg/types.hpp>
 #include <chrono>
 #include <iostream>
 #include <string_view>
@@ -9,7 +9,7 @@
 #include <thread>
 
 namespace {
-std::ostream &operator<<(std::ostream &os, const ggl::Buffer &buffer) {
+std::ostream &operator<<(std::ostream &os, const gg::Buffer &buffer) {
     os.write(
         reinterpret_cast<const char *>(buffer.data()),
         static_cast<std::streamsize>(buffer.size())
@@ -18,19 +18,19 @@ std::ostream &operator<<(std::ostream &os, const ggl::Buffer &buffer) {
 }
 }
 
-class PubsubHandler : public ggl::ipc::LocalTopicCallback {
+class PubsubHandler : public gg::ipc::LocalTopicCallback {
     void operator()(
         std::string_view topic,
-        ggl::Object payload,
-        ggl::ipc::Subscription &handle
+        gg::Object payload,
+        gg::ipc::Subscription &handle
     ) override {
         (void) handle;
         std::cout << "Message received on " << topic << "\n";
-        if (payload.index() == GGL_TYPE_MAP) {
-            std::cout << "(ggl::Map of unknown schema)\n";
+        if (payload.index() == GG_TYPE_MAP) {
+            std::cout << "(gg::Map of unknown schema)\n";
             return;
         }
-        std::cout << get<ggl::Buffer>(payload) << '\n';
+        std::cout << get<gg::Buffer>(payload) << '\n';
     }
 };
 
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     std::string_view topic = argv[1];
     std::string_view payload = argv[2];
 
-    auto &client = ggl::ipc::Client::get();
+    auto &client = gg::ipc::Client::get();
 
     auto error = client.connect();
 

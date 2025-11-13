@@ -10,100 +10,100 @@
 #![allow(dead_code)]
 #![allow(clippy::pedantic)]
 
-pub const GGL_OBJ_NULL: GglObject = GglObject { _private: [0; 11] };
+pub const GG_OBJ_NULL: GgObject = GgObject { _private: [0; 11] };
 
 pub type __time_t = ::core::ffi::c_long;
 pub type __syscall_slong_t = ::core::ffi::c_long;
 pub type GgIpcSubscribeToTopicCallback = ::core::option::Option<
     unsafe extern "C" fn(
         ctx: *mut ::core::ffi::c_void,
-        topic: GglBuffer,
-        payload: GglObject,
+        topic: GgBuffer,
+        payload: GgObject,
         handle: GgIpcSubscriptionHandle,
     ),
 >;
 pub type GgIpcSubscribeToIotCoreCallback = ::core::option::Option<
     unsafe extern "C" fn(
         ctx: *mut ::core::ffi::c_void,
-        topic: GglBuffer,
-        payload: GglBuffer,
+        topic: GgBuffer,
+        payload: GgBuffer,
         handle: GgIpcSubscriptionHandle,
     ),
 >;
 pub type GgIpcSubscribeToConfigurationUpdateCallback = ::core::option::Option<
     unsafe extern "C" fn(
         ctx: *mut ::core::ffi::c_void,
-        component_name: GglBuffer,
-        key_path: GglList,
+        component_name: GgBuffer,
+        key_path: GgList,
         handle: GgIpcSubscriptionHandle,
     ),
 >;
 pub type GgIpcResultCallback = ::core::option::Option<
     unsafe extern "C" fn(
         ctx: *mut ::core::ffi::c_void,
-        result: GglMap,
-    ) -> GglError,
+        result: GgMap,
+    ) -> GgError,
 >;
 pub type GgIpcErrorCallback = ::core::option::Option<
     unsafe extern "C" fn(
         ctx: *mut ::core::ffi::c_void,
-        error_code: GglBuffer,
-        message: GglBuffer,
-    ) -> GglError,
+        error_code: GgBuffer,
+        message: GgBuffer,
+    ) -> GgError,
 >;
 pub type GgIpcSubscribeCallback = ::core::option::Option<
     unsafe extern "C" fn(
         ctx: *mut ::core::ffi::c_void,
         aux_ctx: *mut ::core::ffi::c_void,
         handle: GgIpcSubscriptionHandle,
-        service_model_type: GglBuffer,
-        data: GglMap,
-    ) -> GglError,
+        service_model_type: GgBuffer,
+        data: GgMap,
+    ) -> GgError,
 >;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglBuffer {
+pub struct GgBuffer {
     pub data: *mut u8,
     pub len: usize,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglBufList {
-    pub bufs: *mut GglBuffer,
+pub struct GgBufList {
+    pub bufs: *mut GgBuffer,
     pub len: usize,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
-pub struct GglObject {
+pub struct GgObject {
     pub _private: [u8; 11usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglList {
-    pub items: *mut GglObject,
+pub struct GgList {
+    pub items: *mut GgObject,
     pub len: usize,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
-pub struct GglKV {
+pub struct GgKV {
     pub _private: [u8; 21usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglMap {
-    pub pairs: *mut GglKV,
+pub struct GgMap {
+    pub pairs: *mut GgKV,
     pub len: usize,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglArena {
+pub struct GgArena {
     pub mem: *mut u8,
     pub capacity: u32,
     pub index: u32,
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
-pub struct GglArenaState {
+pub struct GgArenaState {
     pub index: u32,
 }
 #[repr(C)]
@@ -113,21 +113,21 @@ pub struct GgIpcSubscriptionHandle {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglPresence {
-    pub val: GglPresence__bindgen_ty_1,
+pub struct GgPresence {
+    pub val: GgPresence__bindgen_ty_1,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglMapSchemaEntry {
-    pub key: GglBuffer,
-    pub required: GglPresence,
-    pub type_: GglObjectType,
-    pub value: *mut *mut GglObject,
+pub struct GgMapSchemaEntry {
+    pub key: GgBuffer,
+    pub required: GgPresence,
+    pub type_: GgObjectType,
+    pub value: *mut *mut GgObject,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct GglMapSchema {
-    pub entries: *const GglMapSchemaEntry,
+pub struct GgMapSchema {
+    pub entries: *const GgMapSchemaEntry,
     pub entry_count: usize,
 }
 #[repr(C)]
@@ -136,78 +136,78 @@ pub struct timespec {
     pub tv_sec: __time_t,
     pub tv_nsec: __syscall_slong_t,
 }
-pub const GGL_MAX_OBJECT_DEPTH: u32 = 15;
-pub const GGL_MAX_OBJECT_SUBOBJECTS: u32 = 255;
-pub const GGL_IPC_MAX_STREAMS: u32 = 16;
-pub const GGL_IPC_RESPONSE_TIMEOUT: u32 = 10;
+pub const GG_MAX_OBJECT_DEPTH: u32 = 15;
+pub const GG_MAX_OBJECT_SUBOBJECTS: u32 = 255;
+pub const GG_IPC_MAX_STREAMS: u32 = 16;
+pub const GG_IPC_RESPONSE_TIMEOUT: u32 = 10;
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglBuffer"][::core::mem::size_of::<GglBuffer>() - 16usize];
-    ["Alignment of GglBuffer"][::core::mem::align_of::<GglBuffer>() - 8usize];
-    ["Offset of field: GglBuffer::data"]
-        [::core::mem::offset_of!(GglBuffer, data) - 0usize];
-    ["Offset of field: GglBuffer::len"]
-        [::core::mem::offset_of!(GglBuffer, len) - 8usize];
+    ["Size of GgBuffer"][::core::mem::size_of::<GgBuffer>() - 16usize];
+    ["Alignment of GgBuffer"][::core::mem::align_of::<GgBuffer>() - 8usize];
+    ["Offset of field: GgBuffer::data"]
+        [::core::mem::offset_of!(GgBuffer, data) - 0usize];
+    ["Offset of field: GgBuffer::len"]
+        [::core::mem::offset_of!(GgBuffer, len) - 8usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglBufList"][::core::mem::size_of::<GglBufList>() - 16usize];
-    ["Alignment of GglBufList"][::core::mem::align_of::<GglBufList>() - 8usize];
-    ["Offset of field: GglBufList::bufs"]
-        [::core::mem::offset_of!(GglBufList, bufs) - 0usize];
-    ["Offset of field: GglBufList::len"]
-        [::core::mem::offset_of!(GglBufList, len) - 8usize];
+    ["Size of GgBufList"][::core::mem::size_of::<GgBufList>() - 16usize];
+    ["Alignment of GgBufList"][::core::mem::align_of::<GgBufList>() - 8usize];
+    ["Offset of field: GgBufList::bufs"]
+        [::core::mem::offset_of!(GgBufList, bufs) - 0usize];
+    ["Offset of field: GgBufList::len"]
+        [::core::mem::offset_of!(GgBufList, len) - 8usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglObject"][::core::mem::size_of::<GglObject>() - 11usize];
-    ["Alignment of GglObject"][::core::mem::align_of::<GglObject>() - 1usize];
-    ["Offset of field: GglObject::_private"]
-        [::core::mem::offset_of!(GglObject, _private) - 0usize];
+    ["Size of GgObject"][::core::mem::size_of::<GgObject>() - 11usize];
+    ["Alignment of GgObject"][::core::mem::align_of::<GgObject>() - 1usize];
+    ["Offset of field: GgObject::_private"]
+        [::core::mem::offset_of!(GgObject, _private) - 0usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglList"][::core::mem::size_of::<GglList>() - 16usize];
-    ["Alignment of GglList"][::core::mem::align_of::<GglList>() - 8usize];
-    ["Offset of field: GglList::items"]
-        [::core::mem::offset_of!(GglList, items) - 0usize];
-    ["Offset of field: GglList::len"]
-        [::core::mem::offset_of!(GglList, len) - 8usize];
+    ["Size of GgList"][::core::mem::size_of::<GgList>() - 16usize];
+    ["Alignment of GgList"][::core::mem::align_of::<GgList>() - 8usize];
+    ["Offset of field: GgList::items"]
+        [::core::mem::offset_of!(GgList, items) - 0usize];
+    ["Offset of field: GgList::len"]
+        [::core::mem::offset_of!(GgList, len) - 8usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglKV"][::core::mem::size_of::<GglKV>() - 21usize];
-    ["Alignment of GglKV"][::core::mem::align_of::<GglKV>() - 1usize];
-    ["Offset of field: GglKV::_private"]
-        [::core::mem::offset_of!(GglKV, _private) - 0usize];
+    ["Size of GgKV"][::core::mem::size_of::<GgKV>() - 21usize];
+    ["Alignment of GgKV"][::core::mem::align_of::<GgKV>() - 1usize];
+    ["Offset of field: GgKV::_private"]
+        [::core::mem::offset_of!(GgKV, _private) - 0usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglMap"][::core::mem::size_of::<GglMap>() - 16usize];
-    ["Alignment of GglMap"][::core::mem::align_of::<GglMap>() - 8usize];
-    ["Offset of field: GglMap::pairs"]
-        [::core::mem::offset_of!(GglMap, pairs) - 0usize];
-    ["Offset of field: GglMap::len"]
-        [::core::mem::offset_of!(GglMap, len) - 8usize];
+    ["Size of GgMap"][::core::mem::size_of::<GgMap>() - 16usize];
+    ["Alignment of GgMap"][::core::mem::align_of::<GgMap>() - 8usize];
+    ["Offset of field: GgMap::pairs"]
+        [::core::mem::offset_of!(GgMap, pairs) - 0usize];
+    ["Offset of field: GgMap::len"]
+        [::core::mem::offset_of!(GgMap, len) - 8usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglArena"][::core::mem::size_of::<GglArena>() - 16usize];
-    ["Alignment of GglArena"][::core::mem::align_of::<GglArena>() - 8usize];
-    ["Offset of field: GglArena::mem"]
-        [::core::mem::offset_of!(GglArena, mem) - 0usize];
-    ["Offset of field: GglArena::capacity"]
-        [::core::mem::offset_of!(GglArena, capacity) - 8usize];
-    ["Offset of field: GglArena::index"]
-        [::core::mem::offset_of!(GglArena, index) - 12usize];
+    ["Size of GgArena"][::core::mem::size_of::<GgArena>() - 16usize];
+    ["Alignment of GgArena"][::core::mem::align_of::<GgArena>() - 8usize];
+    ["Offset of field: GgArena::mem"]
+        [::core::mem::offset_of!(GgArena, mem) - 0usize];
+    ["Offset of field: GgArena::capacity"]
+        [::core::mem::offset_of!(GgArena, capacity) - 8usize];
+    ["Offset of field: GgArena::index"]
+        [::core::mem::offset_of!(GgArena, index) - 12usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglArenaState"][::core::mem::size_of::<GglArenaState>() - 4usize];
-    ["Alignment of GglArenaState"]
-        [::core::mem::align_of::<GglArenaState>() - 4usize];
-    ["Offset of field: GglArenaState::index"]
-        [::core::mem::offset_of!(GglArenaState, index) - 0usize];
+    ["Size of GgArenaState"][::core::mem::size_of::<GgArenaState>() - 4usize];
+    ["Alignment of GgArenaState"]
+        [::core::mem::align_of::<GgArenaState>() - 4usize];
+    ["Offset of field: GgArenaState::index"]
+        [::core::mem::offset_of!(GgArenaState, index) - 0usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
@@ -218,44 +218,43 @@ const _: () = {
     ["Offset of field: GgIpcSubscriptionHandle::val"]
         [::core::mem::offset_of!(GgIpcSubscriptionHandle, val) - 0usize];
 };
-pub const GglPresence_GGL_PRESENCE_REQUIRED: GglPresence__bindgen_ty_1 =
-    GglPresence__bindgen_ty_1::GGL_PRESENCE_REQUIRED;
-pub const GglPresence_GGL_PRESENCE_OPTIONAL: GglPresence__bindgen_ty_1 =
-    GglPresence__bindgen_ty_1::GGL_PRESENCE_OPTIONAL;
-pub const GglPresence_GGL_PRESENCE_MISSING: GglPresence__bindgen_ty_1 =
-    GglPresence__bindgen_ty_1::GGL_PRESENCE_MISSING;
+pub const GgPresence_GG_PRESENCE_REQUIRED: GgPresence__bindgen_ty_1 =
+    GgPresence__bindgen_ty_1::GG_PRESENCE_REQUIRED;
+pub const GgPresence_GG_PRESENCE_OPTIONAL: GgPresence__bindgen_ty_1 =
+    GgPresence__bindgen_ty_1::GG_PRESENCE_OPTIONAL;
+pub const GgPresence_GG_PRESENCE_MISSING: GgPresence__bindgen_ty_1 =
+    GgPresence__bindgen_ty_1::GG_PRESENCE_MISSING;
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglPresence"][::core::mem::size_of::<GglPresence>() - 4usize];
-    ["Alignment of GglPresence"]
-        [::core::mem::align_of::<GglPresence>() - 4usize];
-    ["Offset of field: GglPresence::val"]
-        [::core::mem::offset_of!(GglPresence, val) - 0usize];
+    ["Size of GgPresence"][::core::mem::size_of::<GgPresence>() - 4usize];
+    ["Alignment of GgPresence"][::core::mem::align_of::<GgPresence>() - 4usize];
+    ["Offset of field: GgPresence::val"]
+        [::core::mem::offset_of!(GgPresence, val) - 0usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglMapSchemaEntry"]
-        [::core::mem::size_of::<GglMapSchemaEntry>() - 32usize];
-    ["Alignment of GglMapSchemaEntry"]
-        [::core::mem::align_of::<GglMapSchemaEntry>() - 8usize];
-    ["Offset of field: GglMapSchemaEntry::key"]
-        [::core::mem::offset_of!(GglMapSchemaEntry, key) - 0usize];
-    ["Offset of field: GglMapSchemaEntry::required"]
-        [::core::mem::offset_of!(GglMapSchemaEntry, required) - 16usize];
-    ["Offset of field: GglMapSchemaEntry::type_"]
-        [::core::mem::offset_of!(GglMapSchemaEntry, type_) - 20usize];
-    ["Offset of field: GglMapSchemaEntry::value"]
-        [::core::mem::offset_of!(GglMapSchemaEntry, value) - 24usize];
+    ["Size of GgMapSchemaEntry"]
+        [::core::mem::size_of::<GgMapSchemaEntry>() - 32usize];
+    ["Alignment of GgMapSchemaEntry"]
+        [::core::mem::align_of::<GgMapSchemaEntry>() - 8usize];
+    ["Offset of field: GgMapSchemaEntry::key"]
+        [::core::mem::offset_of!(GgMapSchemaEntry, key) - 0usize];
+    ["Offset of field: GgMapSchemaEntry::required"]
+        [::core::mem::offset_of!(GgMapSchemaEntry, required) - 16usize];
+    ["Offset of field: GgMapSchemaEntry::type_"]
+        [::core::mem::offset_of!(GgMapSchemaEntry, type_) - 20usize];
+    ["Offset of field: GgMapSchemaEntry::value"]
+        [::core::mem::offset_of!(GgMapSchemaEntry, value) - 24usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of GglMapSchema"][::core::mem::size_of::<GglMapSchema>() - 16usize];
-    ["Alignment of GglMapSchema"]
-        [::core::mem::align_of::<GglMapSchema>() - 8usize];
-    ["Offset of field: GglMapSchema::entries"]
-        [::core::mem::offset_of!(GglMapSchema, entries) - 0usize];
-    ["Offset of field: GglMapSchema::entry_count"]
-        [::core::mem::offset_of!(GglMapSchema, entry_count) - 8usize];
+    ["Size of GgMapSchema"][::core::mem::size_of::<GgMapSchema>() - 16usize];
+    ["Alignment of GgMapSchema"]
+        [::core::mem::align_of::<GgMapSchema>() - 8usize];
+    ["Offset of field: GgMapSchema::entries"]
+        [::core::mem::offset_of!(GgMapSchema, entries) - 0usize];
+    ["Offset of field: GgMapSchema::entry_count"]
+        [::core::mem::offset_of!(GgMapSchema, entry_count) - 8usize];
 };
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
@@ -268,50 +267,50 @@ const _: () = {
 };
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum GglError {
-    GGL_ERR_OK = 0,
-    GGL_ERR_FAILURE = 1,
-    GGL_ERR_RETRY = 2,
-    GGL_ERR_BUSY = 3,
-    GGL_ERR_FATAL = 4,
-    GGL_ERR_INVALID = 5,
-    GGL_ERR_UNSUPPORTED = 6,
-    GGL_ERR_PARSE = 7,
-    GGL_ERR_RANGE = 8,
-    GGL_ERR_NOMEM = 9,
-    GGL_ERR_NOCONN = 10,
-    GGL_ERR_NODATA = 11,
-    GGL_ERR_NOENTRY = 12,
-    GGL_ERR_CONFIG = 13,
-    GGL_ERR_REMOTE = 14,
-    GGL_ERR_EXPECTED = 15,
-    GGL_ERR_TIMEOUT = 16,
+pub enum GgError {
+    GG_ERR_OK = 0,
+    GG_ERR_FAILURE = 1,
+    GG_ERR_RETRY = 2,
+    GG_ERR_BUSY = 3,
+    GG_ERR_FATAL = 4,
+    GG_ERR_INVALID = 5,
+    GG_ERR_UNSUPPORTED = 6,
+    GG_ERR_PARSE = 7,
+    GG_ERR_RANGE = 8,
+    GG_ERR_NOMEM = 9,
+    GG_ERR_NOCONN = 10,
+    GG_ERR_NODATA = 11,
+    GG_ERR_NOENTRY = 12,
+    GG_ERR_CONFIG = 13,
+    GG_ERR_REMOTE = 14,
+    GG_ERR_EXPECTED = 15,
+    GG_ERR_TIMEOUT = 16,
 }
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum GglObjectType {
-    GGL_TYPE_NULL = 0,
-    GGL_TYPE_BOOLEAN = 1,
-    GGL_TYPE_I64 = 2,
-    GGL_TYPE_F64 = 3,
-    GGL_TYPE_BUF = 4,
-    GGL_TYPE_LIST = 5,
-    GGL_TYPE_MAP = 6,
+pub enum GgObjectType {
+    GG_TYPE_NULL = 0,
+    GG_TYPE_BOOLEAN = 1,
+    GG_TYPE_I64 = 2,
+    GG_TYPE_F64 = 3,
+    GG_TYPE_BUF = 4,
+    GG_TYPE_LIST = 5,
+    GG_TYPE_MAP = 6,
 }
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum GglComponentState {
-    GGL_COMPONENT_STATE_RUNNING = 0,
-    GGL_COMPONENT_STATE_ERRORED = 1,
+pub enum GgComponentState {
+    GG_COMPONENT_STATE_RUNNING = 0,
+    GG_COMPONENT_STATE_ERRORED = 1,
 }
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum GglPresence__bindgen_ty_1 {
-    GGL_PRESENCE_REQUIRED = 0,
-    GGL_PRESENCE_OPTIONAL = 1,
-    GGL_PRESENCE_MISSING = 2,
+pub enum GgPresence__bindgen_ty_1 {
+    GG_PRESENCE_REQUIRED = 0,
+    GG_PRESENCE_OPTIONAL = 1,
+    GG_PRESENCE_MISSING = 2,
 }
-impl Default for GglBuffer {
+impl Default for GgBuffer {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -320,7 +319,7 @@ impl Default for GglBuffer {
         }
     }
 }
-impl Default for GglBufList {
+impl Default for GgBufList {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -329,7 +328,7 @@ impl Default for GglBufList {
         }
     }
 }
-impl Default for GglList {
+impl Default for GgList {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -338,7 +337,7 @@ impl Default for GglList {
         }
     }
 }
-impl Default for GglMap {
+impl Default for GgMap {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -347,7 +346,7 @@ impl Default for GglMap {
         }
     }
 }
-impl Default for GglArena {
+impl Default for GgArena {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -356,7 +355,7 @@ impl Default for GglArena {
         }
     }
 }
-impl Default for GglPresence {
+impl Default for GgPresence {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -365,7 +364,7 @@ impl Default for GglPresence {
         }
     }
 }
-impl Default for GglMapSchemaEntry {
+impl Default for GgMapSchemaEntry {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -374,7 +373,7 @@ impl Default for GglMapSchemaEntry {
         }
     }
 }
-impl Default for GglMapSchema {
+impl Default for GgMapSchema {
     fn default() -> Self {
         let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
         unsafe {
@@ -384,254 +383,253 @@ impl Default for GglMapSchema {
     }
 }
 unsafe extern "C" {
-    pub fn ggl_strerror(err: GglError) -> *const ::core::ffi::c_char;
+    pub fn gg_strerror(err: GgError) -> *const ::core::ffi::c_char;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_from_null_term(
-        str_: *mut ::core::ffi::c_char,
-    ) -> GglBuffer;
+    pub fn gg_buffer_from_null_term(str_: *mut ::core::ffi::c_char)
+        -> GgBuffer;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_eq(buf1: GglBuffer, buf2: GglBuffer) -> bool;
+    pub fn gg_buffer_eq(buf1: GgBuffer, buf2: GgBuffer) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_has_prefix(buf: GglBuffer, prefix: GglBuffer) -> bool;
+    pub fn gg_buffer_has_prefix(buf: GgBuffer, prefix: GgBuffer) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_remove_prefix(
-        buf: *mut GglBuffer,
-        prefix: GglBuffer,
+    pub fn gg_buffer_remove_prefix(
+        buf: *mut GgBuffer,
+        prefix: GgBuffer,
     ) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_has_suffix(buf: GglBuffer, suffix: GglBuffer) -> bool;
+    pub fn gg_buffer_has_suffix(buf: GgBuffer, suffix: GgBuffer) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_remove_suffix(
-        buf: *mut GglBuffer,
-        suffix: GglBuffer,
+    pub fn gg_buffer_remove_suffix(
+        buf: *mut GgBuffer,
+        suffix: GgBuffer,
     ) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_contains(
-        buf: GglBuffer,
-        substring: GglBuffer,
+    pub fn gg_buffer_contains(
+        buf: GgBuffer,
+        substring: GgBuffer,
         start: *mut usize,
     ) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_buffer_substr(
-        buf: GglBuffer,
+    pub fn gg_buffer_substr(
+        buf: GgBuffer,
         start: usize,
         end: usize,
-    ) -> GglBuffer;
+    ) -> GgBuffer;
 }
 unsafe extern "C" {
-    pub fn ggl_str_to_int64(str_: GglBuffer, value: *mut i64) -> GglError;
+    pub fn gg_str_to_int64(str_: GgBuffer, value: *mut i64) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_buf_copy(source: GglBuffer, target: *mut GglBuffer) -> GglError;
+    pub fn gg_buf_copy(source: GgBuffer, target: *mut GgBuffer) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_type(obj: GglObject) -> GglObjectType;
+    pub fn gg_obj_type(obj: GgObject) -> GgObjectType;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_bool(value: bool) -> GglObject;
+    pub fn gg_obj_bool(value: bool) -> GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_into_bool(boolean: GglObject) -> bool;
+    pub fn gg_obj_into_bool(boolean: GgObject) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_i64(value: i64) -> GglObject;
+    pub fn gg_obj_i64(value: i64) -> GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_into_i64(i64_: GglObject) -> i64;
+    pub fn gg_obj_into_i64(i64_: GgObject) -> i64;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_f64(value: f64) -> GglObject;
+    pub fn gg_obj_f64(value: f64) -> GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_into_f64(f64_: GglObject) -> f64;
+    pub fn gg_obj_into_f64(f64_: GgObject) -> f64;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_buf(value: GglBuffer) -> GglObject;
+    pub fn gg_obj_buf(value: GgBuffer) -> GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_into_buf(buf: GglObject) -> GglBuffer;
+    pub fn gg_obj_into_buf(buf: GgObject) -> GgBuffer;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_map(value: GglMap) -> GglObject;
+    pub fn gg_obj_map(value: GgMap) -> GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_into_map(map: GglObject) -> GglMap;
+    pub fn gg_obj_into_map(map: GgObject) -> GgMap;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_list(value: GglList) -> GglObject;
+    pub fn gg_obj_list(value: GgList) -> GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_into_list(list: GglObject) -> GglList;
+    pub fn gg_obj_into_list(list: GgObject) -> GgList;
 }
 unsafe extern "C" {
-    pub fn ggl_obj_mem_usage(obj: GglObject, size: *mut usize) -> GglError;
+    pub fn gg_obj_mem_usage(obj: GgObject, size: *mut usize) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_init(buf: GglBuffer) -> GglArena;
+    pub fn gg_arena_init(buf: GgBuffer) -> GgArena;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_alloc(
-        arena: *mut GglArena,
+    pub fn gg_arena_alloc(
+        arena: *mut GgArena,
         size: usize,
         alignment: usize,
     ) -> *mut ::core::ffi::c_void;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_resize_last(
-        arena: *mut GglArena,
+    pub fn gg_arena_resize_last(
+        arena: *mut GgArena,
         ptr: *const ::core::ffi::c_void,
         old_size: usize,
         size: usize,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_owns(
-        arena: *const GglArena,
+    pub fn gg_arena_owns(
+        arena: *const GgArena,
         ptr: *const ::core::ffi::c_void,
     ) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_alloc_rest(arena: *mut GglArena) -> GglBuffer;
+    pub fn gg_arena_alloc_rest(arena: *mut GgArena) -> GgBuffer;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_claim_obj(
-        obj: *mut GglObject,
-        arena: *mut GglArena,
-    ) -> GglError;
+    pub fn gg_arena_claim_obj(
+        obj: *mut GgObject,
+        arena: *mut GgArena,
+    ) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_claim_buf(
-        buf: *mut GglBuffer,
-        arena: *mut GglArena,
-    ) -> GglError;
+    pub fn gg_arena_claim_buf(
+        buf: *mut GgBuffer,
+        arena: *mut GgArena,
+    ) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_arena_claim_obj_bufs(
-        obj: *mut GglObject,
-        arena: *mut GglArena,
-    ) -> GglError;
+    pub fn gg_arena_claim_obj_bufs(
+        obj: *mut GgObject,
+        arena: *mut GgArena,
+    ) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggipc_connect() -> GglError;
+    pub fn ggipc_connect() -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_connect_with_token(
-        socket_path: GglBuffer,
-        auth_token: GglBuffer,
-    ) -> GglError;
+        socket_path: GgBuffer,
+        auth_token: GgBuffer,
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_close_subscription(handle: GgIpcSubscriptionHandle);
 }
 unsafe extern "C" {
     pub fn ggipc_publish_to_topic_json(
-        topic: GglBuffer,
-        payload: GglMap,
-    ) -> GglError;
+        topic: GgBuffer,
+        payload: GgMap,
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_publish_to_topic_binary(
-        topic: GglBuffer,
-        payload: GglBuffer,
-    ) -> GglError;
+        topic: GgBuffer,
+        payload: GgBuffer,
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_publish_to_topic_binary_b64(
-        topic: GglBuffer,
-        b64_payload: GglBuffer,
-    ) -> GglError;
+        topic: GgBuffer,
+        b64_payload: GgBuffer,
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_subscribe_to_topic(
-        topic: GglBuffer,
+        topic: GgBuffer,
         callback: GgIpcSubscribeToTopicCallback,
         ctx: *mut ::core::ffi::c_void,
         handle: *mut GgIpcSubscriptionHandle,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_publish_to_iot_core(
-        topic_name: GglBuffer,
-        payload: GglBuffer,
+        topic_name: GgBuffer,
+        payload: GgBuffer,
         qos: u8,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_publish_to_iot_core_b64(
-        topic_name: GglBuffer,
-        b64_payload: GglBuffer,
+        topic_name: GgBuffer,
+        b64_payload: GgBuffer,
         qos: u8,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_subscribe_to_iot_core(
-        topic_filter: GglBuffer,
+        topic_filter: GgBuffer,
         qos: u8,
         callback: GgIpcSubscribeToIotCoreCallback,
         ctx: *mut ::core::ffi::c_void,
         handle: *mut GgIpcSubscriptionHandle,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_get_config(
-        key_path: GglBufList,
-        component_name: *const GglBuffer,
-        alloc: *mut GglArena,
-        value: *mut GglObject,
-    ) -> GglError;
+        key_path: GgBufList,
+        component_name: *const GgBuffer,
+        alloc: *mut GgArena,
+        value: *mut GgObject,
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_get_config_str(
-        key_path: GglBufList,
-        component_name: *const GglBuffer,
-        value: *mut GglBuffer,
-    ) -> GglError;
+        key_path: GgBufList,
+        component_name: *const GgBuffer,
+        value: *mut GgBuffer,
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_update_config(
-        key_path: GglBufList,
+        key_path: GgBufList,
         timestamp: *const timespec,
-        value_to_merge: GglObject,
-    ) -> GglError;
+        value_to_merge: GgObject,
+    ) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggipc_update_state(state: GglComponentState) -> GglError;
+    pub fn ggipc_update_state(state: GgComponentState) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggipc_restart_component(component_name: GglBuffer) -> GglError;
+    pub fn ggipc_restart_component(component_name: GgBuffer) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_subscribe_to_configuration_update(
-        component_name: *const GglBuffer,
-        key_path: GglBufList,
+        component_name: *const GgBuffer,
+        key_path: GgBufList,
         callback: GgIpcSubscribeToConfigurationUpdateCallback,
         ctx: *mut ::core::ffi::c_void,
         handle: *mut GgIpcSubscriptionHandle,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_call(
-        operation: GglBuffer,
-        service_model_type: GglBuffer,
-        params: GglMap,
+        operation: GgBuffer,
+        service_model_type: GgBuffer,
+        params: GgMap,
         result_callback: GgIpcResultCallback,
         error_callback: GgIpcErrorCallback,
         response_ctx: *mut ::core::ffi::c_void,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
     pub fn ggipc_subscribe(
-        operation: GglBuffer,
-        service_model_type: GglBuffer,
-        params: GglMap,
+        operation: GgBuffer,
+        service_model_type: GgBuffer,
+        params: GgMap,
         result_callback: GgIpcResultCallback,
         error_callback: GgIpcErrorCallback,
         response_ctx: *mut ::core::ffi::c_void,
@@ -639,37 +637,37 @@ unsafe extern "C" {
         sub_callback_ctx: *mut ::core::ffi::c_void,
         sub_callback_aux_ctx: *mut ::core::ffi::c_void,
         sub_handle: *mut GgIpcSubscriptionHandle,
-    ) -> GglError;
+    ) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_map_get(
-        map: GglMap,
-        key: GglBuffer,
-        result: *mut *mut GglObject,
+    pub fn gg_map_get(
+        map: GgMap,
+        key: GgBuffer,
+        result: *mut *mut GgObject,
     ) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_map_get_path(
-        map: GglMap,
-        path: GglBufList,
-        result: *mut *mut GglObject,
+    pub fn gg_map_get_path(
+        map: GgMap,
+        path: GgBufList,
+        result: *mut *mut GgObject,
     ) -> bool;
 }
 unsafe extern "C" {
-    pub fn ggl_kv(key: GglBuffer, val: GglObject) -> GglKV;
+    pub fn gg_kv(key: GgBuffer, val: GgObject) -> GgKV;
 }
 unsafe extern "C" {
-    pub fn ggl_kv_key(kv: GglKV) -> GglBuffer;
+    pub fn gg_kv_key(kv: GgKV) -> GgBuffer;
 }
 unsafe extern "C" {
-    pub fn ggl_kv_set_key(kv: *mut GglKV, key: GglBuffer);
+    pub fn gg_kv_set_key(kv: *mut GgKV, key: GgBuffer);
 }
 unsafe extern "C" {
-    pub fn ggl_kv_val(kv: *mut GglKV) -> *mut GglObject;
+    pub fn gg_kv_val(kv: *mut GgKV) -> *mut GgObject;
 }
 unsafe extern "C" {
-    pub fn ggl_map_validate(map: GglMap, schema: GglMapSchema) -> GglError;
+    pub fn gg_map_validate(map: GgMap, schema: GgMapSchema) -> GgError;
 }
 unsafe extern "C" {
-    pub fn ggl_sdk_init();
+    pub fn gg_sdk_init();
 }

@@ -18,7 +18,7 @@ greengrassv2
 idents
 iwyu
 journalctl
-libggl
+libgg
 LOGD
 LOGE
 LOGI

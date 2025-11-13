@@ -3,54 +3,54 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <assert.h>
-#include <ggl/backoff.h>
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/log.h>
-#include <ggl/rand.h>
-#include <ggl/utils.h>
+#include <gg/backoff.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/log.h>
+#include <gg/rand.h>
+#include <gg/utils.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 static uint64_t backoff_get_rand(void) {
     uint64_t val;
-    ggl_rand_fill((GglBuffer) { .data = (uint8_t *) &val, .len = sizeof(val) });
+    gg_rand_fill((GgBuffer) { .data = (uint8_t *) &val, .len = sizeof(val) });
     return val;
 }
 
 static void backoff_sleep(uint32_t ms) {
-    GglError sleep_err = ggl_sleep_ms(ms);
-    if (sleep_err != GGL_ERR_OK) {
-        GGL_LOGE("Fatal error: unexpected sleep error during backoff.");
+    GgError sleep_err = gg_sleep_ms(ms);
+    if (sleep_err != GG_ERR_OK) {
+        GG_LOGE("Fatal error: unexpected sleep error during backoff.");
         _Exit(1);
     }
 }
 
-GglError ggl_backoff(
+GgError gg_backoff(
     uint32_t base_ms,
     uint32_t max_ms,
     uint32_t max_attempts,
-    GglError (*fn)(void *ctx),
+    GgError (*fn)(void *ctx),
     void *ctx
 ) {
     if (fn == NULL) {
         assert(false);
-        return GGL_ERR_UNSUPPORTED;
+        return GG_ERR_UNSUPPORTED;
     }
     if (base_ms == 0) {
         assert(false);
-        return GGL_ERR_UNSUPPORTED;
+        return GG_ERR_UNSUPPORTED;
     }
 
     uint32_t current_max_ms = base_ms;
     uint32_t attempts = 0;
-    GglError ret = GGL_ERR_FAILURE;
+    GgError ret = GG_ERR_FAILURE;
 
     while (true) {
         ret = fn(ctx);
-        if (ret == GGL_ERR_OK) {
-            return GGL_ERR_OK;
+        if (ret == GG_ERR_OK) {
+            return GG_ERR_OK;
         }
 
         if (max_attempts != 0) {

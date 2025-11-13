@@ -2,19 +2,19 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.hpp>
-#include <ggl/map.hpp>
-#include <ggl/object.hpp>
-#include <ggl/types.hpp>
+#include <gg/buffer.hpp>
+#include <gg/map.hpp>
+#include <gg/object.hpp>
+#include <gg/types.hpp>
 
-namespace ggl {
+namespace gg {
 
 Object *KV::value() noexcept {
-    return static_cast<Object *>(ggl_kv_val(this));
+    return static_cast<Object *>(gg_kv_val(this));
 }
 
 KV::KV(Buffer key, const Object &value) noexcept
-    : GglKV { ggl_kv(key, value) } {
+    : GgKV { gg_kv(key, value) } {
 }
 
 }

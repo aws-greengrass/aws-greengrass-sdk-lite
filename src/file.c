@@ -5,11 +5,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ggl/buffer.h>
-#include <ggl/cleanup.h>
-#include <ggl/error.h>
-#include <ggl/file.h>
-#include <ggl/log.h>
+#include <gg/buffer.h>
+#include <gg/cleanup.h>
+#include <gg/error.h>
+#include <gg/file.h>
+#include <gg/log.h>
 #include <limits.h>
 #include <pthread.h>
 #include <signal.h>
@@ -47,7 +47,7 @@ __attribute__((constructor)) static void ignore_sigpipe(void) {
 static char path_comp_buf[NAME_MAX + 1];
 static pthread_mutex_t path_comp_buf_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-GglError ggl_close(int fd) {
+GgError gg_close(int fd) {
     // Do not loop on EINTR
     // Posix states that after an interrupted close, the state of the file
     // descriptor is unspecified. On Linux and most other systems, the fd is
@@ -65,23 +65,23 @@ GglError ggl_close(int fd) {
     pthread_sigmask(SIG_SETMASK, &old_set, NULL);
 
     if ((ret == 0) || (err == EINTR)) {
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     }
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
-GglError ggl_fsync(int fd) {
+GgError gg_fsync(int fd) {
     int ret;
     do {
         ret = fsync(fd);
     } while ((ret != 0) && (errno == EINTR));
     if (ret == 0) {
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     }
     if ((errno == EROFS) || (errno == EINVAL)) {
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     }
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
 /// Call openat, looping when interrupted by signal.
@@ -95,7 +95,7 @@ static int openat_wrapper(
     return ret;
 }
 
-static GglError ggl_openat(
+static GgError gg_openat(
     int dirfd, const char *pathname, int flags, mode_t mode, int *out
 ) {
     int ret;
@@ -103,125 +103,125 @@ static GglError ggl_openat(
         ret = openat(dirfd, pathname, flags, mode);
     } while ((ret < 0) && (errno == EINTR));
     if (ret < 0) {
-        return GGL_ERR_FAILURE;
+        return GG_ERR_FAILURE;
     }
     *out = ret;
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError copy_dir_fd(int dirfd, int flags, int *new) {
+static GgError copy_dir_fd(int dirfd, int flags, int *new) {
     int fd = openat_wrapper(dirfd, ".", O_CLOEXEC | O_DIRECTORY | flags, 0);
     if (fd < 0) {
-        GGL_LOGE("Err %d while opening path.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Err %d while opening path.", errno);
+        return GG_ERR_FAILURE;
     }
     *new = fd;
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError ggl_mkdirat(int dirfd, const char *pathname, mode_t mode) {
+static GgError gg_mkdirat(int dirfd, const char *pathname, mode_t mode) {
     int sys_ret;
     int parent_fd;
-    GglError ret = copy_dir_fd(dirfd, O_RDONLY, &parent_fd);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = copy_dir_fd(dirfd, O_RDONLY, &parent_fd);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    GGL_CLEANUP(cleanup_close, parent_fd);
+    GG_CLEANUP(cleanup_close, parent_fd);
 
     do {
         sys_ret = mkdirat(parent_fd, pathname, mode);
     } while ((sys_ret != 0) && (errno == EINTR));
     if (sys_ret != 0) {
-        return GGL_ERR_FAILURE;
+        return GG_ERR_FAILURE;
     }
 
-    ret = ggl_fsync(parent_fd);
-    if (ret != GGL_ERR_OK) {
+    ret = gg_fsync(parent_fd);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
 /// Open a directory, creating it if needed
 /// dirfd must not be O_PATH
-static GglError ggl_dir_openat_mkdir(
+static GgError gg_dir_openat_mkdir(
     int dirfd, const char *pathname, int flags, mode_t mode, int *out
 ) {
     int fd;
-    GglError ret = ggl_openat(dirfd, pathname, flags, 0, &fd);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = gg_openat(dirfd, pathname, flags, 0, &fd);
+    if (ret != GG_ERR_OK) {
         if (errno == ENOENT) {
-            ret = ggl_mkdirat(dirfd, pathname, mode);
-            if (ret != GGL_ERR_OK) {
+            ret = gg_mkdirat(dirfd, pathname, mode);
+            if (ret != GG_ERR_OK) {
                 return ret;
             }
-            ret = ggl_openat(dirfd, pathname, flags, 0, &fd);
-            if (ret != GGL_ERR_OK) {
+            ret = gg_openat(dirfd, pathname, flags, 0, &fd);
+            if (ret != GG_ERR_OK) {
                 return ret;
             }
 
             *out = fd;
-            return GGL_ERR_OK;
+            return GG_ERR_OK;
         }
         return ret;
     }
 
     *out = fd;
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
 /// Splits buffer to part before first `/` and part after
 static bool split_path_first_comp(
-    GglBuffer path, GglBuffer *comp, GglBuffer *rest
+    GgBuffer path, GgBuffer *comp, GgBuffer *rest
 ) {
     for (size_t i = 0; i < path.len; i++) {
         if (path.data[i] == '/') {
-            *comp = ggl_buffer_substr(path, 0, i);
-            *rest = ggl_buffer_substr(path, i + 1, SIZE_MAX);
+            *comp = gg_buffer_substr(path, 0, i);
+            *rest = gg_buffer_substr(path, i + 1, SIZE_MAX);
             return true;
         }
     }
 
     *comp = path;
-    *rest = ggl_buffer_substr(path, path.len, SIZE_MAX);
+    *rest = gg_buffer_substr(path, path.len, SIZE_MAX);
     return false;
 }
 
 /// Splits buffer to part before last `/` and part after
 static bool split_path_last_comp(
-    GglBuffer path, GglBuffer *prefix, GglBuffer *comp
+    GgBuffer path, GgBuffer *prefix, GgBuffer *comp
 ) {
     for (size_t i = path.len; i > 0; i--) {
         if (path.data[i - 1] == '/') {
-            *prefix = ggl_buffer_substr(path, 0, i - 1);
-            *comp = ggl_buffer_substr(path, i, SIZE_MAX);
+            *prefix = gg_buffer_substr(path, 0, i - 1);
+            *comp = gg_buffer_substr(path, i, SIZE_MAX);
             return true;
         }
     }
 
     *comp = path;
-    *prefix = ggl_buffer_substr(path, 0, 0);
+    *prefix = gg_buffer_substr(path, 0, 0);
     return false;
 }
 
-static void strip_trailing_slashes(GglBuffer *path) {
+static void strip_trailing_slashes(GgBuffer *path) {
     while ((path->len >= 1) && (path->data[path->len - 1] == '/')) {
         path->len -= 1;
     }
 }
 
 /// Get fd for an absolute path to a dir
-GglError ggl_dir_open(GglBuffer path, int flags, bool create, int *fd) {
+GgError gg_dir_open(GgBuffer path, int flags, bool create, int *fd) {
     if (path.len == 0) {
-        return GGL_ERR_INVALID;
+        return GG_ERR_INVALID;
     }
 
     bool absolute = false;
-    GglBuffer rel_path = path;
+    GgBuffer rel_path = path;
 
     if (path.data[0] == '/') {
         absolute = true;
-        rel_path = ggl_buffer_substr(path, 1, SIZE_MAX);
+        rel_path = gg_buffer_substr(path, 1, SIZE_MAX);
     }
 
     // Handle cases like `////`
@@ -229,15 +229,15 @@ GglError ggl_dir_open(GglBuffer path, int flags, bool create, int *fd) {
 
     if (rel_path.len == 0) {
         if (!absolute) {
-            return GGL_ERR_INVALID;
+            return GG_ERR_INVALID;
         }
         // Path is `/`
         *fd = open("/", O_CLOEXEC | O_DIRECTORY | flags);
         if (*fd < 0) {
-            GGL_LOGE("Err %d while opening /", errno);
-            return GGL_ERR_FAILURE;
+            GG_LOGE("Err %d while opening /", errno);
+            return GG_ERR_FAILURE;
         }
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     }
 
     int base_fd = open(
@@ -245,18 +245,18 @@ GglError ggl_dir_open(GglBuffer path, int flags, bool create, int *fd) {
         O_CLOEXEC | O_DIRECTORY | (create ? O_RDONLY : O_PATH)
     );
     if (base_fd < 0) {
-        GGL_LOGE("Err %d while opening /", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Err %d while opening /", errno);
+        return GG_ERR_FAILURE;
     }
-    GGL_CLEANUP(cleanup_close, base_fd);
-    return ggl_dir_openat(base_fd, rel_path, flags, create, fd);
+    GG_CLEANUP(cleanup_close, base_fd);
+    return gg_dir_openat(base_fd, rel_path, flags, create, fd);
 }
 
-GglError ggl_dir_openat(
-    int dirfd, GglBuffer path, int flags, bool create, int *fd
+GgError gg_dir_openat(
+    int dirfd, GgBuffer path, int flags, bool create, int *fd
 ) {
-    GglBuffer comp = GGL_STR("");
-    GglBuffer rest = path;
+    GgBuffer comp = GG_STR("");
+    GgBuffer rest = path;
     // Stripping trailing slashes is fine as we are assuming its a directory
     // regardless of trailing slash
     strip_trailing_slashes(&rest);
@@ -266,13 +266,13 @@ GglError ggl_dir_openat(
 
     // Make a copy of dirfd, so we can close it
     int cur_fd;
-    GglError ret = copy_dir_fd(dirfd, O_PATH, &cur_fd);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = copy_dir_fd(dirfd, O_PATH, &cur_fd);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    GGL_CLEANUP_ID(cur_fd_cleanup, cleanup_close, cur_fd);
+    GG_CLEANUP_ID(cur_fd_cleanup, cleanup_close, cur_fd);
 
-    GGL_MTX_SCOPE_GUARD(&path_comp_buf_mtx);
+    GG_MTX_SCOPE_GUARD(&path_comp_buf_mtx);
 
     // Iterate over parents from /
     while (split_path_first_comp(rest, &comp, &rest)) {
@@ -281,7 +281,7 @@ GglError ggl_dir_openat(
             continue;
         }
         if (comp.len > NAME_MAX) {
-            return GGL_ERR_RANGE;
+            return GG_ERR_RANGE;
         }
         memcpy(path_comp_buf, comp.data, comp.len);
         path_comp_buf[comp.len] = '\0';
@@ -289,7 +289,7 @@ GglError ggl_dir_openat(
         // Get next parent
         int new_fd;
         if (create) {
-            ret = ggl_dir_openat_mkdir(
+            ret = gg_dir_openat_mkdir(
                 cur_fd,
                 path_comp_buf,
                 O_CLOEXEC | O_DIRECTORY | O_PATH,
@@ -297,7 +297,7 @@ GglError ggl_dir_openat(
                 &new_fd
             );
         } else {
-            ret = ggl_openat(
+            ret = gg_openat(
                 cur_fd,
                 path_comp_buf,
                 O_CLOEXEC | O_DIRECTORY | O_PATH,
@@ -305,13 +305,13 @@ GglError ggl_dir_openat(
                 &new_fd
             );
         }
-        if (ret != GGL_ERR_OK) {
-            GGL_LOGD("Err %d while opening path: %s", errno, path_comp_buf);
-            return GGL_ERR_FAILURE;
+        if (ret != GG_ERR_OK) {
+            GG_LOGD("Err %d while opening path: %s", errno, path_comp_buf);
+            return GG_ERR_FAILURE;
         }
 
         // swap cur_fd
-        (void) ggl_close(cur_fd);
+        (void) gg_close(cur_fd);
         cur_fd = new_fd;
         cur_fd_cleanup = new_fd;
     }
@@ -319,14 +319,14 @@ GglError ggl_dir_openat(
     // Handle final path component (non-empty since trailing slashes stripped)
 
     if (comp.len > NAME_MAX) {
-        return GGL_ERR_NOMEM;
+        return GG_ERR_NOMEM;
     }
     memcpy(path_comp_buf, comp.data, comp.len);
     path_comp_buf[comp.len] = '\0';
 
     int result;
     if (create) {
-        ret = ggl_dir_openat_mkdir(
+        ret = gg_dir_openat_mkdir(
             cur_fd,
             path_comp_buf,
             O_CLOEXEC | O_DIRECTORY | flags,
@@ -334,250 +334,250 @@ GglError ggl_dir_openat(
             &result
         );
     } else {
-        ret = ggl_openat(
+        ret = gg_openat(
             cur_fd, path_comp_buf, O_CLOEXEC | O_DIRECTORY | flags, 0, &result
         );
     }
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGD("Err %d while opening path: %s", errno, path_comp_buf);
-        return GGL_ERR_FAILURE;
+    if (ret != GG_ERR_OK) {
+        GG_LOGD("Err %d while opening path: %s", errno, path_comp_buf);
+        return GG_ERR_FAILURE;
     }
 
     *fd = result;
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-GglError ggl_file_openat(
-    int dirfd, GglBuffer path, int flags, mode_t mode, int *fd
+GgError gg_file_openat(
+    int dirfd, GgBuffer path, int flags, mode_t mode, int *fd
 ) {
     int cur_fd;
-    GglBuffer file = path;
-    GglBuffer dir;
+    GgBuffer file = path;
+    GgBuffer dir;
     if (split_path_last_comp(path, &dir, &file)) {
         bool create = (flags & O_CREAT) > 0;
-        GglError ret = ggl_dir_openat(dirfd, dir, O_PATH, create, &cur_fd);
-        if (ret != GGL_ERR_OK) {
+        GgError ret = gg_dir_openat(dirfd, dir, O_PATH, create, &cur_fd);
+        if (ret != GG_ERR_OK) {
             return ret;
         }
     } else {
         // Make a copy of dirfd, so we can close it
-        GglError ret = copy_dir_fd(dirfd, O_PATH, &cur_fd);
-        if (ret != GGL_ERR_OK) {
+        GgError ret = copy_dir_fd(dirfd, O_PATH, &cur_fd);
+        if (ret != GG_ERR_OK) {
             return ret;
         }
     }
-    GGL_CLEANUP(cleanup_close, cur_fd);
+    GG_CLEANUP(cleanup_close, cur_fd);
 
     if (file.len > NAME_MAX) {
-        return GGL_ERR_NOMEM;
+        return GG_ERR_NOMEM;
     }
 
-    GGL_MTX_SCOPE_GUARD(&path_comp_buf_mtx);
+    GG_MTX_SCOPE_GUARD(&path_comp_buf_mtx);
 
     memcpy(path_comp_buf, file.data, file.len);
     path_comp_buf[file.len] = '\0';
 
     int result;
-    GglError ret
-        = ggl_openat(cur_fd, path_comp_buf, O_CLOEXEC | flags, mode, &result);
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGD("Err %d while opening file: %s", errno, path_comp_buf);
-        return GGL_ERR_FAILURE;
+    GgError ret
+        = gg_openat(cur_fd, path_comp_buf, O_CLOEXEC | flags, mode, &result);
+    if (ret != GG_ERR_OK) {
+        GG_LOGD("Err %d while opening file: %s", errno, path_comp_buf);
+        return GG_ERR_FAILURE;
     }
 
     *fd = result;
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
 /// Open a file.
-GglError ggl_file_open(GglBuffer path, int flags, mode_t mode, int *fd) {
+GgError gg_file_open(GgBuffer path, int flags, mode_t mode, int *fd) {
     if (path.len == 0) {
-        return GGL_ERR_INVALID;
+        return GG_ERR_INVALID;
     }
 
     bool absolute = false;
-    GglBuffer rel_path = path;
+    GgBuffer rel_path = path;
 
     if (path.data[0] == '/') {
         absolute = true;
-        rel_path = ggl_buffer_substr(path, 1, SIZE_MAX);
+        rel_path = gg_buffer_substr(path, 1, SIZE_MAX);
     }
 
     if (rel_path.len == 0) {
-        return GGL_ERR_INVALID;
+        return GG_ERR_INVALID;
     }
 
     int base_fd = open(absolute ? "/" : ".", O_CLOEXEC | O_DIRECTORY | O_PATH);
     if (base_fd < 0) {
-        GGL_LOGE("Err %d while opening /", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Err %d while opening /", errno);
+        return GG_ERR_FAILURE;
     }
-    GGL_CLEANUP(cleanup_close, base_fd);
-    return ggl_file_openat(base_fd, rel_path, flags, mode, fd);
+    GG_CLEANUP(cleanup_close, base_fd);
+    return gg_file_openat(base_fd, rel_path, flags, mode, fd);
 }
 
-GglError ggl_file_read_partial(int fd, GglBuffer *buf) {
+GgError gg_file_read_partial(int fd, GgBuffer *buf) {
     ssize_t ret = read(fd, buf->data, buf->len);
     if (ret < 0) {
         if (errno == EINTR) {
-            return GGL_ERR_RETRY;
+            return GG_ERR_RETRY;
         }
         if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-            GGL_LOGE("Read timed out on fd %d.", fd);
-            return GGL_ERR_FAILURE;
+            GG_LOGE("Read timed out on fd %d.", fd);
+            return GG_ERR_FAILURE;
         }
         if (errno == ECONNRESET) {
-            GGL_LOGW("Peer closed %d with written data pending.", fd);
-            return GGL_ERR_NODATA;
+            GG_LOGW("Peer closed %d with written data pending.", fd);
+            return GG_ERR_NODATA;
         }
-        GGL_LOGE("Failed to read fd %d: %d.", fd, errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to read fd %d: %d.", fd, errno);
+        return GG_ERR_FAILURE;
     }
     if (ret == 0) {
-        return GGL_ERR_NODATA;
+        return GG_ERR_NODATA;
     }
 
-    *buf = ggl_buffer_substr(*buf, (size_t) ret, SIZE_MAX);
-    return GGL_ERR_OK;
+    *buf = gg_buffer_substr(*buf, (size_t) ret, SIZE_MAX);
+    return GG_ERR_OK;
 }
 
-GglError ggl_file_read(int fd, GglBuffer *buf) {
-    GglBuffer rest = *buf;
+GgError gg_file_read(int fd, GgBuffer *buf) {
+    GgBuffer rest = *buf;
 
     while (rest.len > 0) {
-        GglError ret = ggl_file_read_partial(fd, &rest);
-        if (ret == GGL_ERR_NODATA) {
+        GgError ret = gg_file_read_partial(fd, &rest);
+        if (ret == GG_ERR_NODATA) {
             buf->len = (size_t) (rest.data - buf->data);
-            return GGL_ERR_OK;
+            return GG_ERR_OK;
         }
-        if (ret == GGL_ERR_RETRY) {
+        if (ret == GG_ERR_RETRY) {
             continue;
         }
-        if (ret != GGL_ERR_OK) {
+        if (ret != GG_ERR_OK) {
             return ret;
         }
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-GglError ggl_file_read_exact(int fd, GglBuffer buf) {
-    GglBuffer copy = buf;
-    GglError ret = ggl_file_read(fd, &copy);
-    if (ret != GGL_ERR_OK) {
+GgError gg_file_read_exact(int fd, GgBuffer buf) {
+    GgBuffer copy = buf;
+    GgError ret = gg_file_read(fd, &copy);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    return buf.len == copy.len ? GGL_ERR_OK : GGL_ERR_NODATA;
+    return buf.len == copy.len ? GG_ERR_OK : GG_ERR_NODATA;
 }
 
-GglError ggl_file_write_partial(int fd, GglBuffer *buf) {
+GgError gg_file_write_partial(int fd, GgBuffer *buf) {
     ssize_t ret = write(fd, buf->data, buf->len);
     if (ret < 0) {
         if (errno == EINTR) {
-            return GGL_ERR_RETRY;
+            return GG_ERR_RETRY;
         }
         if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-            GGL_LOGE("Write timed out on fd %d.", fd);
-            return GGL_ERR_FAILURE;
+            GG_LOGE("Write timed out on fd %d.", fd);
+            return GG_ERR_FAILURE;
         }
         if (errno == EPIPE) {
-            GGL_LOGE("Write failed to %d; peer closed pipe.", fd);
-            return GGL_ERR_NOCONN;
+            GG_LOGE("Write failed to %d; peer closed pipe.", fd);
+            return GG_ERR_NOCONN;
         }
         if (errno == ECONNRESET) {
-            GGL_LOGE("Write failed to %d; peer closed connection.", fd);
-            return GGL_ERR_NOCONN;
+            GG_LOGE("Write failed to %d; peer closed connection.", fd);
+            return GG_ERR_NOCONN;
         }
-        GGL_LOGE("Failed to write to fd %d: %d.", fd, errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to write to fd %d: %d.", fd, errno);
+        return GG_ERR_FAILURE;
     }
 
-    *buf = ggl_buffer_substr(*buf, (size_t) ret, SIZE_MAX);
-    return GGL_ERR_OK;
+    *buf = gg_buffer_substr(*buf, (size_t) ret, SIZE_MAX);
+    return GG_ERR_OK;
 }
 
-GglError ggl_file_write(int fd, GglBuffer buf) {
-    GglBuffer rest = buf;
+GgError gg_file_write(int fd, GgBuffer buf) {
+    GgBuffer rest = buf;
 
     while (rest.len > 0) {
-        GglError ret = ggl_file_write_partial(fd, &rest);
-        if (ret == GGL_ERR_RETRY) {
+        GgError ret = gg_file_write_partial(fd, &rest);
+        if (ret == GG_ERR_RETRY) {
             continue;
         }
-        if (ret != GGL_ERR_OK) {
+        if (ret != GG_ERR_OK) {
             return ret;
         }
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-GglError ggl_file_read_path_at(int dirfd, GglBuffer path, GglBuffer *content) {
-    GglBuffer buf = *content;
+GgError gg_file_read_path_at(int dirfd, GgBuffer path, GgBuffer *content) {
+    GgBuffer buf = *content;
     int fd;
-    GglError ret = ggl_file_openat(dirfd, path, O_RDONLY, 0, &fd);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = gg_file_openat(dirfd, path, O_RDONLY, 0, &fd);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    GGL_CLEANUP(cleanup_close, fd);
+    GG_CLEANUP(cleanup_close, fd);
 
     struct stat info;
     int sys_ret = fstat(fd, &info);
     if (sys_ret != 0) {
-        GGL_LOGE(
+        GG_LOGE(
             "Err %d while calling fstat on file: %.*s",
             errno,
             (int) path.len,
             path.data
         );
-        return GGL_ERR_FAILURE;
+        return GG_ERR_FAILURE;
     }
 
     size_t file_size = (size_t) info.st_size;
 
     if (file_size > buf.len) {
-        GGL_LOGE(
+        GG_LOGE(
             "Insufficient memory for file %.*s.", (int) path.len, path.data
         );
-        return GGL_ERR_NOMEM;
+        return GG_ERR_NOMEM;
     }
 
     buf.len = file_size;
 
-    ret = ggl_file_read_exact(fd, buf);
-    if (ret == GGL_ERR_OK) {
+    ret = gg_file_read_exact(fd, buf);
+    if (ret == GG_ERR_OK) {
         *content = buf;
     }
     return ret;
 }
 
-GglError ggl_file_read_path(GglBuffer path, GglBuffer *content) {
+GgError gg_file_read_path(GgBuffer path, GgBuffer *content) {
     if (path.len == 0) {
-        return GGL_ERR_INVALID;
+        return GG_ERR_INVALID;
     }
 
     bool absolute = false;
-    GglBuffer rel_path = path;
+    GgBuffer rel_path = path;
 
     if (path.data[0] == '/') {
         absolute = true;
-        rel_path = ggl_buffer_substr(path, 1, SIZE_MAX);
+        rel_path = gg_buffer_substr(path, 1, SIZE_MAX);
     }
 
     if (rel_path.len == 0) {
-        return GGL_ERR_INVALID;
+        return GG_ERR_INVALID;
     }
 
     int base_fd = open(absolute ? "/" : ".", O_CLOEXEC | O_DIRECTORY | O_PATH);
     if (base_fd < 0) {
-        GGL_LOGE("Err %d while opening /", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Err %d while opening /", errno);
+        return GG_ERR_FAILURE;
     }
-    GGL_CLEANUP(cleanup_close, base_fd);
+    GG_CLEANUP(cleanup_close, base_fd);
 
-    GglError ret = ggl_file_read_path_at(base_fd, rel_path, content);
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE(
+    GgError ret = gg_file_read_path_at(base_fd, rel_path, content);
+    if (ret != GG_ERR_OK) {
+        GG_LOGE(
             "Err %d occurred while reading file %.*s",
             errno,
             (int) rel_path.len,
@@ -586,5 +586,5 @@ GglError ggl_file_read_path(GglBuffer path, GglBuffer *content) {
         return ret;
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }

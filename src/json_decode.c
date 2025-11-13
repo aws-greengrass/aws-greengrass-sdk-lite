@@ -4,13 +4,13 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <ggl/arena.h>
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/json_decode.h>
-#include <ggl/log.h>
-#include <ggl/map.h>
-#include <ggl/object.h>
+#include <gg/arena.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/json_decode.h>
+#include <gg/log.h>
+#include <gg/map.h>
+#include <gg/object.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -33,12 +33,12 @@ typedef enum {
 } JsonType;
 
 typedef void (*ParseValueHandler)(
-    void *ctx, JsonType type, GglBuffer content, size_t count
+    void *ctx, JsonType type, GgBuffer content, size_t count
 );
 
 typedef struct {
     JsonType json_type;
-    GglBuffer content;
+    GgBuffer content;
     size_t count;
 } ParseResult;
 
@@ -47,20 +47,20 @@ static const ParseResult PARSE_RESULT_INIT = {
 };
 
 typedef struct {
-    bool (*fn)(const void *parser_ctx, GglBuffer *buf, ParseResult *output);
+    bool (*fn)(const void *parser_ctx, GgBuffer *buf, ParseResult *output);
     const void *parser_ctx;
 } Parser;
 
-typedef void (*ParseOutputHandler)(GglBuffer match, ParseResult *output);
+typedef void (*ParseOutputHandler)(GgBuffer match, ParseResult *output);
 
 static bool parser_call(
-    const Parser *parser, GglBuffer *buf, ParseResult *output
+    const Parser *parser, GgBuffer *buf, ParseResult *output
 ) {
     return parser->fn(parser->parser_ctx, buf, output);
 }
 
 static bool comb_one_of_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const Parser *const *parsers = parser_ctx;
 
@@ -81,10 +81,10 @@ static bool comb_one_of_fn(
     }
 
 static bool comb_sequence_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const Parser *const *parsers = parser_ctx;
-    GglBuffer buf_copy = *buf;
+    GgBuffer buf_copy = *buf;
 
     while (*parsers != NULL) {
         if (!parser_call(*parsers, &buf_copy, output)) {
@@ -104,7 +104,7 @@ static bool comb_sequence_fn(
     }
 
 static bool comb_zero_or_more_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const Parser *parser = parser_ctx;
     while (parser_call(parser, buf, output)) { }
@@ -117,7 +117,7 @@ static bool comb_zero_or_more_fn(
     }
 
 static bool comb_maybe_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const Parser *parser = parser_ctx;
     (void) parser_call(parser, buf, output);
@@ -135,7 +135,7 @@ typedef struct {
 } CombCallbackCtx;
 
 static bool comb_nested_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const Parser *parser = parser_ctx;
     (void) output;
@@ -148,11 +148,11 @@ typedef struct {
 } CombResultValCtx;
 
 static bool comb_result_val_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const CombResultValCtx *ctx = parser_ctx;
 
-    GglBuffer match = *buf;
+    GgBuffer match = *buf;
     bool matches = parser_call(ctx->parser, buf, output);
     match.len = (size_t) (buf->data - match.data);
 
@@ -176,7 +176,7 @@ static bool comb_result_val_fn(
     }
 
 static bool parser_char_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const uint8_t *c = parser_ctx;
     (void) output;
@@ -187,7 +187,7 @@ static bool parser_char_fn(
     if (buf->data[0] != *c) {
         return false;
     }
-    *buf = ggl_buffer_substr(*buf, 1, SIZE_MAX);
+    *buf = gg_buffer_substr(*buf, 1, SIZE_MAX);
     return true;
 }
 
@@ -197,9 +197,9 @@ static bool parser_char_fn(
     }
 
 static bool parser_str_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
-    const GglBuffer *str = parser_ctx;
+    const GgBuffer *str = parser_ctx;
     (void) output;
 
     if (buf->len < str->len) {
@@ -208,13 +208,13 @@ static bool parser_str_fn(
     if (memcmp(str->data, buf->data, str->len) != 0) {
         return false;
     }
-    *buf = ggl_buffer_substr(*buf, str->len, SIZE_MAX);
+    *buf = gg_buffer_substr(*buf, str->len, SIZE_MAX);
     return true;
 }
 
 #define PARSER_STR(str) \
     (Parser) { \
-        .fn = parser_str_fn, .parser_ctx = &GGL_STR(str), \
+        .fn = parser_str_fn, .parser_ctx = &GG_STR(str), \
     }
 
 typedef struct {
@@ -223,7 +223,7 @@ typedef struct {
 } CharRange;
 
 static bool parser_char_range_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const CharRange *range = parser_ctx;
     (void) output;
@@ -238,7 +238,7 @@ static bool parser_char_range_fn(
         return false;
     }
 
-    *buf = ggl_buffer_substr(*buf, 1, SIZE_MAX);
+    *buf = gg_buffer_substr(*buf, 1, SIZE_MAX);
     return true;
 }
 
@@ -275,7 +275,7 @@ static const Parser PARSER_JSON_STR_ESCAPE = COMB_SEQUENCE(
 );
 
 static bool parser_json_str_codepoint_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     (void) parser_ctx;
     (void) output;
@@ -322,7 +322,7 @@ static bool parser_json_str_codepoint_fn(
         }
     }
 
-    *buf = ggl_buffer_substr(*buf, utf8_len, SIZE_MAX);
+    *buf = gg_buffer_substr(*buf, utf8_len, SIZE_MAX);
     return true;
 }
 
@@ -378,7 +378,7 @@ static const Parser PARSER_JSON_NUMBER = COMB_RESULT_VAL(
 );
 
 static bool comb_increment_count_fn(
-    const void *parser_ctx, GglBuffer *buf, ParseResult *output
+    const void *parser_ctx, GgBuffer *buf, ParseResult *output
 ) {
     const Parser *parser = parser_ctx;
 
@@ -528,7 +528,7 @@ static bool write_codepoint_utf8(uint32_t code_point, uint8_t **write_ptr) {
     return false;
 }
 
-static bool str_conv_handle_utf16_escape(GglBuffer *buf, uint8_t **write_ptr) {
+static bool str_conv_handle_utf16_escape(GgBuffer *buf, uint8_t **write_ptr) {
     if ((buf->len < 6) || (buf->data[0] != '\\') || (buf->data[1] != 'u')) {
         return false;
     }
@@ -539,7 +539,7 @@ static bool str_conv_handle_utf16_escape(GglBuffer *buf, uint8_t **write_ptr) {
         return false;
     }
 
-    *buf = ggl_buffer_substr(*buf, 6, SIZE_MAX);
+    *buf = gg_buffer_substr(*buf, 6, SIZE_MAX);
 
     if ((code_value >= 0xD800) && (code_value <= 0xDBFF)) {
         // high surrogates
@@ -552,7 +552,7 @@ static bool str_conv_handle_utf16_escape(GglBuffer *buf, uint8_t **write_ptr) {
             return false;
         }
 
-        *buf = ggl_buffer_substr(*buf, 6, SIZE_MAX);
+        *buf = gg_buffer_substr(*buf, 6, SIZE_MAX);
 
         uint32_t code_point = ((((uint32_t) code_value - 0xD800) << 10)
                                + (low_surrogate - 0xDC00))
@@ -569,7 +569,7 @@ static bool str_conv_handle_utf16_escape(GglBuffer *buf, uint8_t **write_ptr) {
     return write_codepoint_utf8(code_value, write_ptr);
 }
 
-static bool str_conv_handle_escape(GglBuffer *buf, uint8_t **write_ptr) {
+static bool str_conv_handle_escape(GgBuffer *buf, uint8_t **write_ptr) {
     if ((buf->len < 2) || (buf->data[0] != '\\')) {
         return false;
     }
@@ -605,13 +605,13 @@ static bool str_conv_handle_escape(GglBuffer *buf, uint8_t **write_ptr) {
 
     **write_ptr = c;
     *write_ptr = &(*write_ptr)[1];
-    *buf = ggl_buffer_substr(*buf, 2, SIZE_MAX);
+    *buf = gg_buffer_substr(*buf, 2, SIZE_MAX);
     return true;
 }
 
-static bool unescape_string(GglBuffer *str) {
+static bool unescape_string(GgBuffer *str) {
     uint8_t *write_ptr = str->data;
-    GglBuffer buf = *str;
+    GgBuffer buf = *str;
     while (buf.len > 0) {
         if (buf.data[0] == '\\') {
             bool ret = str_conv_handle_escape(&buf, &write_ptr);
@@ -621,33 +621,33 @@ static bool unescape_string(GglBuffer *str) {
         } else {
             *write_ptr = buf.data[0];
             write_ptr = &write_ptr[1];
-            buf = ggl_buffer_substr(buf, 1, SIZE_MAX);
+            buf = gg_buffer_substr(buf, 1, SIZE_MAX);
         }
     }
     str->len = (size_t) (write_ptr - str->data);
     return true;
 }
 
-static GglError decode_json_str(GglBuffer content, GglObject *obj) {
-    GglBuffer str = content;
+static GgError decode_json_str(GgBuffer content, GgObject *obj) {
+    GgBuffer str = content;
     bool ret = unescape_string(&str);
     if (!ret) {
-        GGL_LOGE("Error decoding JSON string.");
-        return GGL_ERR_PARSE;
+        GG_LOGE("Error decoding JSON string.");
+        return GG_ERR_PARSE;
     }
     if (obj != NULL) {
-        *obj = ggl_obj_buf(str);
+        *obj = gg_obj_buf(str);
     }
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError decode_json_number(GglBuffer content, GglObject *obj) {
-    GglBuffer buf = content;
+static GgError decode_json_number(GgBuffer content, GgObject *obj) {
+    GgBuffer buf = content;
 
     bool result = parser_call(&PARSER_INT_PART, &buf, NULL);
     if (!result) {
-        GGL_LOGE("Failed to parse JSON number.");
-        return GGL_ERR_PARSE;
+        GG_LOGE("Failed to parse JSON number.");
+        return GG_ERR_PARSE;
     }
 
     bool has_frac_part = parser_call(&PARSER_FRAC_PART, &buf, NULL);
@@ -655,136 +655,136 @@ static GglError decode_json_number(GglBuffer content, GglObject *obj) {
 
     if (!has_frac_part && !has_exp_part) {
         int64_t val;
-        GglError parse_ret = ggl_str_to_int64(content, &val);
-        if (parse_ret != GGL_ERR_OK) {
-            GGL_LOGE("JSON integer out of range of int64_t.");
+        GgError parse_ret = gg_str_to_int64(content, &val);
+        if (parse_ret != GG_ERR_OK) {
+            GG_LOGE("JSON integer out of range of int64_t.");
             return parse_ret;
         }
         if (obj != NULL) {
-            *obj = ggl_obj_i64(val);
+            *obj = gg_obj_i64(val);
         }
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     }
 
     errno = 0;
     double val = strtod((char *) content.data, NULL);
     if (errno == ERANGE) {
-        GGL_LOGE("JSON float out of range of double.");
-        return GGL_ERR_RANGE;
+        GG_LOGE("JSON float out of range of double.");
+        return GG_ERR_RANGE;
     }
     if (obj != NULL) {
-        *obj = ggl_obj_f64(val);
+        *obj = gg_obj_f64(val);
     }
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError take_json_val(GglBuffer *buf, GglArena *arena, GglObject *obj);
+static GgError take_json_val(GgBuffer *buf, GgArena *arena, GgObject *obj);
 
 // NOLINTNEXTLINE(misc-no-recursion)
-static GglError decode_json_array(
-    GglBuffer content, size_t count, GglArena *arena, GglObject *obj
+static GgError decode_json_array(
+    GgBuffer content, size_t count, GgArena *arena, GgObject *obj
 ) {
     assert(arena != NULL);
 
-    GglObject *items = NULL;
+    GgObject *items = NULL;
     if ((count > 0) && (obj != NULL)) {
-        items = GGL_ARENA_ALLOCN(arena, GglObject, count);
+        items = GG_ARENA_ALLOCN(arena, GgObject, count);
         if (items == NULL) {
-            GGL_LOGE("Insufficent memory to decode JSON.");
-            return GGL_ERR_NOMEM;
+            GG_LOGE("Insufficent memory to decode JSON.");
+            return GG_ERR_NOMEM;
         }
     }
 
-    GglBuffer buf_copy = content;
+    GgBuffer buf_copy = content;
 
     for (size_t i = 0; i < count; i++) {
-        GglError ret = take_json_val(
+        GgError ret = take_json_val(
             &buf_copy, arena, (items == NULL) ? NULL : &items[i]
         );
-        if (ret != GGL_ERR_OK) {
+        if (ret != GG_ERR_OK) {
             return ret;
         }
         if (i != count - 1) {
             bool matches = parser_call(&PARSER_CHAR(','), &buf_copy, NULL);
             if (!matches) {
-                GGL_LOGE("Failed to match comma while decoding array.");
-                return GGL_ERR_PARSE;
+                GG_LOGE("Failed to match comma while decoding array.");
+                return GG_ERR_PARSE;
             }
         }
     }
 
     if (obj != NULL) {
-        *obj = ggl_obj_list((GglList) { .items = items, .len = count });
+        *obj = gg_obj_list((GgList) { .items = items, .len = count });
     }
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
-static GglError decode_json_object(
-    GglBuffer content, size_t count, GglArena *arena, GglObject *obj
+static GgError decode_json_object(
+    GgBuffer content, size_t count, GgArena *arena, GgObject *obj
 ) {
-    GglKV *pairs = NULL;
+    GgKV *pairs = NULL;
     if ((count > 0) && (obj != NULL)) {
-        pairs = GGL_ARENA_ALLOCN(arena, GglKV, count);
+        pairs = GG_ARENA_ALLOCN(arena, GgKV, count);
         if (pairs == NULL) {
-            GGL_LOGE("Insufficent memory to decode JSON.");
-            return GGL_ERR_NOMEM;
+            GG_LOGE("Insufficent memory to decode JSON.");
+            return GG_ERR_NOMEM;
         }
     }
 
-    GglBuffer buf_copy = content;
+    GgBuffer buf_copy = content;
 
     for (size_t i = 0; i < count; i++) {
-        GglObject key_obj = { 0 };
-        GglError ret = take_json_val(&buf_copy, arena, &key_obj);
-        if (ret != GGL_ERR_OK) {
+        GgObject key_obj = { 0 };
+        GgError ret = take_json_val(&buf_copy, arena, &key_obj);
+        if (ret != GG_ERR_OK) {
             return ret;
         }
-        if (ggl_obj_type(key_obj) != GGL_TYPE_BUF) {
-            GGL_LOGE("Non-string key type when decoding object.");
-            return GGL_ERR_PARSE;
+        if (gg_obj_type(key_obj) != GG_TYPE_BUF) {
+            GG_LOGE("Non-string key type when decoding object.");
+            return GG_ERR_PARSE;
         }
         if (pairs != NULL) {
-            ggl_kv_set_key(&pairs[i], ggl_obj_into_buf(key_obj));
+            gg_kv_set_key(&pairs[i], gg_obj_into_buf(key_obj));
         }
 
         bool matches = parser_call(&PARSER_CHAR(':'), &buf_copy, NULL);
         if (!matches) {
-            GGL_LOGE("Failed to match comma while decoding object.");
-            return GGL_ERR_PARSE;
+            GG_LOGE("Failed to match comma while decoding object.");
+            return GG_ERR_PARSE;
         }
 
         ret = take_json_val(
-            &buf_copy, arena, (pairs == NULL) ? NULL : ggl_kv_val(&pairs[i])
+            &buf_copy, arena, (pairs == NULL) ? NULL : gg_kv_val(&pairs[i])
         );
-        if (ret != GGL_ERR_OK) {
+        if (ret != GG_ERR_OK) {
             return ret;
         }
         if (i != count - 1) {
             matches = parser_call(&PARSER_CHAR(','), &buf_copy, NULL);
             if (!matches) {
-                GGL_LOGE("Failed to match comma while decoding object.");
-                return GGL_ERR_PARSE;
+                GG_LOGE("Failed to match comma while decoding object.");
+                return GG_ERR_PARSE;
             }
         }
     }
 
     if (obj != NULL) {
-        *obj = ggl_obj_map((GglMap) { .pairs = pairs, .len = count });
+        *obj = gg_obj_map((GgMap) { .pairs = pairs, .len = count });
     }
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
-static GglError take_json_val(GglBuffer *buf, GglArena *arena, GglObject *obj) {
+static GgError take_json_val(GgBuffer *buf, GgArena *arena, GgObject *obj) {
     assert(buf != NULL);
     assert(arena != NULL);
 
     ParseResult output = PARSE_RESULT_INIT;
     bool matches = parser_call(&PARSER_JSON_VALUE, buf, &output);
     if (!matches) {
-        GGL_LOGE("Failed to parse buffer.");
-        return GGL_ERR_PARSE;
+        GG_LOGE("Failed to parse buffer.");
+        return GG_ERR_PARSE;
     }
 
     switch (output.json_type) {
@@ -794,19 +794,19 @@ static GglError take_json_val(GglBuffer *buf, GglArena *arena, GglObject *obj) {
         return decode_json_number(output.content, obj);
     case JSON_TYPE_TRUE:
         if (obj != NULL) {
-            *obj = ggl_obj_bool(true);
+            *obj = gg_obj_bool(true);
         }
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     case JSON_TYPE_FALSE:
         if (obj != NULL) {
-            *obj = ggl_obj_bool(false);
+            *obj = gg_obj_bool(false);
         }
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     case JSON_TYPE_NULL:
         if (obj != NULL) {
-            *obj = GGL_OBJ_NULL;
+            *obj = GG_OBJ_NULL;
         }
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     case JSON_TYPE_ARRAY:
         return decode_json_array(output.content, output.count, arena, obj);
     case JSON_TYPE_OBJECT:
@@ -814,30 +814,30 @@ static GglError take_json_val(GglBuffer *buf, GglArena *arena, GglObject *obj) {
     }
 
     assert(false);
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
-GglError ggl_json_decode_destructive(
-    GglBuffer buf, GglArena *arena, GglObject *obj
+GgError gg_json_decode_destructive(
+    GgBuffer buf, GgArena *arena, GgObject *obj
 ) {
     // Handle NULL arena arg
-    GglArena empty_arena = { 0 };
-    GglArena *result_arena = (arena == NULL) ? &empty_arena : arena;
+    GgArena empty_arena = { 0 };
+    GgArena *result_arena = (arena == NULL) ? &empty_arena : arena;
 
     // Copy to avoid committing allocation on error path
-    GglArena arena_copy = *result_arena;
+    GgArena arena_copy = *result_arena;
 
     // Copy since we treat arguments as read-only
-    GglBuffer buf_copy = buf;
+    GgBuffer buf_copy = buf;
 
-    GglError ret = take_json_val(&buf_copy, &arena_copy, obj);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = take_json_val(&buf_copy, &arena_copy, obj);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
 
     if (buf_copy.len > 0) {
-        GGL_LOGE("Trailing buffer content when decoding.");
-        return GGL_ERR_PARSE;
+        GG_LOGE("Trailing buffer content when decoding.");
+        return GG_ERR_PARSE;
     }
 
     if (obj != NULL) {
@@ -845,5 +845,5 @@ GglError ggl_json_decode_destructive(
         *result_arena = arena_copy;
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }

@@ -1,6 +1,6 @@
 use std::{thread, time::Duration};
 
-use ggl_sdk::{ComponentState, Sdk};
+use gg_sdk::{ComponentState, Sdk};
 
 fn main() {
     let sdk = Sdk::init();

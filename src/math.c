@@ -2,10 +2,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/math.h>
+#include <gg/math.h>
 #include <stdint.h>
 
-uint64_t ggl_abs(int64_t i64) {
+uint64_t gg_abs(int64_t i64) {
     if (i64 >= 0) {
         return (uint64_t) i64;
     }

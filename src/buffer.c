@@ -3,21 +3,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <assert.h>
-#include <ggl/buffer.h>
-#include <ggl/cbmc.h>
-#include <ggl/error.h>
-#include <ggl/io.h>
-#include <ggl/log.h>
+#include <gg/buffer.h>
+#include <gg/cbmc.h>
+#include <gg/error.h>
+#include <gg/io.h>
+#include <gg/log.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-GglBuffer ggl_buffer_from_null_term(char str[static 1]) {
+GgBuffer gg_buffer_from_null_term(char str[static 1]) {
     assert(str != NULL);
-    return (GglBuffer) { .data = (uint8_t *) str, .len = strlen(str) };
+    return (GgBuffer) { .data = (uint8_t *) str, .len = strlen(str) };
 }
 
-bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2) {
+bool gg_buffer_eq(GgBuffer buf1, GgBuffer buf2) {
     if (buf1.len == buf2.len) {
         if (buf1.len == 0) {
             return true;
@@ -27,23 +27,23 @@ bool ggl_buffer_eq(GglBuffer buf1, GglBuffer buf2) {
     return false;
 }
 
-bool ggl_buffer_has_prefix(GglBuffer buf, GglBuffer prefix) {
+bool gg_buffer_has_prefix(GgBuffer buf, GgBuffer prefix) {
     if (prefix.len <= buf.len) {
         return memcmp(buf.data, prefix.data, prefix.len) == 0;
     }
     return false;
 }
 
-bool ggl_buffer_remove_prefix(GglBuffer buf[static 1], GglBuffer prefix) {
+bool gg_buffer_remove_prefix(GgBuffer buf[static 1], GgBuffer prefix) {
     assert(buf != NULL);
-    if (ggl_buffer_has_prefix(*buf, prefix)) {
-        *buf = ggl_buffer_substr(*buf, prefix.len, SIZE_MAX);
+    if (gg_buffer_has_prefix(*buf, prefix)) {
+        *buf = gg_buffer_substr(*buf, prefix.len, SIZE_MAX);
         return true;
     }
     return false;
 }
 
-bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix) {
+bool gg_buffer_has_suffix(GgBuffer buf, GgBuffer suffix) {
     if (suffix.len <= buf.len) {
         return memcmp(&buf.data[buf.len - suffix.len], suffix.data, suffix.len)
             == 0;
@@ -51,16 +51,16 @@ bool ggl_buffer_has_suffix(GglBuffer buf, GglBuffer suffix) {
     return false;
 }
 
-bool ggl_buffer_remove_suffix(GglBuffer buf[static 1], GglBuffer suffix) {
+bool gg_buffer_remove_suffix(GgBuffer buf[static 1], GgBuffer suffix) {
     assert(buf != NULL);
-    if (ggl_buffer_has_suffix(*buf, suffix)) {
-        *buf = ggl_buffer_substr(*buf, 0, buf->len - suffix.len);
+    if (gg_buffer_has_suffix(*buf, suffix)) {
+        *buf = gg_buffer_substr(*buf, 0, buf->len - suffix.len);
         return true;
     }
     return false;
 }
 
-bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start) {
+bool gg_buffer_contains(GgBuffer buf, GgBuffer substring, size_t *start) {
     if (substring.len == 0) {
         if (start != NULL) {
             *start = 0;
@@ -77,10 +77,10 @@ bool ggl_buffer_contains(GglBuffer buf, GglBuffer substring, size_t *start) {
     return true;
 }
 
-GglBuffer ggl_buffer_substr(GglBuffer buf, size_t start, size_t end) {
+GgBuffer gg_buffer_substr(GgBuffer buf, size_t start, size_t end) {
     size_t start_trunc = start < buf.len ? start : buf.len;
     size_t end_trunc = end < buf.len ? end : buf.len;
-    return (GglBuffer) {
+    return (GgBuffer) {
         .data = &buf.data[start_trunc],
         .len = end_trunc >= start_trunc ? end_trunc - start_trunc : 0U,
     };
@@ -98,7 +98,7 @@ static bool add_overflow_int64(int64_t a, int64_t b) {
     return b > 0 ? (a > INT64_MAX - b) : (a < INT64_MIN - b);
 }
 
-GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
+GgError gg_str_to_int64(GgBuffer str, int64_t value[static 1]) {
     int64_t ret = 0;
     int64_t sign = 1;
     size_t i = 0;
@@ -109,8 +109,8 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
     }
 
     if (i == str.len) {
-        GGL_LOGE("Insufficient characters when parsing int64.");
-        return GGL_ERR_INVALID;
+        GG_LOGE("Insufficient characters when parsing int64.");
+        return GG_ERR_INVALID;
     }
 
     for (; i < str.len; i++)
@@ -118,56 +118,56 @@ GglError ggl_str_to_int64(GglBuffer str, int64_t value[static 1]) {
             uint8_t c = str.data[i];
 
             if ((c < '0') || (c > '9')) {
-                GGL_LOGE("Invalid character %c when parsing int64.", c);
-                return GGL_ERR_INVALID;
+                GG_LOGE("Invalid character %c when parsing int64.", c);
+                return GG_ERR_INVALID;
             }
 
             if (mult_overflow_int64(ret, 10U)) {
-                GGL_LOGE("Overflow when parsing int64 from buffer.");
-                return GGL_ERR_RANGE;
+                GG_LOGE("Overflow when parsing int64 from buffer.");
+                return GG_ERR_RANGE;
             }
             ret *= 10;
 
             if (add_overflow_int64(ret, sign * (c - '0'))) {
-                GGL_LOGE("Overflow when parsing int64 from buffer.");
-                return GGL_ERR_RANGE;
+                GG_LOGE("Overflow when parsing int64 from buffer.");
+                return GG_ERR_RANGE;
             }
             ret += sign * (c - '0');
         }
 
     *value = ret;
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError buf_write(void *ctx, GglBuffer buf) {
-    GglBuffer *target = ctx;
-    GglBuffer target_copy = *target;
+static GgError buf_write(void *ctx, GgBuffer buf) {
+    GgBuffer *target = ctx;
+    GgBuffer target_copy = *target;
 
-    GglError ret = ggl_buf_copy(buf, &target_copy);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = gg_buf_copy(buf, &target_copy);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
 
-    *target = ggl_buffer_substr(*target, buf.len, SIZE_MAX);
-    return GGL_ERR_OK;
+    *target = gg_buffer_substr(*target, buf.len, SIZE_MAX);
+    return GG_ERR_OK;
 }
 
-GglWriter ggl_buf_writer(GglBuffer *buf) {
-    return (GglWriter) { .ctx = buf, .write = &buf_write };
+GgWriter gg_buf_writer(GgBuffer *buf) {
+    return (GgWriter) { .ctx = buf, .write = &buf_write };
 }
 
-GglError ggl_buf_copy(GglBuffer source, GglBuffer *target) {
+GgError gg_buf_copy(GgBuffer source, GgBuffer *target) {
     if (source.len == 0) {
         target->len = 0;
-        GGL_LOGT("Source has zero length buffer");
-        return GGL_ERR_OK;
+        GG_LOGT("Source has zero length buffer");
+        return GG_ERR_OK;
     }
     if (target->len < source.len) {
-        GGL_LOGT("Failed to copy buffer due to insufficient space.");
-        return GGL_ERR_NOMEM;
+        GG_LOGT("Failed to copy buffer due to insufficient space.");
+        return GG_ERR_NOMEM;
     }
     memcpy(target->data, source.data, source.len);
     target->len = source.len;
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }

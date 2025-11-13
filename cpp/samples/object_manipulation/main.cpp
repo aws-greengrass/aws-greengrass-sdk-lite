@@ -1,7 +1,7 @@
-#include <ggl/list.hpp>
-#include <ggl/map.hpp>
-#include <ggl/object.hpp>
-#include <ggl/schema.hpp>
+#include <gg/list.hpp>
+#include <gg/map.hpp>
+#include <gg/object.hpp>
+#include <gg/schema.hpp>
 #include <stdint.h>
 #include <array>
 #include <iostream>
@@ -17,19 +17,19 @@ template <class... Ts> struct Overloads : Ts... {
 };
 
 int main() {
-    std::array list { ggl::Object { "15" },
-                      ggl::Object { 24 },
-                      ggl::Object { 4.0 } };
-    std::array pairs { ggl::KV { "key", ggl::Object { false } },
-                       ggl::KV { "another key", "Value" },
-                       ggl::KV { "key3", "Anything" },
-                       ggl::KV { "key4", 25 },
-                       ggl::KV { "key5",
-                                 ggl::List { list.data(), list.size() } } };
-    ggl::Map map { pairs.data(), pairs.size() };
-    std::array items { ggl::Object { "String value" },
-                       ggl::Object { map },
-                       ggl::Object { 10.0F } };
+    std::array list { gg::Object { "15" },
+                      gg::Object { 24 },
+                      gg::Object { 4.0 } };
+    std::array pairs { gg::KV { "key", gg::Object { false } },
+                       gg::KV { "another key", "Value" },
+                       gg::KV { "key3", "Anything" },
+                       gg::KV { "key4", 25 },
+                       gg::KV { "key5",
+                                gg::List { list.data(), list.size() } } };
+    gg::Map map { pairs.data(), pairs.size() };
+    std::array items { gg::Object { "String value" },
+                       gg::Object { map },
+                       gg::Object { 10.0F } };
 
     Overloads print_object {
         [](std::monostate) { std::cout << "(null)\n"; },
@@ -42,8 +42,8 @@ int main() {
                 static_cast<std::streamsize>(value.size())
             ) << '\n';
         },
-        [](const ggl::List &list) { std::cout << list.size() << " items\n"; },
-        [](const ggl::Map &pair_list) {
+        [](const gg::List &list) { std::cout << list.size() << " items\n"; },
+        [](const gg::Map &pair_list) {
             std::cout << get<bool>(*pair_list["key"]) << '\n';
             std::cout << get<std::string_view>(*pair_list["another key"])
                       << '\n';
@@ -56,24 +56,24 @@ int main() {
 
     std::optional<bool> x;
 
-    ggl::Object required;
+    gg::Object required;
 
     int64_t y;
 
-    ggl::Object object;
-    ggl::Object *mutable_object;
+    gg::Object object;
+    gg::Object *mutable_object;
 
-    std::optional<ggl::Object> optional_object;
-    ggl::Object *mutable_optional_object;
+    std::optional<gg::Object> optional_object;
+    gg::Object *mutable_optional_object;
 
-    std::error_code error = ggl::validate_map(
+    std::error_code error = gg::validate_map(
         map,
-        ggl::MapSchema { "key", x },
-        ggl::MapSchemaMissingEntry { "key2" },
-        ggl::MapSchema { "key3", required },
-        ggl::MapSchema { "key4", y },
-        ggl::MapSchema { "key5", object, mutable_object },
-        ggl::MapSchema {
+        gg::MapSchema { "key", x },
+        gg::MapSchemaMissingEntry { "key2" },
+        gg::MapSchema { "key3", required },
+        gg::MapSchema { "key4", y },
+        gg::MapSchema { "key5", object, mutable_object },
+        gg::MapSchema {
             "optional_obj", optional_object, mutable_optional_object }
     );
 
@@ -91,7 +91,7 @@ int main() {
 
         std::cout << "optional_obj:";
         std::visit(
-            print_object, optional_object.value_or(ggl::Object {}).to_variant()
+            print_object, optional_object.value_or(gg::Object {}).to_variant()
         );
         std::cout << '\n';
     } else {

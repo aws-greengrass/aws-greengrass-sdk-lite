@@ -1,6 +1,6 @@
 use std::{mem::MaybeUninit, sync::mpsc};
 
-use ggl_sdk::Sdk;
+use gg_sdk::Sdk;
 
 fn main() {
     let sdk = Sdk::init();

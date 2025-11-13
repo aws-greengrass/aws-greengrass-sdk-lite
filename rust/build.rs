@@ -2,7 +2,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Build script for ggl-sdk.
+//! Build script for gg-sdk.
 
 use std::env;
 use std::path::PathBuf;
@@ -50,8 +50,8 @@ fn main() {
         .flag("-fno-asynchronous-unwind-tables")
         .flag("-fstrict-flex-arrays=3")
         .define("_GNU_SOURCE", None)
-        .define("GGL_MODULE", "\"ggl-sdk\"")
-        .define("GGL_LOG_LEVEL", "GGL_LOG_DEBUG");
+        .define("GG_MODULE", "\"gg-sdk\"")
+        .define("GG_LOG_LEVEL", "GG_LOG_DEBUG");
 
     if env::var("PROFILE").unwrap() == "release" {
         build.flag("-Oz");
@@ -59,7 +59,7 @@ fn main() {
         build.flag("-ffat-lto-objects");
     }
 
-    build.compile("ggl-sdk");
+    build.compile("gg-sdk");
 
     println!("cargo:rerun-if-changed=../src");
     println!("cargo:rerun-if-changed=../include");

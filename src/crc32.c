@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "crc32.h"
-#include <ggl/buffer.h>
+#include <gg/buffer.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -52,7 +52,7 @@ static uint32_t crc_step(uint32_t crc, uint8_t byte) {
 
 #endif
 
-uint32_t ggl_update_crc(uint32_t crc, GglBuffer buf) {
+uint32_t gg_update_crc(uint32_t crc, GgBuffer buf) {
     uint32_t c = ~crc;
     for (size_t n = 0; n < buf.len; n++) {
         c = crc_step(c, buf.data[n]);

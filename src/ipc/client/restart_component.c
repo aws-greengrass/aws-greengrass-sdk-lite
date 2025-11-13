@@ -2,22 +2,20 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/flags.h>
-#include <ggl/ipc/client.h>
-#include <ggl/ipc/client_raw.h>
-#include <ggl/log.h>
-#include <ggl/map.h>
-#include <ggl/object.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/flags.h>
+#include <gg/ipc/client.h>
+#include <gg/ipc/client_raw.h>
+#include <gg/log.h>
+#include <gg/map.h>
+#include <gg/object.h>
 #include <stddef.h>
 
-static GglError error_handler(
-    void *ctx, GglBuffer error_code, GglBuffer message
-) {
+static GgError error_handler(void *ctx, GgBuffer error_code, GgBuffer message) {
     (void) ctx;
 
-    GGL_LOGE(
+    GG_LOGE(
         "Received RestartComponent error %.*s: %.*s.",
         (int) error_code.len,
         error_code.data,
@@ -25,44 +23,43 @@ static GglError error_handler(
         message.data
     );
 
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
-static GglError response_handler(void *ctx, GglMap response) {
+static GgError response_handler(void *ctx, GgMap response) {
     (void) ctx;
 
-    GglObject *restart_status_obj;
-    GglError ret = ggl_map_validate(
+    GgObject *restart_status_obj;
+    GgError ret = gg_map_validate(
         response,
-        GGL_MAP_SCHEMA(
-            { GGL_STR("restartStatus"),
-              GGL_REQUIRED,
-              GGL_TYPE_BUF,
+        GG_MAP_SCHEMA(
+            { GG_STR("restartStatus"),
+              GG_REQUIRED,
+              GG_TYPE_BUF,
               &restart_status_obj }
         )
     );
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("RestartComponent response missing restartStatus.");
-        return GGL_ERR_FAILURE;
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("RestartComponent response missing restartStatus.");
+        return GG_ERR_FAILURE;
     }
 
-    GglBuffer restart_status = ggl_obj_into_buf(*restart_status_obj);
-    if (ggl_buffer_eq(restart_status, GGL_STR("FAILED"))) {
-        GGL_LOGE("Component restart failed.");
-        return GGL_ERR_FAILURE;
+    GgBuffer restart_status = gg_obj_into_buf(*restart_status_obj);
+    if (gg_buffer_eq(restart_status, GG_STR("FAILED"))) {
+        GG_LOGE("Component restart failed.");
+        return GG_ERR_FAILURE;
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-GglError ggipc_restart_component(GglBuffer component_name) {
-    GglMap args = GGL_MAP(
-        ggl_kv(GGL_STR("componentName"), ggl_obj_buf(component_name))
-    );
+GgError ggipc_restart_component(GgBuffer component_name) {
+    GgMap args
+        = GG_MAP(gg_kv(GG_STR("componentName"), gg_obj_buf(component_name)));
 
     return ggipc_call(
-        GGL_STR("aws.greengrass#RestartComponent"),
-        GGL_STR("aws.greengrass#RestartComponentRequest"),
+        GG_STR("aws.greengrass#RestartComponent"),
+        GG_STR("aws.greengrass#RestartComponentRequest"),
         args,
         &response_handler,
         &error_handler,

@@ -62,7 +62,7 @@ impl Sdk {
     ///
     /// Must be called before using any IPC operations.
     pub fn init() -> Self {
-        INIT.get_or_init(|| unsafe { c::ggl_sdk_init() });
+        INIT.get_or_init(|| unsafe { c::gg_sdk_init() });
         Self {}
     }
 
@@ -97,11 +97,11 @@ impl Sdk {
             return Err(Error::Failure);
         }
 
-        let socket_buf = c::GglBuffer {
+        let socket_buf = c::GgBuffer {
             data: socket_path.as_ptr().cast_mut(),
             len: socket_path.len(),
         };
-        let token_buf = c::GglBuffer {
+        let token_buf = c::GgBuffer {
             data: auth_token.as_ptr().cast_mut(),
             len: auth_token.len(),
         };
@@ -124,7 +124,7 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::{Sdk, Kv, Object};
+    /// use gg_sdk::{Sdk, Kv, Object};
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
@@ -134,7 +134,7 @@ impl Sdk {
     ///     Kv::new("humidity", Object::i64(45)),
     /// ];
     /// sdk.publish_to_topic_json("sensor/data", &payload)?;
-    /// # Ok::<(), ggl_sdk::Error>(())
+    /// # Ok::<(), gg_sdk::Error>(())
     /// ```
     ///
     /// # Errors
@@ -145,12 +145,12 @@ impl Sdk {
         payload: impl Into<MapRef<'a>>,
     ) -> Result<()> {
         fn inner(topic: &str, payload: &MapRef<'_>) -> Result<()> {
-            let topic_buf = c::GglBuffer {
+            let topic_buf = c::GgBuffer {
                 data: topic.as_ptr().cast_mut(),
                 len: topic.len(),
             };
-            let payload_map = c::GglMap {
-                pairs: payload.0.as_ptr() as *mut c::GglKV,
+            let payload_map = c::GgMap {
+                pairs: payload.0.as_ptr() as *mut c::GgKV,
                 len: payload.0.len(),
             };
 
@@ -171,14 +171,14 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::Sdk;
+    /// use gg_sdk::Sdk;
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
     ///
     /// let data = b"binary payload data";
     /// sdk.publish_to_topic_binary("sensor/raw", data)?;
-    /// # Ok::<(), ggl_sdk::Error>(())
+    /// # Ok::<(), gg_sdk::Error>(())
     /// ```
     ///
     /// # Errors
@@ -189,11 +189,11 @@ impl Sdk {
         payload: impl AsRef<[u8]>,
     ) -> Result<()> {
         fn inner(topic: &str, payload: &[u8]) -> Result<()> {
-            let topic_buf = c::GglBuffer {
+            let topic_buf = c::GgBuffer {
                 data: topic.as_ptr().cast_mut(),
                 len: topic.len(),
             };
-            let payload_buf = c::GglBuffer {
+            let payload_buf = c::GgBuffer {
                 data: payload.as_ptr().cast_mut(),
                 len: payload.len(),
             };
@@ -224,8 +224,8 @@ impl Sdk {
     ) -> Result<Subscription<'a, F>> {
         extern "C" fn trampoline<F: FnMut(&str, SubscribeToTopicPayload)>(
             ctx: *mut ffi::c_void,
-            topic: c::GglBuffer,
-            payload: c::GglObject,
+            topic: c::GgBuffer,
+            payload: c::GgObject,
             _handle: c::GgIpcSubscriptionHandle,
         ) {
             let cb = unsafe { &mut *ctx.cast::<F>() };
@@ -235,9 +235,9 @@ impl Sdk {
                 ))
             };
 
-            let unpacked = match unsafe { c::ggl_obj_type(payload) } {
-                c::GglObjectType::GGL_TYPE_MAP => {
-                    let map = unsafe { c::ggl_obj_into_map(payload) };
+            let unpacked = match unsafe { c::gg_obj_type(payload) } {
+                c::GgObjectType::GG_TYPE_MAP => {
+                    let map = unsafe { c::gg_obj_into_map(payload) };
                     SubscribeToTopicPayload::Json(MapRef(unsafe {
                         slice::from_raw_parts(
                             map.pairs as *const KvRef,
@@ -245,8 +245,8 @@ impl Sdk {
                         )
                     }))
                 }
-                c::GglObjectType::GGL_TYPE_BUF => {
-                    let buf = unsafe { c::ggl_obj_into_buf(payload) };
+                c::GgObjectType::GG_TYPE_BUF => {
+                    let buf = unsafe { c::gg_obj_into_buf(payload) };
                     SubscribeToTopicPayload::Binary(unsafe {
                         slice::from_raw_parts(buf.data, buf.len)
                     })
@@ -258,7 +258,7 @@ impl Sdk {
         }
 
         let topic = topic.into();
-        let topic_buf = c::GglBuffer {
+        let topic_buf = c::GgBuffer {
             data: topic.as_ptr().cast_mut(),
             len: topic.len(),
         };
@@ -296,14 +296,14 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::{Sdk, Qos};
+    /// use gg_sdk::{Sdk, Qos};
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
     ///
     /// let payload = b"telemetry data";
     /// sdk.publish_to_iot_core("device/telemetry", payload, Qos::AtMostOnce)?;
-    /// # Ok::<(), ggl_sdk::Error>(())
+    /// # Ok::<(), gg_sdk::Error>(())
     /// ```
     ///
     /// # Errors
@@ -315,11 +315,11 @@ impl Sdk {
         qos: Qos,
     ) -> Result<()> {
         fn inner(topic: &str, payload: &[u8], qos: Qos) -> Result<()> {
-            let topic_buf = c::GglBuffer {
+            let topic_buf = c::GgBuffer {
                 data: topic.as_ptr().cast_mut(),
                 len: topic.len(),
             };
-            let payload_buf = c::GglBuffer {
+            let payload_buf = c::GgBuffer {
                 data: payload.as_ptr().cast_mut(),
                 len: payload.len(),
             };
@@ -348,8 +348,8 @@ impl Sdk {
     ) -> Result<Subscription<'a, F>> {
         extern "C" fn trampoline<F: FnMut(&str, &[u8])>(
             ctx: *mut ffi::c_void,
-            topic: c::GglBuffer,
-            payload: c::GglBuffer,
+            topic: c::GgBuffer,
+            payload: c::GgBuffer,
             _handle: c::GgIpcSubscriptionHandle,
         ) {
             let cb = unsafe { &mut *ctx.cast::<F>() };
@@ -363,7 +363,7 @@ impl Sdk {
         }
 
         let topic_filter = topic_filter.into();
-        let topic_buf = c::GglBuffer {
+        let topic_buf = c::GgBuffer {
             data: topic_filter.as_ptr().cast_mut(),
             len: topic_filter.len(),
         };
@@ -407,32 +407,32 @@ impl Sdk {
         component_name: Option<&str>,
         result_mem: &'a mut [mem::MaybeUninit<u8>],
     ) -> Result<ObjectRef<'a>> {
-        let bufs: Box<[c::GglBuffer]> = key_path
+        let bufs: Box<[c::GgBuffer]> = key_path
             .iter()
-            .map(|k| c::GglBuffer {
+            .map(|k| c::GgBuffer {
                 data: k.as_ptr().cast_mut(),
                 len: k.len(),
             })
             .collect();
 
-        let key_path_list = c::GglBufList {
+        let key_path_list = c::GgBufList {
             bufs: bufs.as_ptr().cast_mut(),
             len: bufs.len(),
         };
 
-        let component_buf = component_name.map(|name| c::GglBuffer {
+        let component_buf = component_name.map(|name| c::GgBuffer {
             data: name.as_ptr().cast_mut(),
             len: name.len(),
         });
 
         let mut arena = unsafe {
-            c::ggl_arena_init(c::GglBuffer {
+            c::gg_arena_init(c::GgBuffer {
                 data: result_mem.as_mut_ptr().cast::<u8>(),
                 len: result_mem.len(),
             })
         };
 
-        let mut obj = c::GGL_OBJ_NULL;
+        let mut obj = c::GG_OBJ_NULL;
 
         Result::from(unsafe {
             c::ggipc_get_config(
@@ -464,25 +464,25 @@ impl Sdk {
         component_name: Option<&str>,
         value_buf: &'a mut [mem::MaybeUninit<u8>],
     ) -> Result<&'a str> {
-        let bufs: Box<[c::GglBuffer]> = key_path
+        let bufs: Box<[c::GgBuffer]> = key_path
             .iter()
-            .map(|k| c::GglBuffer {
+            .map(|k| c::GgBuffer {
                 data: k.as_ptr().cast_mut(),
                 len: k.len(),
             })
             .collect();
 
-        let key_path_list = c::GglBufList {
+        let key_path_list = c::GgBufList {
             bufs: bufs.as_ptr().cast_mut(),
             len: bufs.len(),
         };
 
-        let component_buf = component_name.map(|name| c::GglBuffer {
+        let component_buf = component_name.map(|name| c::GgBuffer {
             data: name.as_ptr().cast_mut(),
             len: name.len(),
         });
 
-        let mut value = c::GglBuffer {
+        let mut value = c::GgBuffer {
             data: value_buf.as_mut_ptr().cast::<u8>(),
             len: value_buf.len(),
         };
@@ -511,13 +511,13 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::Sdk;
+    /// use gg_sdk::Sdk;
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
     ///
     /// sdk.update_config(&["maxRetries"], None, 100_i64)?;
-    /// # Ok::<(), ggl_sdk::Error>(())
+    /// # Ok::<(), gg_sdk::Error>(())
     /// ```
     ///
     /// # Errors
@@ -529,15 +529,15 @@ impl Sdk {
         value_to_merge: impl Into<ObjectRef<'a>>,
     ) -> Result<()> {
         let value_to_merge = value_to_merge.into();
-        let bufs: Box<[c::GglBuffer]> = key_path
+        let bufs: Box<[c::GgBuffer]> = key_path
             .iter()
-            .map(|k| c::GglBuffer {
+            .map(|k| c::GgBuffer {
                 data: k.as_ptr().cast_mut(),
                 len: k.len(),
             })
             .collect();
 
-        let key_path_list = c::GglBufList {
+        let key_path_list = c::GgBufList {
             bufs: bufs.as_ptr().cast_mut(),
             len: bufs.len(),
         };
@@ -556,7 +556,7 @@ impl Sdk {
             c::ggipc_update_config(
                 key_path_list,
                 timespec.as_ref().map_or(ptr::null(), ptr::from_ref),
-                *ptr::from_ref(&value_to_merge).cast::<c::GglObject>(),
+                *ptr::from_ref(&value_to_merge).cast::<c::GgObject>(),
             )
         })
     }
@@ -572,10 +572,10 @@ impl Sdk {
     pub fn update_state(&self, state: ComponentState) -> Result<()> {
         let c_state = match state {
             ComponentState::Running => {
-                c::GglComponentState::GGL_COMPONENT_STATE_RUNNING
+                c::GgComponentState::GG_COMPONENT_STATE_RUNNING
             }
             ComponentState::Errored => {
-                c::GglComponentState::GGL_COMPONENT_STATE_ERRORED
+                c::GgComponentState::GG_COMPONENT_STATE_ERRORED
             }
         };
         Result::from(unsafe { c::ggipc_update_state(c_state) })
@@ -591,13 +591,13 @@ impl Sdk {
     /// # Examples
     ///
     /// ```no_run
-    /// use ggl_sdk::Sdk;
+    /// use gg_sdk::Sdk;
     ///
     /// let sdk = Sdk::init();
     /// sdk.connect()?;
     ///
     /// sdk.restart_component("com.example.MyComponent")?;
-    /// # Ok::<(), ggl_sdk::Error>(())
+    /// # Ok::<(), gg_sdk::Error>(())
     /// ```
     ///
     /// # Errors
@@ -607,7 +607,7 @@ impl Sdk {
         component_name: impl Into<&'a str>,
     ) -> Result<()> {
         fn inner(component_name: &str) -> Result<()> {
-            let component_buf = c::GglBuffer {
+            let component_buf = c::GgBuffer {
                 data: component_name.as_ptr().cast_mut(),
                 len: component_name.len(),
             };
@@ -637,8 +637,8 @@ impl Sdk {
     ) -> Result<Subscription<'a, F>> {
         extern "C" fn trampoline<F: FnMut(&str, &[&str])>(
             ctx: *mut ffi::c_void,
-            component_name: c::GglBuffer,
-            key_path: c::GglList,
+            component_name: c::GgBuffer,
+            key_path: c::GgList,
             _handle: c::GgIpcSubscriptionHandle,
         ) {
             let cb = unsafe { &mut *ctx.cast::<F>() };
@@ -651,7 +651,7 @@ impl Sdk {
             let path_strs: Box<[&str]> = path_objs
                 .iter()
                 .map(|obj| {
-                    let buf = unsafe { c::ggl_obj_into_buf(*obj) };
+                    let buf = unsafe { c::gg_obj_into_buf(*obj) };
                     str::from_utf8(unsafe {
                         slice::from_raw_parts(buf.data, buf.len)
                     })
@@ -662,20 +662,20 @@ impl Sdk {
             cb(component_str, &path_strs);
         }
 
-        let bufs: Box<[c::GglBuffer]> = key_path
+        let bufs: Box<[c::GgBuffer]> = key_path
             .iter()
-            .map(|k| c::GglBuffer {
+            .map(|k| c::GgBuffer {
                 data: k.as_ptr().cast_mut(),
                 len: k.len(),
             })
             .collect();
 
-        let key_path_list = c::GglBufList {
+        let key_path_list = c::GgBufList {
             bufs: bufs.as_ptr().cast_mut(),
             len: bufs.len(),
         };
 
-        let component_buf = component_name.map(|name| c::GglBuffer {
+        let component_buf = component_name.map(|name| c::GgBuffer {
             data: name.as_ptr().cast_mut(),
             len: name.len(),
         });
@@ -726,8 +726,8 @@ impl Sdk {
             F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
-            result: c::GglMap,
-        ) -> c::GglError {
+            result: c::GgMap,
+        ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
                 slice::from_raw_parts(result.pairs as *const KvRef, result.len)
@@ -740,9 +740,9 @@ impl Sdk {
             F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
-            error_code: c::GglBuffer,
-            message: c::GglBuffer,
-        ) -> c::GglError {
+            error_code: c::GgBuffer,
+            message: c::GgBuffer,
+        ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let code = str::from_utf8(unsafe {
                 slice::from_raw_parts(error_code.data, error_code.len)
@@ -759,16 +759,16 @@ impl Sdk {
             .into()
         }
 
-        let operation_buf = c::GglBuffer {
+        let operation_buf = c::GgBuffer {
             data: operation.as_ptr().cast_mut(),
             len: operation.len(),
         };
-        let service_model_type_buf = c::GglBuffer {
+        let service_model_type_buf = c::GgBuffer {
             data: service_model_type.as_ptr().cast_mut(),
             len: service_model_type.len(),
         };
-        let params_map = c::GglMap {
-            pairs: params.as_ptr() as *mut c::GglKV,
+        let params_map = c::GgMap {
+            pairs: params.as_ptr() as *mut c::GgKV,
             len: params.len(),
         };
 
@@ -810,8 +810,8 @@ impl Sdk {
             F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
-            result: c::GglMap,
-        ) -> c::GglError {
+            result: c::GgMap,
+        ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
                 slice::from_raw_parts(result.pairs as *const KvRef, result.len)
@@ -824,9 +824,9 @@ impl Sdk {
             F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
-            error_code: c::GglBuffer,
-            message: c::GglBuffer,
-        ) -> c::GglError {
+            error_code: c::GgBuffer,
+            message: c::GgBuffer,
+        ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let code = str::from_utf8(unsafe {
                 slice::from_raw_parts(error_code.data, error_code.len)
@@ -851,9 +851,9 @@ impl Sdk {
             ctx: *mut ffi::c_void,
             aux_ctx: *mut ffi::c_void,
             _handle: c::GgIpcSubscriptionHandle,
-            service_model_type: c::GglBuffer,
-            data: c::GglMap,
-        ) -> c::GglError {
+            service_model_type: c::GgBuffer,
+            data: c::GgMap,
+        ) -> c::GgError {
             let cb = unsafe { &mut *ctx.cast::<G>() };
             let aux = aux_ctx as usize;
             let smt = str::from_utf8(unsafe {
@@ -869,16 +869,16 @@ impl Sdk {
             cb(aux, smt, map).into()
         }
 
-        let operation_buf = c::GglBuffer {
+        let operation_buf = c::GgBuffer {
             data: operation.as_ptr().cast_mut(),
             len: operation.len(),
         };
-        let service_model_type_buf = c::GglBuffer {
+        let service_model_type_buf = c::GgBuffer {
             data: service_model_type.as_ptr().cast_mut(),
             len: service_model_type.len(),
         };
-        let params_map = c::GglMap {
-            pairs: params.as_ptr() as *mut c::GglKV,
+        let params_map = c::GgMap {
+            pairs: params.as_ptr() as *mut c::GgKV,
             len: params.len(),
         };
 

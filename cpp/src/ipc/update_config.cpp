@@ -2,18 +2,18 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.hpp>
-#include <ggl/error.hpp>
-#include <ggl/ipc/client.hpp>
-#include <ggl/ipc/client_c_api.hpp>
-#include <ggl/object.hpp>
+#include <gg/buffer.hpp>
+#include <gg/error.hpp>
+#include <gg/ipc/client.hpp>
+#include <gg/ipc/client_c_api.hpp>
+#include <gg/object.hpp>
 #include <chrono>
 #include <ctime>
 #include <ratio> // IWYU pragma: keep (duration uses ratio)
 #include <span>
 #include <system_error>
 
-namespace ggl::ipc {
+namespace gg::ipc {
 // singleton interface class.
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 

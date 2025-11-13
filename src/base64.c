@@ -2,10 +2,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/arena.h>
-#include <ggl/base64.h>
-#include <ggl/buffer.h>
-#include <ggl/error.h>
+#include <gg/arena.h>
+#include <gg/base64.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,7 +28,7 @@ static bool base64_char_to_byte(char digit, uint8_t *value) {
 }
 
 static bool base64_decode_segment(
-    const uint8_t segment[4U], GglBuffer *target, bool *padding
+    const uint8_t segment[4U], GgBuffer *target, bool *padding
 ) {
     uint8_t value[3U] = { 0 };
     size_t len = 0U;
@@ -90,20 +90,20 @@ static bool base64_decode_segment(
     }
 
     memcpy(target->data, value, len);
-    *target = ggl_buffer_substr(*target, len, SIZE_MAX);
+    *target = gg_buffer_substr(*target, len, SIZE_MAX);
     *padding = len != 3U;
 
     return true;
 }
 
-bool ggl_base64_decode(GglBuffer base64, GglBuffer target[static 1]) {
+bool gg_base64_decode(GgBuffer base64, GgBuffer target[static 1]) {
     if ((base64.len % 4) != 0) {
         return false;
     }
     if (target->len < ((base64.len / 4) * 3)) {
         return false;
     }
-    GglBuffer out = *target;
+    GgBuffer out = *target;
     bool last = false;
     for (size_t i = 0; i < base64.len; i += 4) {
         if (last) {
@@ -119,20 +119,20 @@ bool ggl_base64_decode(GglBuffer base64, GglBuffer target[static 1]) {
     return true;
 }
 
-bool ggl_base64_decode_in_place(GglBuffer target[static 1]) {
-    return ggl_base64_decode(*target, target);
+bool gg_base64_decode_in_place(GgBuffer target[static 1]) {
+    return gg_base64_decode(*target, target);
 }
 
 static const uint8_t BASE64_TABLE[]
     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-GglError ggl_base64_encode(
-    GglBuffer buf, GglArena *alloc, GglBuffer result[static 1]
+GgError gg_base64_encode(
+    GgBuffer buf, GgArena *alloc, GgBuffer result[static 1]
 ) {
     size_t base64_len = ((buf.len + 2) / 3) * 4;
-    uint8_t *mem = GGL_ARENA_ALLOCN(alloc, uint8_t, base64_len);
+    uint8_t *mem = GG_ARENA_ALLOCN(alloc, uint8_t, base64_len);
     if (mem == NULL) {
-        return GGL_ERR_NOMEM;
+        return GG_ERR_NOMEM;
     }
 
     size_t chunks = buf.len / 3;
@@ -162,6 +162,6 @@ GglError ggl_base64_encode(
         mem[(chunks * 4) + 3] = '=';
     }
 
-    *result = (GglBuffer) { .data = mem, .len = base64_len };
-    return GGL_ERR_OK;
+    *result = (GgBuffer) { .data = mem, .len = base64_len };
+    return GG_ERR_OK;
 }

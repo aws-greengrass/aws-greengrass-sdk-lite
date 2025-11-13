@@ -2,78 +2,76 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/base64.h>
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/flags.h>
-#include <ggl/ipc/client.h>
-#include <ggl/ipc/client_raw.h>
-#include <ggl/log.h>
-#include <ggl/map.h>
-#include <ggl/object.h>
+#include <gg/base64.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/flags.h>
+#include <gg/ipc/client.h>
+#include <gg/ipc/client_raw.h>
+#include <gg/log.h>
+#include <gg/map.h>
+#include <gg/object.h>
 #include <inttypes.h>
 #include <string.h>
 
-static GglError subscribe_to_iot_core_resp_handler(
+static GgError subscribe_to_iot_core_resp_handler(
     void *ctx,
     void *aux_ctx,
     GgIpcSubscriptionHandle handle,
-    GglBuffer service_model_type,
-    GglMap data
+    GgBuffer service_model_type,
+    GgMap data
 ) {
     GgIpcSubscribeToIotCoreCallback *callback = ctx;
 
-    if (!ggl_buffer_eq(
-            service_model_type, GGL_STR("aws.greengrass#IoTCoreMessage")
+    if (!gg_buffer_eq(
+            service_model_type, GG_STR("aws.greengrass#IoTCoreMessage")
         )) {
-        GGL_LOGE("Unexpected service-model-type received.");
-        return GGL_ERR_INVALID;
+        GG_LOGE("Unexpected service-model-type received.");
+        return GG_ERR_INVALID;
     }
 
-    GglObject *message_obj;
-    GglError ret = ggl_map_validate(
+    GgObject *message_obj;
+    GgError ret = gg_map_validate(
         data,
-        GGL_MAP_SCHEMA(
-            { GGL_STR("message"), GGL_REQUIRED, GGL_TYPE_MAP, &message_obj }
+        GG_MAP_SCHEMA(
+            { GG_STR("message"), GG_REQUIRED, GG_TYPE_MAP, &message_obj }
         )
     );
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Received invalid IoT Core subscription response.");
-        return GGL_ERR_INVALID;
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("Received invalid IoT Core subscription response.");
+        return GG_ERR_INVALID;
     }
-    GglMap message = ggl_obj_into_map(*message_obj);
+    GgMap message = gg_obj_into_map(*message_obj);
 
-    GglObject *topic_obj;
-    GglObject *payload_obj;
-    ret = ggl_map_validate(
+    GgObject *topic_obj;
+    GgObject *payload_obj;
+    ret = gg_map_validate(
         message,
-        GGL_MAP_SCHEMA(
-            { GGL_STR("topicName"), GGL_REQUIRED, GGL_TYPE_BUF, &topic_obj },
-            { GGL_STR("payload"), GGL_REQUIRED, GGL_TYPE_BUF, &payload_obj },
+        GG_MAP_SCHEMA(
+            { GG_STR("topicName"), GG_REQUIRED, GG_TYPE_BUF, &topic_obj },
+            { GG_STR("payload"), GG_REQUIRED, GG_TYPE_BUF, &payload_obj },
         )
     );
-    if (ret != GGL_ERR_OK) {
-        GGL_LOGE("Received invalid IoT Core subscription response.");
-        return GGL_ERR_INVALID;
+    if (ret != GG_ERR_OK) {
+        GG_LOGE("Received invalid IoT Core subscription response.");
+        return GG_ERR_INVALID;
     }
-    GglBuffer topic = ggl_obj_into_buf(*topic_obj);
-    GglBuffer payload = ggl_obj_into_buf(*payload_obj);
+    GgBuffer topic = gg_obj_into_buf(*topic_obj);
+    GgBuffer payload = gg_obj_into_buf(*payload_obj);
 
-    if (!ggl_base64_decode_in_place(&payload)) {
-        GGL_LOGE("Failed to decode IoT Core subscription response payload.");
-        return GGL_ERR_INVALID;
+    if (!gg_base64_decode_in_place(&payload)) {
+        GG_LOGE("Failed to decode IoT Core subscription response payload.");
+        return GG_ERR_INVALID;
     }
 
     callback(aux_ctx, topic, payload, handle);
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError error_handler(
-    void *ctx, GglBuffer error_code, GglBuffer message
-) {
+static GgError error_handler(void *ctx, GgBuffer error_code, GgBuffer message) {
     (void) ctx;
 
-    GGL_LOGE(
+    GG_LOGE(
         "Received SubscribeToIoTCore error %.*s: %.*s.",
         (int) error_code.len,
         error_code.data,
@@ -81,32 +79,32 @@ static GglError error_handler(
         message.data
     );
 
-    if (ggl_buffer_eq(error_code, GGL_STR("UnauthorizedError"))) {
-        return GGL_ERR_UNSUPPORTED;
+    if (gg_buffer_eq(error_code, GG_STR("UnauthorizedError"))) {
+        return GG_ERR_UNSUPPORTED;
     }
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
-GglError ggipc_subscribe_to_iot_core(
-    GglBuffer topic_filter,
+GgError ggipc_subscribe_to_iot_core(
+    GgBuffer topic_filter,
     uint8_t qos,
     GgIpcSubscribeToIotCoreCallback *callback,
     void *ctx,
     GgIpcSubscriptionHandle *handle
 ) {
     if (qos > 2) {
-        GGL_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
-        return GGL_ERR_INVALID;
+        GG_LOGE("Invalid QoS \"%" PRIu8 "\" provided. QoS must be <= 2", qos);
+        return GG_ERR_INVALID;
     }
-    GglBuffer qos_buffer = GGL_BUF((uint8_t[1]) { qos + (uint8_t) '0' });
-    GglMap args = GGL_MAP(
-        ggl_kv(GGL_STR("topicName"), ggl_obj_buf(topic_filter)),
-        ggl_kv(GGL_STR("qos"), ggl_obj_buf(qos_buffer))
+    GgBuffer qos_buffer = GG_BUF((uint8_t[1]) { qos + (uint8_t) '0' });
+    GgMap args = GG_MAP(
+        gg_kv(GG_STR("topicName"), gg_obj_buf(topic_filter)),
+        gg_kv(GG_STR("qos"), gg_obj_buf(qos_buffer))
     );
 
     return ggipc_subscribe(
-        GGL_STR("aws.greengrass#SubscribeToIoTCore"),
-        GGL_STR("aws.greengrass#SubscribeToIoTCoreRequest"),
+        GG_STR("aws.greengrass#SubscribeToIoTCore"),
+        GG_STR("aws.greengrass#SubscribeToIoTCoreRequest"),
         args,
         NULL,
         &error_handler,

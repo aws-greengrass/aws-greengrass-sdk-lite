@@ -1,6 +1,6 @@
 use std::{mem::MaybeUninit, thread, time::Duration};
 
-use ggl_sdk::{Sdk, UnpackedObject};
+use gg_sdk::{Sdk, UnpackedObject};
 
 fn main() {
     let sdk = Sdk::init();

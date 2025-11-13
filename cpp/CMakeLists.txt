@@ -23,20 +23,20 @@ foreach(src ${SRCS})
 endforeach()
 
 if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
-  add_library(ggl-sdk++ STATIC ${SRCS})
+  add_library(gg-sdk++ STATIC ${SRCS})
 else()
-  add_library(ggl-sdk++ STATIC EXCLUDE_FROM_ALL ${SRCS})
+  add_library(gg-sdk++ STATIC EXCLUDE_FROM_ALL ${SRCS})
 endif()
 
-target_compile_options(ggl-sdk++ PRIVATE -pthread -fno-strict-aliasing
-                                         -std=gnu++20)
-target_include_directories(ggl-sdk++ PRIVATE include priv_include)
-target_include_directories(ggl-sdk++ SYSTEM INTERFACE include)
-target_compile_definitions(ggl-sdk++ PRIVATE "GGL_MODULE=(\"ggl-sdk++\")")
-target_link_libraries(ggl-sdk++ PRIVATE ggl-sdk)
+target_compile_options(gg-sdk++ PRIVATE -pthread -fno-strict-aliasing
+                                        -std=gnu++20)
+target_include_directories(gg-sdk++ PRIVATE include priv_include)
+target_include_directories(gg-sdk++ SYSTEM INTERFACE include)
+target_compile_definitions(gg-sdk++ PRIVATE "GG_MODULE=(\"gg-sdk++\")")
+target_link_libraries(gg-sdk++ PRIVATE gg-sdk)
 
 if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
-  install(TARGETS ggl-sdk++)
+  install(TARGETS gg-sdk++)
 
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
@@ -50,7 +50,7 @@ if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
         APPEND_STRING
         PROPERTY COMPILE_FLAGS "-frandom-seed=${sample_dir}/main.cpp")
       add_executable(sample_cpp_${sample_name} ${sample_dir}/main.cpp)
-      target_link_libraries(sample_cpp_${sample_name} PRIVATE ggl-sdk++)
+      target_link_libraries(sample_cpp_${sample_name} PRIVATE gg-sdk++)
       install(TARGETS sample_cpp_${sample_name})
     endforeach()
   endif()
@@ -67,8 +67,8 @@ if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
         APPEND_STRING
         PROPERTY COMPILE_FLAGS "-frandom-seed=${test_dir}/main.cpp")
       add_executable(test_cpp_${test_name} ${test_dir}/main.cpp)
-      target_link_libraries(test_cpp_${test_name}
-                            PRIVATE ggl-sdk++ ggl-ipc-mock PkgConfig::unity)
+      target_link_libraries(test_cpp_${test_name} PRIVATE gg-sdk++ gg-ipc-mock
+                                                          PkgConfig::unity)
       install(TARGETS test_cpp_${test_name})
     endforeach()
   endif()

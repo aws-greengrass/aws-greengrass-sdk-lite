@@ -2,11 +2,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/alloc.h>
-#include <ggl/log.h>
+#include <gg/alloc.h>
+#include <gg/log.h>
 #include <stddef.h>
 
-void *ggl_alloc(GglAlloc alloc, size_t size, size_t alignment) {
+void *gg_alloc(GgAlloc alloc, size_t size, size_t alignment) {
     void *ret = NULL;
 
     if ((alloc.VTABLE != NULL) && (alloc.VTABLE->ALLOC != NULL)) {
@@ -14,14 +14,14 @@ void *ggl_alloc(GglAlloc alloc, size_t size, size_t alignment) {
     }
 
     if (ret == NULL) {
-        GGL_LOGW(
+        GG_LOGW(
             "[%p:%p] Failed alloc %zu bytes.",
             (void *) alloc.VTABLE,
             (void *) alloc.ctx,
             size
         );
     } else {
-        GGL_LOGT(
+        GG_LOGT(
             "[%p:%p] alloc %p, len %zu.",
             (void *) alloc.VTABLE,
             (void *) alloc.ctx,
@@ -33,8 +33,8 @@ void *ggl_alloc(GglAlloc alloc, size_t size, size_t alignment) {
     return ret;
 }
 
-void ggl_free(GglAlloc alloc, void *ptr) {
-    GGL_LOGT("[%p:%p] Free %p", (void *) alloc.VTABLE, (void *) alloc.ctx, ptr);
+void gg_free(GgAlloc alloc, void *ptr) {
+    GG_LOGT("[%p:%p] Free %p", (void *) alloc.VTABLE, (void *) alloc.ctx, ptr);
 
     if ((ptr != NULL) && (alloc.VTABLE != NULL)
         && (alloc.VTABLE->FREE != NULL)) {

@@ -20,7 +20,7 @@ Detailed deployment documentation can be found here:
 ### 1. Upload Sample Binary to S3
 
 ```bash
-aws s3 cp result/bin/sample_<name> s3://YOUR_BUCKET/ggl-sdk-samples/sample_<name>
+aws s3 cp result/bin/sample_<name> s3://YOUR_BUCKET/gg-sdk-samples/sample_<name>
 ```
 
 ### 2. Update Recipe with S3 Location
@@ -33,7 +33,7 @@ cp recipe.yml recipe-deploy.yml
 # Edit recipe-deploy.yml and replace:
 # URI: s3://EXAMPLE_BUCKET/sample_<name>
 # with:
-# URI: s3://YOUR_BUCKET/ggl-sdk-samples/sample_<name>
+# URI: s3://YOUR_BUCKET/gg-sdk-samples/sample_<name>
 ```
 
 ### 3. Create Component Version

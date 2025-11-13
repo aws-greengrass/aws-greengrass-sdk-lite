@@ -19,7 +19,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52051878f80a721bb68ebfbc930e07b65ba72f2da88968ea5c06fd6ca3d3a127"
 
 [[package]]
-name = "ggl-sdk"
+name = "gg-sdk"
 version = "0.0.2"
 dependencies = [
  "cc",

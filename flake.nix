@@ -98,10 +98,10 @@
             "*.py" = "${yapf}/bin/yapf -i";
           };
 
-        pname = "ggl-sdk";
+        pname = "gg-sdk";
         package = { stdenv, cmake, ninja, static ? true }:
           stdenv.mkDerivation {
-            name = "ggl-sdk";
+            name = "gg-sdk";
             src = filteredSrc;
             nativeBuildInputs = [ cmake ninja ];
             cmakeBuildType = "MinSizeRel";
@@ -112,11 +112,11 @@
           };
 
         packages = {
-          ggl-sdk-static = { pkgsStatic }: pkgsStatic.ggl-sdk;
-          ggl-sdk-static-aarch64 = { pkgsCross }:
-            pkgsCross.aarch64-multiplatform-musl.ggl-sdk-static;
-          ggl-sdk-static-armv7l = { pkgsCross }:
-            pkgsCross.armv7l-hf-multiplatform.ggl-sdk-static;
+          gg-sdk-static = { pkgsStatic }: pkgsStatic.gg-sdk;
+          gg-sdk-static-aarch64 = { pkgsCross }:
+            pkgsCross.aarch64-multiplatform-musl.gg-sdk-static;
+          gg-sdk-static-armv7l = { pkgsCross }:
+            pkgsCross.armv7l-hf-multiplatform.gg-sdk-static;
         };
 
         checks =
@@ -155,10 +155,10 @@
                 allowSubstitutes = false;
               };
 
-            shared-lib = pkgs: pkgs.ggl-sdk.override { static = false; };
+            shared-lib = pkgs: pkgs.gg-sdk.override { static = false; };
           in
           {
-            build-clang = pkgs: pkgs.ggl-sdk.override
+            build-clang = pkgs: pkgs.gg-sdk.override
               { stdenv = llvmStdenv pkgs; };
 
             build-shared = shared-lib;
@@ -185,13 +185,13 @@
             '';
 
             namespacing = pkgs:
-              let so = "${shared-lib pkgs}/lib/libggl-sdk.so"; in
+              let so = "${shared-lib pkgs}/lib/libgg-sdk.so"; in
               ''
                 set -eo pipefail
                 PATH=${lib.makeBinPath
                   (with pkgs; [gcc gnugrep])}:$PATH
                 nm -D --defined-only ${so} | cut -d' ' -f3 > syms
-                grep -v '^ggl_\|^ggipc_' syms && exit 1 || true
+                grep -v '^gg_\|^ggipc_' syms && exit 1 || true
               '';
 
             cbmc-contracts = { stdenv, cmake, cbmc, python3, ... }:
@@ -201,7 +201,7 @@
                 nativeBuildInputs = [ cbmc python3 ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B build -D CMAKE_BUILD_TYPE=Debug \
-                    -D GGL_LOG_LEVEL=TRACE
+                    -D GG_LOG_LEVEL=TRACE
                   python ${./misc/check_contracts.py} src
                   touch $out
                 '';

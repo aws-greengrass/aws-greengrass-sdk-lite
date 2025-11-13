@@ -2,21 +2,19 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ggl/buffer.h>
-#include <ggl/error.h>
-#include <ggl/ipc/client.h>
-#include <ggl/ipc/client_raw.h>
-#include <ggl/log.h>
-#include <ggl/map.h>
-#include <ggl/object.h>
+#include <gg/buffer.h>
+#include <gg/error.h>
+#include <gg/ipc/client.h>
+#include <gg/ipc/client_raw.h>
+#include <gg/log.h>
+#include <gg/map.h>
+#include <gg/object.h>
 #include <stddef.h>
 
-static GglError error_handler(
-    void *ctx, GglBuffer error_code, GglBuffer message
-) {
+static GgError error_handler(void *ctx, GgBuffer error_code, GgBuffer message) {
     (void) ctx;
 
-    GGL_LOGE(
+    GG_LOGE(
         "Received UpdateState error %.*s: %.*s.",
         (int) error_code.len,
         error_code.data,
@@ -24,29 +22,29 @@ static GglError error_handler(
         message.data
     );
 
-    return GGL_ERR_FAILURE;
+    return GG_ERR_FAILURE;
 }
 
-GglError ggipc_update_state(GglComponentState state) {
+GgError ggipc_update_state(GgComponentState state) {
     // Convert enum to string
-    GglBuffer state_str;
+    GgBuffer state_str;
     switch (state) {
-    case GGL_COMPONENT_STATE_RUNNING:
-        state_str = GGL_STR("RUNNING");
+    case GG_COMPONENT_STATE_RUNNING:
+        state_str = GG_STR("RUNNING");
         break;
-    case GGL_COMPONENT_STATE_ERRORED:
-        state_str = GGL_STR("ERRORED");
+    case GG_COMPONENT_STATE_ERRORED:
+        state_str = GG_STR("ERRORED");
         break;
     default:
-        GGL_LOGE("Invalid component state: %d", state);
-        return GGL_ERR_INVALID;
+        GG_LOGE("Invalid component state: %d", state);
+        return GG_ERR_INVALID;
     }
 
-    GglMap args = GGL_MAP(ggl_kv(GGL_STR("state"), ggl_obj_buf(state_str)));
+    GgMap args = GG_MAP(gg_kv(GG_STR("state"), gg_obj_buf(state_str)));
 
     return ggipc_call(
-        GGL_STR("aws.greengrass#UpdateState"),
-        GGL_STR("aws.greengrass#UpdateStateRequest"),
+        GG_STR("aws.greengrass#UpdateState"),
+        GG_STR("aws.greengrass#UpdateStateRequest"),
         args,
         NULL,
         &error_handler,

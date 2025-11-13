@@ -1,29 +1,29 @@
-#include "ggl/ipc/mock.h"
-#include "ggl/object_compare.h"
+#include "gg/ipc/mock.h"
+#include "gg/object_compare.h"
 #include "inttypes.h"
 #include "sys/epoll.h"
 #include <assert.h>
 #include <errno.h>
-#include <ggl/arena.h>
-#include <ggl/attr.h>
-#include <ggl/buffer.h>
-#include <ggl/cleanup.h>
-#include <ggl/error.h>
-#include <ggl/eventstream/decode.h>
-#include <ggl/eventstream/encode.h>
-#include <ggl/eventstream/rpc.h>
-#include <ggl/eventstream/types.h>
-#include <ggl/file.h>
-#include <ggl/io.h>
-#include <ggl/ipc/limits.h>
-#include <ggl/json_decode.h>
-#include <ggl/json_encode.h>
-#include <ggl/log.h>
-#include <ggl/map.h>
-#include <ggl/object.h>
-#include <ggl/object_visit.h>
-#include <ggl/socket.h>
-#include <ggl/socket_epoll.h>
+#include <gg/arena.h>
+#include <gg/attr.h>
+#include <gg/buffer.h>
+#include <gg/cleanup.h>
+#include <gg/error.h>
+#include <gg/eventstream/decode.h>
+#include <gg/eventstream/encode.h>
+#include <gg/eventstream/rpc.h>
+#include <gg/eventstream/types.h>
+#include <gg/file.h>
+#include <gg/io.h>
+#include <gg/ipc/limits.h>
+#include <gg/json_decode.h>
+#include <gg/json_encode.h>
+#include <gg/log.h>
+#include <gg/map.h>
+#include <gg/object.h>
+#include <gg/object_visit.h>
+#include <gg/socket.h>
+#include <gg/socket_epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -33,16 +33,15 @@
 
 #define EVENSTREAM_MAX_HEADER_COUNT 50
 
-static uint8_t ipc_recv_mem[GGL_IPC_MAX_MSG_LEN];
-static uint8_t
-    ipc_recv_decode_mem[sizeof(GglObject[GGL_MAX_OBJECT_SUBOBJECTS])];
+static uint8_t ipc_recv_mem[GG_IPC_MAX_MSG_LEN];
+static uint8_t ipc_recv_decode_mem[sizeof(GgObject[GG_MAX_OBJECT_SUBOBJECTS])];
 
 static int sock_fd = -1;
 static int epoll_fd = -1;
 static int client_fd = -1;
 
-static GglError configure_server_socket(
-    int socket_fd, GglBuffer path, mode_t mode
+static GgError configure_server_socket(
+    int socket_fd, GgBuffer path, mode_t mode
 ) {
     assert(socket_fd >= 0);
 
@@ -50,29 +49,29 @@ static GglError configure_server_socket(
 
     // TODO: Handle long paths by creating socket in temp dir and moving
     if (path.len >= sizeof(addr.sun_path)) {
-        GGL_LOGE(
+        GG_LOGE(
             "Socket path too long (len %zu, max %zu).",
             path.len,
             sizeof(addr.sun_path) - 1
         );
-        return GGL_ERR_FAILURE;
+        return GG_ERR_FAILURE;
     }
 
     memcpy(addr.sun_path, path.data, path.len);
 
     if ((unlink(addr.sun_path) == -1) && (errno != ENOENT)) {
-        GGL_LOGE("Failed to unlink server socket: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to unlink server socket: %d.", errno);
+        return GG_ERR_FAILURE;
     }
 
     if (bind(socket_fd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-        GGL_LOGE("Failed to bind server socket: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to bind server socket: %d.", errno);
+        return GG_ERR_FAILURE;
     }
 
     if (chmod(addr.sun_path, mode) == -1) {
-        GGL_LOGE("Failed to chmod server socket: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to chmod server socket: %d.", errno);
+        return GG_ERR_FAILURE;
     }
 
     // To prevent deadlocking on hanged client, add a timeout
@@ -81,37 +80,37 @@ static GglError configure_server_socket(
         socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)
     );
     if (sys_ret == -1) {
-        GGL_LOGE("Failed to set receive timeout on socket: %d.", errno);
-        return GGL_ERR_FATAL;
+        GG_LOGE("Failed to set receive timeout on socket: %d.", errno);
+        return GG_ERR_FATAL;
     }
     sys_ret = setsockopt(
         socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)
     );
     if (sys_ret == -1) {
-        GGL_LOGE("Failed to set send timeout on socket: %d.", errno);
-        return GGL_ERR_FATAL;
+        GG_LOGE("Failed to set send timeout on socket: %d.", errno);
+        return GG_ERR_FATAL;
     }
 
     // Client must only attempt to connect once during tests
     static const int MAX_SOCKET_BACKLOG = 1;
     if (listen(socket_fd, MAX_SOCKET_BACKLOG) == -1) {
-        GGL_LOGE("Failed to listen on server socket: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to listen on server socket: %d.", errno);
+        return GG_ERR_FAILURE;
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError ggl_socket_open(GglBuffer path, mode_t mode, int *socket_fd) {
+static GgError gg_socket_open(GgBuffer path, mode_t mode, int *socket_fd) {
     assert(socket_fd != NULL);
     int server_fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (server_fd == -1) {
-        GGL_LOGE("Failed to create socket: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to create socket: %d.", errno);
+        return GG_ERR_FAILURE;
     }
 
-    GglError ret = configure_server_socket(server_fd, path, mode);
-    if (ret != GGL_ERR_OK) {
+    GgError ret = configure_server_socket(server_fd, path, mode);
+    if (ret != GG_ERR_OK) {
         cleanup_close(&server_fd);
         return ret;
     }
@@ -119,26 +118,26 @@ static GglError ggl_socket_open(GglBuffer path, mode_t mode, int *socket_fd) {
     return ret;
 }
 
-GglError ggl_test_setup_ipc(
+GgError gg_test_setup_ipc(
     const char *path, mode_t mode, int *handle, const char *auth_token
 ) {
     int socket_fd = -1;
-    GglError ret = ggl_socket_open(
-        ggl_buffer_from_null_term((char *) path), mode, &socket_fd
+    GgError ret = gg_socket_open(
+        gg_buffer_from_null_term((char *) path), mode, &socket_fd
     );
-    if (ret != GGL_ERR_OK) {
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    GGL_CLEANUP_ID(cleanup_sock, cleanup_close, socket_fd);
+    GG_CLEANUP_ID(cleanup_sock, cleanup_close, socket_fd);
 
-    ret = ggl_socket_epoll_create(&epoll_fd);
-    if (ret != GGL_ERR_OK) {
+    ret = gg_socket_epoll_create(&epoll_fd);
+    if (ret != GG_ERR_OK) {
         epoll_fd = -1;
         return ret;
     }
-    GGL_CLEANUP_ID(cleanup_epollfd, cleanup_close, epoll_fd);
-    ret = ggl_socket_epoll_add(epoll_fd, socket_fd, UINT64_MAX);
-    if (ret != GGL_ERR_OK) {
+    GG_CLEANUP_ID(cleanup_epollfd, cleanup_close, epoll_fd);
+    ret = gg_socket_epoll_add(epoll_fd, socket_fd, UINT64_MAX);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
 
@@ -154,74 +153,73 @@ GglError ggl_test_setup_ipc(
         "AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT", path, true
     );
     if (setenv_ret != 0) {
-        GGL_LOGE("Failed to set socket environment variable: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to set socket environment variable: %d.", errno);
+        return GG_ERR_FAILURE;
     }
 
     setenv_ret = setenv("SVCUID", auth_token, true);
     if (setenv_ret != 0) {
-        GGL_LOGE("Failed to set auth token environment variable: %d.", errno);
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Failed to set auth token environment variable: %d.", errno);
+        return GG_ERR_FAILURE;
     }
     // NOLINTEND(concurrency-mt-unsafe)
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-static GglError ggl_test_send_packet(const GgipcPacket *packet, int client) {
-    GglBuffer packet_bytes = GGL_BUF(ipc_recv_mem);
-    GglError ret = eventstream_encode(
+static GgError gg_test_send_packet(const GgipcPacket *packet, int client) {
+    GgBuffer packet_bytes = GG_BUF(ipc_recv_mem);
+    GgError ret = eventstream_encode(
         &packet_bytes,
         packet->headers,
         packet->header_count,
-        packet->has_payload ? ggl_json_reader(&packet->payload)
-                            : GGL_NULL_READER
+        packet->has_payload ? gg_json_reader(&packet->payload) : GG_NULL_READER
     );
-    if (ret != GGL_ERR_OK) {
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    return ggl_socket_write(client, packet_bytes);
+    return gg_socket_write(client, packet_bytes);
 }
 
-static GglError find_header_int(
-    EventStreamHeaderIter headers, GglBuffer name, int32_t value
+static GgError find_header_int(
+    EventStreamHeaderIter headers, GgBuffer name, int32_t value
 ) {
     EventStreamHeaderIter iter = headers;
     EventStreamHeader header;
-    while (eventstream_header_next(&iter, &header) == GGL_ERR_OK) {
-        if (ggl_buffer_eq(header.name, name)) {
+    while (eventstream_header_next(&iter, &header) == GG_ERR_OK) {
+        if (gg_buffer_eq(header.name, name)) {
             if (header.value.type != EVENTSTREAM_INT32) {
-                GGL_LOGE("Expected header value to be int.");
+                GG_LOGE("Expected header value to be int.");
                 break;
             }
             if (header.value.int32 != value) {
-                GGL_LOGE(
+                GG_LOGE(
                     "Expected header value %" PRIi32 ", got %" PRIi32 ".",
                     value,
                     header.value.int32
                 );
                 break;
             }
-            return GGL_ERR_OK;
+            return GG_ERR_OK;
         }
     }
-    GGL_LOGE("Expected header %.*s not found.", (int) name.len, name.data);
-    return GGL_ERR_FAILURE;
+    GG_LOGE("Expected header %.*s not found.", (int) name.len, name.data);
+    return GG_ERR_FAILURE;
 }
 
-static GglError find_header_str(
-    EventStreamHeaderIter headers, GglBuffer name, GglBuffer value
+static GgError find_header_str(
+    EventStreamHeaderIter headers, GgBuffer name, GgBuffer value
 ) {
     EventStreamHeaderIter iter = headers;
     EventStreamHeader header;
-    while (eventstream_header_next(&iter, &header) == GGL_ERR_OK) {
-        if (ggl_buffer_eq(header.name, name)) {
+    while (eventstream_header_next(&iter, &header) == GG_ERR_OK) {
+        if (gg_buffer_eq(header.name, name)) {
             if (header.value.type != EVENTSTREAM_STRING) {
-                GGL_LOGE("Expected header value to be string.");
+                GG_LOGE("Expected header value to be string.");
                 break;
             }
-            if (!ggl_buffer_eq(value, header.value.string)) {
-                GGL_LOGE(
+            if (!gg_buffer_eq(value, header.value.string)) {
+                GG_LOGE(
                     "Expected header value %.*s, got %.*s.",
                     (int) value.len,
                     value.data,
@@ -230,31 +228,31 @@ static GglError find_header_str(
                 );
                 break;
             }
-            return GGL_ERR_OK;
+            return GG_ERR_OK;
         }
     }
-    GGL_LOGE("Expected header \"%.*s\" not found.", (int) name.len, name.data);
-    return GGL_ERR_FAILURE;
+    GG_LOGE("Expected header \"%.*s\" not found.", (int) name.len, name.data);
+    return GG_ERR_FAILURE;
 }
 
-static GglError ggl_file_writer_write(void *ctx, GglBuffer buf) {
+static GgError gg_file_writer_write(void *ctx, GgBuffer buf) {
     int *fd = ctx;
-    return ggl_file_write(*fd, buf);
+    return gg_file_write(*fd, buf);
 }
 
-static GglWriter ggl_file_writer(int *fd) {
-    return (GglWriter) { .ctx = fd, .write = ggl_file_writer_write };
+static GgWriter gg_file_writer(int *fd) {
+    return (GgWriter) { .ctx = fd, .write = gg_file_writer_write };
 }
 
 static void print_client_packet(EventStreamMessage msg) {
-    GGL_LOGE("Client headers:");
+    GG_LOGE("Client headers:");
 
     EventStreamHeaderIter iter = msg.headers;
     EventStreamHeader header;
-    while (eventstream_header_next(&iter, &header) == GGL_ERR_OK) {
+    while (eventstream_header_next(&iter, &header) == GG_ERR_OK) {
         switch (header.value.type) {
         case EVENTSTREAM_INT32:
-            GGL_LOGE(
+            GG_LOGE(
                 "%.*s=%" PRIi32,
                 (int) header.name.len,
                 header.name.data,
@@ -262,7 +260,7 @@ static void print_client_packet(EventStreamMessage msg) {
             );
             break;
         case EVENTSTREAM_STRING:
-            GGL_LOGE(
+            GG_LOGE(
                 "%.*s=%.*s",
                 (int) header.name.len,
                 header.name.data,
@@ -276,18 +274,18 @@ static void print_client_packet(EventStreamMessage msg) {
     }
 }
 
-static GglError ggl_test_recv_packet(const GgipcPacket *packet, int client) {
-    GglBuffer packet_bytes = GGL_BUF(ipc_recv_mem);
+static GgError gg_test_recv_packet(const GgipcPacket *packet, int client) {
+    GgBuffer packet_bytes = GG_BUF(ipc_recv_mem);
     EventStreamMessage msg = { 0 };
-    GglError ret
-        = eventsteam_get_packet(ggl_socket_reader(&client), &msg, packet_bytes);
-    if (ret != GGL_ERR_OK) {
+    GgError ret
+        = eventsteam_get_packet(gg_socket_reader(&client), &msg, packet_bytes);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
 
     // check headers
     if (packet->header_count != msg.headers.count) {
-        GGL_LOGE(
+        GG_LOGE(
             "Expected header count %" PRIu32 ", got %" PRIu32 ".",
             packet->header_count,
             msg.headers.count
@@ -297,11 +295,11 @@ static GglError ggl_test_recv_packet(const GgipcPacket *packet, int client) {
     for (EventStreamHeader *header = packet->headers;
          header < &packet->headers[packet->header_count];
          ++header) {
-        GglBuffer key = header->name;
+        GgBuffer key = header->name;
         switch (header->value.type) {
         case EVENTSTREAM_INT32: {
             ret = find_header_int(msg.headers, key, header->value.int32);
-            if (ret != GGL_ERR_OK) {
+            if (ret != GG_ERR_OK) {
                 print_client_packet(msg);
                 return ret;
             }
@@ -309,53 +307,53 @@ static GglError ggl_test_recv_packet(const GgipcPacket *packet, int client) {
         }
         case EVENTSTREAM_STRING: {
             ret = find_header_str(msg.headers, key, header->value.string);
-            if (ret != GGL_ERR_OK) {
+            if (ret != GG_ERR_OK) {
                 print_client_packet(msg);
                 return ret;
             }
             break;
         }
         default:
-            GGL_LOGE(
+            GG_LOGE(
                 "INTERNAL TEST ERROR: Unhandled header type %d.",
                 header->value.type
             );
             assert(false);
-            return GGL_ERR_FAILURE;
+            return GG_ERR_FAILURE;
         }
     }
 
     if (!packet->has_payload) {
-        return GGL_ERR_OK;
+        return GG_ERR_OK;
     }
 
-    GglArena json_arena = ggl_arena_init(GGL_BUF(ipc_recv_decode_mem));
-    GglObject payload_obj = GGL_OBJ_NULL;
-    ret = ggl_json_decode_destructive(msg.payload, &json_arena, &payload_obj);
-    if (ret != GGL_ERR_OK) {
+    GgArena json_arena = gg_arena_init(GG_BUF(ipc_recv_decode_mem));
+    GgObject payload_obj = GG_OBJ_NULL;
+    ret = gg_json_decode_destructive(msg.payload, &json_arena, &payload_obj);
+    if (ret != GG_ERR_OK) {
         return ret;
     }
-    // Compare GglObject representation of payload
-    if (ggl_obj_type(payload_obj) != GGL_TYPE_MAP) {
-        GGL_LOGE("Expected payload to be map");
-        return GGL_ERR_FAILURE;
+    // Compare GgObject representation of payload
+    if (gg_obj_type(payload_obj) != GG_TYPE_MAP) {
+        GG_LOGE("Expected payload to be map");
+        return GG_ERR_FAILURE;
     }
 
-    if (!ggl_obj_eq(packet->payload, payload_obj)) {
+    if (!gg_obj_eq(packet->payload, payload_obj)) {
         int stderr_fd = STDERR_FILENO;
 
-        GGL_LOGE("Expected payload mismatch");
-        GGL_LOGE("Expected payload:");
-        (void) ggl_json_encode(packet->payload, ggl_file_writer(&stderr_fd));
-        GGL_LOGE("Actual payload:");
-        (void) ggl_json_encode(payload_obj, ggl_file_writer(&stderr_fd));
-        return GGL_ERR_FAILURE;
+        GG_LOGE("Expected payload mismatch");
+        GG_LOGE("Expected payload:");
+        (void) gg_json_encode(packet->payload, gg_file_writer(&stderr_fd));
+        GG_LOGE("Actual payload:");
+        (void) gg_json_encode(payload_obj, gg_file_writer(&stderr_fd));
+        return GG_ERR_FAILURE;
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-GglError ggl_test_expect_packet_sequence(
+GgError gg_test_expect_packet_sequence(
     GgipcPacketSequence sequence, int client_timeout, int handle
 ) {
     assert(handle > 0);
@@ -369,22 +367,22 @@ GglError ggl_test_expect_packet_sequence(
     struct epoll_event events[1];
     int max_events = sizeof(events) / sizeof(events[0]);
 
-    GGL_LOGD("Waiting for client to connect.");
+    GG_LOGD("Waiting for client to connect.");
     int epoll_ret;
     do {
         epoll_ret
             = epoll_wait(epoll_fd, events, max_events, client_timeout * 1000);
     } while ((epoll_ret == -1) && (errno == EINTR));
     if (epoll_ret == -1) {
-        GGL_LOGE("Failed to wait for test client connect (%d).", errno);
-        return GGL_ERR_TIMEOUT;
+        GG_LOGE("Failed to wait for test client connect (%d).", errno);
+        return GG_ERR_TIMEOUT;
     }
     struct sockaddr_un addr = { .sun_family = AF_UNIX, .sun_path = { 0 } };
     socklen_t len = sizeof(addr);
     client_fd = accept(sock_fd, &addr, &len);
     if (client_fd < 0) {
-        GGL_LOGE("Failed to accept test client.");
-        return GGL_ERR_TIMEOUT;
+        GG_LOGE("Failed to accept test client.");
+        return GG_ERR_TIMEOUT;
     }
     // To prevent deadlocking on hanged client, add a timeout
     struct timeval timeout = { .tv_sec = client_timeout };
@@ -392,61 +390,61 @@ GglError ggl_test_expect_packet_sequence(
         client_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)
     );
     if (sys_ret == -1) {
-        GGL_LOGE("Failed to set receive timeout on socket: %d.", errno);
-        return GGL_ERR_FATAL;
+        GG_LOGE("Failed to set receive timeout on socket: %d.", errno);
+        return GG_ERR_FATAL;
     }
     sys_ret = setsockopt(
         client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)
     );
     if (sys_ret == -1) {
-        GGL_LOGE("Failed to set send timeout on socket: %d.", errno);
-        return GGL_ERR_FATAL;
+        GG_LOGE("Failed to set send timeout on socket: %d.", errno);
+        return GG_ERR_FATAL;
     }
 
-    GGL_LOGD("Awaiting sequence of %zu packets.", sequence.len);
-    GGL_PACKET_SEQUENCE_FOREACH(packet, sequence) {
+    GG_LOGD("Awaiting sequence of %zu packets.", sequence.len);
+    GG_PACKET_SEQUENCE_FOREACH(packet, sequence) {
         if (packet->direction == 0) {
-            GglError ret = ggl_test_recv_packet(packet, client_fd);
-            if (ret != GGL_ERR_OK) {
-                GGL_LOGE("Failed to receive a packet.");
+            GgError ret = gg_test_recv_packet(packet, client_fd);
+            if (ret != GG_ERR_OK) {
+                GG_LOGE("Failed to receive a packet.");
                 return ret;
             }
         } else {
-            GglError ret = ggl_test_send_packet(packet, client_fd);
-            if (ret != GGL_ERR_OK) {
-                GGL_LOGE("Failed to send a packet.");
+            GgError ret = gg_test_send_packet(packet, client_fd);
+            if (ret != GG_ERR_OK) {
+                GG_LOGE("Failed to send a packet.");
                 return ret;
             }
         }
     }
 
-    return GGL_ERR_OK;
+    return GG_ERR_OK;
 }
 
-GglError ggl_test_disconnect(int handle) {
+GgError gg_test_disconnect(int handle) {
     assert(handle > 0);
     if (client_fd < 0) {
-        GGL_LOGE("Client not connected.");
-        return GGL_ERR_NOENTRY;
+        GG_LOGE("Client not connected.");
+        return GG_ERR_NOENTRY;
     }
 
     int old_client_fd = client_fd;
     client_fd = -1;
-    return ggl_close(old_client_fd);
+    return gg_close(old_client_fd);
 }
 
-void ggl_test_close(int handle) {
+void gg_test_close(int handle) {
     assert(handle > 0);
     if (client_fd >= 0) {
-        (void) ggl_close(client_fd);
+        (void) gg_close(client_fd);
         client_fd = -1;
     }
     if (epoll_fd >= 0) {
-        (void) ggl_close(epoll_fd);
+        (void) gg_close(epoll_fd);
         epoll_fd = -1;
     }
     if (sock_fd >= 0) {
-        (void) ggl_close(sock_fd);
+        (void) gg_close(sock_fd);
         sock_fd = -1;
     }
 }

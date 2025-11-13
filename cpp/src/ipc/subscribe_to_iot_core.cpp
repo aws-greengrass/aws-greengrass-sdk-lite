@@ -1,9 +1,9 @@
-#include <ggl/buffer.hpp>
-#include <ggl/error.hpp>
-#include <ggl/ipc/client.hpp>
-#include <ggl/ipc/client_c_api.hpp>
-#include <ggl/ipc/subscription.hpp>
-#include <ggl/types.hpp>
+#include <gg/buffer.hpp>
+#include <gg/error.hpp>
+#include <gg/ipc/client.hpp>
+#include <gg/ipc/client_c_api.hpp>
+#include <gg/ipc/subscription.hpp>
+#include <gg/types.hpp>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -12,13 +12,13 @@
 #include <string_view>
 #include <system_error>
 
-namespace ggl::ipc {
+namespace gg::ipc {
 extern "C" {
 namespace {
     void subscribe_to_iot_core_callback(
         void *ctx,
-        GglBuffer topic,
-        GglBuffer payload,
+        GgBuffer topic,
+        GgBuffer payload,
         GgIpcSubscriptionHandle handle
     ) noexcept try {
         Subscription locked { handle };
@@ -51,14 +51,14 @@ std::error_code Client::subscribe_to_iot_core(
     Subscription *handle
 ) noexcept {
     GgIpcSubscriptionHandle raw_handle;
-    GglError ret = ggipc_subscribe_to_iot_core(
-        ggl::Buffer { topic_filter },
+    GgError ret = ggipc_subscribe_to_iot_core(
+        gg::Buffer { topic_filter },
         qos,
         subscribe_to_iot_core_callback,
         &callback,
         (handle != nullptr) ? &raw_handle : nullptr
     );
-    if ((handle != nullptr) && (ret == GGL_ERR_OK)) {
+    if ((handle != nullptr) && (ret == GG_ERR_OK)) {
         handle->reset(raw_handle);
     }
     return ret;

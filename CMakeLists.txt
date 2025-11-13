@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(aws-greengrass-sdk-lite C)
 
-set(GGL_LOG_LEVEL CACHE STRING "GGL log level")
+set(GG_LOG_LEVEL CACHE STRING "GG log level")
 
 if(PROJECT_IS_TOP_LEVEL)
 
@@ -184,25 +184,25 @@ foreach(src ${SRCS})
 endforeach()
 
 if(PROJECT_IS_TOP_LEVEL)
-  add_library(ggl-sdk ${SRCS})
+  add_library(gg-sdk ${SRCS})
 else()
-  add_library(ggl-sdk EXCLUDE_FROM_ALL ${SRCS})
+  add_library(gg-sdk EXCLUDE_FROM_ALL ${SRCS})
 endif()
 
-target_compile_options(ggl-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
-                                       -Wno-missing-braces)
-target_compile_definitions(ggl-sdk PRIVATE _GNU_SOURCE)
-target_include_directories(ggl-sdk PRIVATE include priv_include)
-target_include_directories(ggl-sdk SYSTEM INTERFACE include)
+target_compile_options(gg-sdk PRIVATE -pthread -fno-strict-aliasing -std=gnu11
+                                      -Wno-missing-braces)
+target_compile_definitions(gg-sdk PRIVATE _GNU_SOURCE)
+target_include_directories(gg-sdk PRIVATE include priv_include)
+target_include_directories(gg-sdk SYSTEM INTERFACE include)
 
-target_compile_definitions(ggl-sdk PRIVATE "GGL_MODULE=(\"ggl-sdk\")")
+target_compile_definitions(gg-sdk PRIVATE "GG_MODULE=(\"gg-sdk\")")
 
-string(TOUPPER "${GGL_LOG_LEVEL}" log_level)
+string(TOUPPER "${GG_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
-target_compile_definitions(ggl-sdk PUBLIC GGL_LOG_LEVEL=GGL_LOG_${choose_level})
+target_compile_definitions(gg-sdk PUBLIC GG_LOG_LEVEL=GG_LOG_${choose_level})
 
 if(PROJECT_IS_TOP_LEVEL)
-  install(TARGETS ggl-sdk)
+  install(TARGETS gg-sdk)
 
   if(BUILD_SAMPLES)
     file(GLOB SAMPLE_DIRS CONFIGURE_DEPENDS "samples/*")
@@ -216,7 +216,7 @@ if(PROJECT_IS_TOP_LEVEL)
         APPEND_STRING
         PROPERTY COMPILE_FLAGS "-frandom-seed=${sample_dir}/main.c")
       add_executable(sample_${sample_name} ${sample_dir}/main.c)
-      target_link_libraries(sample_${sample_name} PRIVATE ggl-sdk)
+      target_link_libraries(sample_${sample_name} PRIVATE gg-sdk)
       install(TARGETS sample_${sample_name})
     endforeach()
   endif()
@@ -224,15 +224,15 @@ if(PROJECT_IS_TOP_LEVEL)
   if(BUILD_TESTING)
     include(CTest)
     file(GLOB_RECURSE MOCKS CONFIGURE_DEPENDS "mock/*.c")
-    add_library(ggl-ipc-mock ${MOCKS})
+    add_library(gg-ipc-mock ${MOCKS})
 
-    target_compile_options(ggl-ipc-mock PRIVATE -pthread -fno-strict-aliasing
-                                                -std=gnu11 -Wno-missing-braces)
-    target_compile_definitions(ggl-ipc-mock PRIVATE _GNU_SOURCE)
-    target_include_directories(ggl-ipc-mock PRIVATE mock include priv_include)
-    target_include_directories(ggl-ipc-mock SYSTEM INTERFACE mock priv_include)
-    target_compile_definitions(ggl-ipc-mock PUBLIC "GGL_MODULE=(\"ggl-test\")")
-    target_link_libraries(ggl-ipc-mock PRIVATE ggl-sdk m)
+    target_compile_options(gg-ipc-mock PRIVATE -pthread -fno-strict-aliasing
+                                               -std=gnu11 -Wno-missing-braces)
+    target_compile_definitions(gg-ipc-mock PRIVATE _GNU_SOURCE)
+    target_include_directories(gg-ipc-mock PRIVATE mock include priv_include)
+    target_include_directories(gg-ipc-mock SYSTEM INTERFACE mock priv_include)
+    target_compile_definitions(gg-ipc-mock PUBLIC "GG_MODULE=(\"gg-test\")")
+    target_link_libraries(gg-ipc-mock PRIVATE gg-sdk m)
 
     file(GLOB TEST_DIRS CONFIGURE_DEPENDS "test/*")
     foreach(test_dir ${TEST_DIRS})
@@ -245,7 +245,7 @@ if(PROJECT_IS_TOP_LEVEL)
         APPEND_STRING
         PROPERTY COMPILE_FLAGS "-frandom-seed=${test_dir}/main.c")
       add_executable(test_${test_name} ${test_dir}/main.c)
-      target_link_libraries(test_${test_name} PRIVATE ggl-sdk ggl-ipc-mock
+      target_link_libraries(test_${test_name} PRIVATE gg-sdk gg-ipc-mock
                                                       PkgConfig::unity)
       target_compile_options(test_${test_name} PRIVATE)
       target_link_options(test_${test_name} PUBLIC)
