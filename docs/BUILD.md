@@ -1,4 +1,4 @@
-# Building `aws-greengrass-sdk-lite` and its samples
+# Building `aws-greengrass-component-sdk` and its samples
 
 This document will walk you through building the SDK, as well as the included
 sample Greengrass v2 components.

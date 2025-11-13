@@ -27,10 +27,10 @@ int main(void) {
     }
 
     printf(
-        "Restarting component 'aws-greengrass-sdk-lite.samples.restart_component'...\n"
+        "Restarting component 'aws-greengrass-component-sdk.samples.restart_component'...\n"
     );
     err = ggipc_restart_component(
-        GG_STR("aws-greengrass-sdk-lite.samples.restart_component")
+        GG_STR("aws-greengrass-component-sdk.samples.restart_component")
     );
     if (err != GG_ERR_OK) {
         fprintf(stderr, "Failed to restart component.\n");

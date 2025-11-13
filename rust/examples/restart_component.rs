@@ -13,9 +13,11 @@ fn main() {
         thread::sleep(Duration::from_secs(1));
     }
 
-    println!("Restarting component 'aws-greengrass-sdk-lite.samples.restart_component'...");
-    sdk.restart_component("aws-greengrass-sdk-lite.samples.restart_component")
-        .expect("Failed to restart component");
+    println!("Restarting component 'aws-greengrass-component-sdk.samples.restart_component'...");
+    sdk.restart_component(
+        "aws-greengrass-component-sdk.samples.restart_component",
+    )
+    .expect("Failed to restart component");
 
     println!("Restart request sent successfully.");
 }

@@ -1,6 +1,6 @@
-# Greengrass SDK Lite Developer setup
+# Greengrass Component SDK Developer setup
 
-This guide is intended for developers working on the Greengrass SDK Lite
+This guide is intended for developers working on the Greengrass Component SDK
 codebase itself.
 
 ## Using Nix

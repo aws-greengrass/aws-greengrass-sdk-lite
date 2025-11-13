@@ -1,5 +1,5 @@
 #!/bin/sh
-# aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
+# aws-greengrass-component-sdk - Lightweight AWS IoT Greengrass SDK
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
@@ -23,7 +23,7 @@ bindgen wrapper.h \
   --allowlist-type 'Gg.*' \
   --allowlist-type 'GgIpc.*' \
   --allowlist-var 'GG_.*' \
-  --raw-line '// aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK' \
+  --raw-line '// aws-greengrass-component-sdk - Lightweight AWS IoT Greengrass SDK' \
   --raw-line '// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.' \
   --raw-line '// SPDX-License-Identifier: Apache-2.0' \
   --raw-line "" \

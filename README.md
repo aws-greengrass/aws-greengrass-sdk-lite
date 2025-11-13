@@ -1,11 +1,11 @@
-# AWS Greengrass SDK Lite
+# AWS Greengrass Component SDK
 
-The `aws-greengrass-sdk-lite` provides an API for making AWS IoT Greengrass IPC
-calls with a small footprint. It enables Greengrass components to interact with
-the Greengrass Nucleus (Lite or Classic) with less binary overhead and also
-supports components written in C. Greengrass components can use this SDK as an
-alternative to the `aws-iot-device-sdk-cpp-v2` or other language-specific device
-SDKs.
+The `aws-greengrass-component-sdk` provides an API for making AWS IoT Greengrass
+IPC calls with a small footprint. It enables Greengrass components to interact
+with the Greengrass runtime (Greengrass Nucleus or Greeengrass Nucleus Lite)
+with less binary overhead and also supports components written in C. Greengrass
+components can use this SDK as an alternative to the `aws-iot-device-sdk-cpp-v2`
+or other language-specific device SDKs.
 
 ### ⚠️ Important Notice ⚠️
 

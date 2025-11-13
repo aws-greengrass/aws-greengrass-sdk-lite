@@ -26,8 +26,8 @@ subscription callback.
 1. Navigate to AWS IoT Greengrass console
 2. Select `Deployments` and find the deployment targeting your thing group
 3. Click `Actions` > `Revise` > `Next` > `Next`
-4. Find `aws-greengrass-sdk-lite.samples.SubscribeToConfigurationUpdate` in the
-   component list
+4. Find `aws-greengrass-component-sdk.samples.SubscribeToConfigurationUpdate` in
+   the component list
 5. Click `Configure component`
 6. Under `Configuration to merge`, add:
    ```json
@@ -43,7 +43,7 @@ subscription callback.
 aws greengrassv2 create-deployment \
   --target-arn "arn:aws:iot:REGION:ACCOUNT_ID:thinggroup/YOUR_THING_GROUP" \
   --components '{
-    "aws-greengrass-sdk-lite.samples.SubscribeToConfigurationUpdate": {
+    "aws-greengrass-component-sdk.samples.SubscribeToConfigurationUpdate": {
       "componentVersion": "VERSION",
       "configurationUpdate": {
         "merge": "{\"test_str\":\"updated_value\"}"

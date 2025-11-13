@@ -1,4 +1,4 @@
-// aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
+// aws-greengrass-component-sdk - Lightweight AWS IoT Greengrass SDK
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 

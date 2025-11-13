@@ -1,10 +1,10 @@
-# aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
+# aws-greengrass-component-sdk - Lightweight AWS IoT Greengrass SDK
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-project(aws-greengrass-sdk-lite++ C CXX)
+project(aws-greengrass-component-sdk++ C CXX)
 
-if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
+if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
   set(CMAKE_CXX_FLAGS_DEBUG "")
   set(CMAKE_CXX_FLAGS_RELEASE "")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
@@ -22,7 +22,7 @@ foreach(src ${SRCS})
     PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
 endforeach()
 
-if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
+if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
   add_library(gg-sdk++ STATIC ${SRCS})
 else()
   add_library(gg-sdk++ STATIC EXCLUDE_FROM_ALL ${SRCS})
@@ -35,7 +35,7 @@ target_include_directories(gg-sdk++ SYSTEM INTERFACE include)
 target_compile_definitions(gg-sdk++ PRIVATE "GG_MODULE=(\"gg-sdk++\")")
 target_link_libraries(gg-sdk++ PRIVATE gg-sdk)
 
-if(aws-greengrass-sdk-lite_IS_TOP_LEVEL)
+if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
   install(TARGETS gg-sdk++)
 
   if(BUILD_SAMPLES)

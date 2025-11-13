@@ -1,9 +1,9 @@
-# aws-greengrass-sdk-lite - Lightweight AWS IoT Greengrass SDK
+# aws-greengrass-component-sdk - Lightweight AWS IoT Greengrass SDK
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.22)
-project(aws-greengrass-sdk-lite C)
+project(aws-greengrass-component-sdk C)
 
 set(GG_LOG_LEVEL CACHE STRING "GG log level")
 

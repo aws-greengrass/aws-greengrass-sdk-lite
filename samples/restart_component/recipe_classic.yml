@@ -1,5 +1,5 @@
 RecipeFormatVersion: 2020-01-25
-ComponentName: aws-greengrass-sdk-lite.samples.restart_component
+ComponentName: aws-greengrass-component-sdk.samples.restart_component
 ComponentVersion: 1.0.0
 ComponentDescription:
   Sample component demonstrating RestartComponent IPC operation
@@ -17,7 +17,7 @@ ComponentConfiguration:
           operations:
             - "aws.greengrass#RestartComponent"
           resources:
-            - "aws-greengrass-sdk-lite.samples.restart_component"
+            - "aws-greengrass-component-sdk.samples.restart_component"
 Manifests:
   - Platform:
       os: linux

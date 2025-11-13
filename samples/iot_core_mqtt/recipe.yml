@@ -1,11 +1,11 @@
 ---
 RecipeFormatVersion: "2020-01-25"
-ComponentName: "aws-greengrass-sdk-lite.samples.iot_core_mqtt"
+ComponentName: "aws-greengrass-component-sdk.samples.iot_core_mqtt"
 ComponentVersion: "1.0.0"
 ComponentType: "aws.greengrass.generic"
 ComponentDescription:
-  Example component using aws-greengrass-sdk-lite to publish/subscribe to AWS
-  IoT Core
+  Example component using aws-greengrass-component-sdk to publish/subscribe to
+  AWS IoT Core
 ComponentPublisher: AWS
 ComponentConfiguration:
   DefaultConfiguration:

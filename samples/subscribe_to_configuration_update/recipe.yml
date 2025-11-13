@@ -1,6 +1,6 @@
 ---
 RecipeFormatVersion: "2020-01-25"
-ComponentName: "aws-greengrass-sdk-lite.samples.SubscribeToConfigurationUpdate"
+ComponentName: "aws-greengrass-component-sdk.samples.SubscribeToConfigurationUpdate"
 ComponentVersion: "1.0.0"
 ComponentDescription:
   "Component that subscribes to ConfigUpdater configuration updates"
