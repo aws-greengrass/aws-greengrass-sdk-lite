@@ -783,8 +783,7 @@ static GglError data_ready_callback(void *ctx, uint64_t data) {
 
     if (ret != GGL_ERR_OK) {
         GGL_LOGE(
-            "Error receiving from GG-IPC connection on fd %d. Closing "
-            "connection.",
+            "Error receiving from GG-IPC connection on fd %d. Closing connection.",
             ipc_conn_fd
         );
         (void) ggl_close(ipc_conn_fd);

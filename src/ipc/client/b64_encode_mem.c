@@ -24,8 +24,8 @@ GglError ggipc_publish_to_topic_binary(GglBuffer topic, GglBuffer payload) {
     GglError ret = ggl_base64_encode(payload, &arena, &b64_payload);
     if (ret != GGL_ERR_OK) {
         GGL_LOGE(
-            "Insufficient memory provided to base64 encode PublishToTopic "
-            "payload (required %zu, provided %" PRIu32 ").",
+            "Insufficient memory provided to base64 encode PublishToTopic payload (required %zu, provided %" PRIu32
+            ").",
             ((payload.len + 2) / 3) * 4,
             arena.capacity - arena.index
         );
@@ -45,8 +45,8 @@ GglError ggipc_publish_to_iot_core(
     GglError ret = ggl_base64_encode(payload, &arena, &b64_payload);
     if (ret != GGL_ERR_OK) {
         GGL_LOGE(
-            "Insufficient memory provided to base64 encode PublishToIoTCore "
-            "payload (required %zu, available %" PRIu32 ").",
+            "Insufficient memory provided to base64 encode PublishToIoTCore payload (required %zu, available %" PRIu32
+            ").",
             ((payload.len + 2) / 3) * 4,
             arena.capacity - arena.index
         );

@@ -16,8 +16,7 @@
 
 static_assert(
     sizeof(void *) == sizeof(size_t),
-    "Platforms where pointers and size_t are not same width are not currently "
-    "supported."
+    "Platforms where pointers and size_t are not same width are not currently supported."
 );
 
 static_assert(
