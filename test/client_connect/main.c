@@ -1,6 +1,5 @@
 
 #include <errno.h>
-#include <fcntl.h>
 #include <gg/arena.h>
 #include <gg/error.h>
 #include <gg/eventstream/rpc.h>
@@ -14,8 +13,6 @@
 #include <gg/process_wait.h>
 #include <gg/sdk.h>
 #include <pthread.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <unistd.h>
 #include <unity.h>
 #include <stdlib.h>
@@ -32,7 +29,7 @@ void suiteSetUp(void) {
     GgError ret
         = gg_test_setup_ipc(SOCKET_PATH, 0777, &server_handle, AUTH_TOKEN);
     if ((ret != GG_ERR_OK) || (server_handle < 0)) {
-        TEST_ABORT();
+        _Exit(1);
     }
 }
 
@@ -59,7 +56,7 @@ static void test_gg_connect_okay(void) {
     if (pid == 0) {
         gg_sdk_init();
         GG_TEST_ASSERT_OK(ggipc_connect());
-        _Exit(0);
+        TEST_PASS();
     }
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 30, server_handle));
@@ -88,7 +85,7 @@ static void test_gg_connect_with_token_okay(void) {
         GG_TEST_ASSERT_OK(
             ggipc_connect_with_token(GG_STR(SOCKET_PATH), GG_STR(AUTH_TOKEN))
         );
-        _Exit(0);
+        TEST_PASS();
     }
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 30, server_handle));
@@ -104,13 +101,13 @@ static void test_gg_connect_bad(void) {
 
     pid_t pid = fork();
     if (pid < 0) {
-        TEST_ABORT();
+        TEST_IGNORE_MESSAGE("fork() failed.");
     }
 
     if (pid == 0) {
         gg_sdk_init();
         GG_TEST_ASSERT_BAD(ggipc_connect());
-        _Exit(0);
+        TEST_PASS();
     }
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 1, server_handle));
@@ -128,7 +125,7 @@ static void test_gg_connect_with_token_bad(void) {
 
     pid_t pid = fork();
     if (pid < 0) {
-        TEST_ABORT();
+        TEST_IGNORE_MESSAGE("fork() failed.");
     }
 
     if (pid == 0) {
@@ -139,7 +136,7 @@ static void test_gg_connect_with_token_bad(void) {
 
         gg_sdk_init();
         GG_TEST_ASSERT_BAD(ggipc_connect());
-        _Exit(0);
+        TEST_PASS();
     }
 
     GG_TEST_ASSERT_BAD(gg_test_expect_packet_sequence(seq, 1, server_handle));
