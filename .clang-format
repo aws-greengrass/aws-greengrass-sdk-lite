@@ -28,13 +28,13 @@ SpaceAfterCStyleCast: true
 PenaltyReturnTypeOnItsOwnLine: 240
 AttributeMacros:
 ForEachMacros:
-  - GGL_LIST_FOREACH
-  - GGL_MAP_FOREACH
-  - GGL_BUF_LIST_FOREACH
+  - GG_LIST_FOREACH
+  - GG_MAP_FOREACH
+  - GG_BUF_LIST_FOREACH
 Macros:
   - CBMC_CONTRACT(x)=[[cbmc::contract(x)]]
   - NODISCARD=[[nodiscard]]
-  - GGL_EXPORT=[[gnu::visibility(protected)]]
+  - GG_EXPORT=[[gnu::visibility(protected)]]
   - VISIBILITY(x)=[[gnu::visibility(x)]]
   - FORMAT(x,y,z)=[[gnu::format(x,y,z)]]
   - UNUSED=[[gnu::unused]]

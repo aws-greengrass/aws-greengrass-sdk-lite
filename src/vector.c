@@ -143,7 +143,7 @@ void gg_buf_vec_chain_push(GgError *err, GgBufVec *vector, GgBuffer buf) {
 }
 
 GgError gg_buf_vec_append_list(GgBufVec *vector, GgList list) {
-    GG_LIST_FOREACH(item, list) {
+    GG_LIST_FOREACH (item, list) {
         if (gg_obj_type(*item) != GG_TYPE_BUF) {
             return GG_ERR_INVALID;
         }

@@ -8,7 +8,7 @@
 #include <gg/object.h>
 
 GgError gg_list_type_check(GgList list, GgObjectType type) {
-    GG_LIST_FOREACH(elem, list) {
+    GG_LIST_FOREACH (elem, list) {
         if (gg_obj_type(*elem) != type) {
             GG_LOGE("List element is of invalid type.");
             return GG_ERR_PARSE;

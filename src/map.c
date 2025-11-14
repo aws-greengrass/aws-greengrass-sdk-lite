@@ -67,7 +67,7 @@ GgObject *gg_kv_val(GgKV *kv) {
 }
 
 bool gg_map_get(GgMap map, GgBuffer key, GgObject **result) {
-    GG_MAP_FOREACH(pair, map) {
+    GG_MAP_FOREACH (pair, map) {
         if (gg_buffer_eq(key, gg_kv_key(*pair))) {
             if (result != NULL) {
                 *result = gg_kv_val(pair);
