@@ -67,8 +67,9 @@ if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
         APPEND_STRING
         PROPERTY COMPILE_FLAGS "-frandom-seed=${test_dir}/main.cpp")
       add_executable(test_cpp_${test_name} ${test_dir}/main.cpp)
-      target_link_libraries(test_cpp_${test_name} PRIVATE gg-sdk++ gg-ipc-mock
-                                                          PkgConfig::unity)
+      target_link_libraries(
+        test_cpp_${test_name} PRIVATE gg-sdk++ gg-sdk gg-ipc-mock unity-config
+                                      PkgConfig::unity)
       install(TARGETS test_cpp_${test_name})
     endforeach()
   endif()
