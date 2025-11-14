@@ -2,11 +2,17 @@
 #define GG_IPC_MOCK_H
 
 #include <gg/attr.h>
+#include <sys/types.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+#include <gg/ipc/mock_types.hpp>
+#include <gg/types.hpp>
+#else
 #include <gg/eventstream/rpc.h>
 #include <gg/eventstream/types.h>
 #include <gg/object.h>
-#include <sys/types.h>
-#include <stddef.h>
+#endif
 
 typedef enum {
     CLIENT_TO_SERVER = 0,
