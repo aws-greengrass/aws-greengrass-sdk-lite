@@ -1,15 +1,15 @@
-#ifndef GGL_TEST_PROCESS_WAIT_H
-#define GGL_TEST_PROCESS_WAIT_H
+#ifndef GG_TEST_PROCESS_WAIT_H
+#define GG_TEST_PROCESS_WAIT_H
 
 #ifdef __cplusplus
-#include <ggl/error.hpp>
+#include <gg/error.hpp>
 #else
-#include <ggl/error.h>
+#include <gg/error.h>
 #endif
 
 #include <sys/types.h>
 #include <stdbool.h>
 
-GglError gg_process_wait(pid_t pid, bool *exit_status);
+GgError gg_process_wait(pid_t pid, bool *exit_status);
 
 #endif
