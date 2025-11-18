@@ -1,7 +1,5 @@
 #include "gg/ipc/mock.h"
 #include "gg/object_compare.h"
-#include "inttypes.h"
-#include "sys/epoll.h"
 #include <assert.h>
 #include <errno.h>
 #include <gg/arena.h>
@@ -24,6 +22,8 @@
 #include <gg/object_visit.h>
 #include <gg/socket.h>
 #include <gg/socket_epoll.h>
+#include <inttypes.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -360,7 +360,7 @@ GgError gg_test_expect_packet_sequence(
     assert(sock_fd >= 0);
     assert(epoll_fd >= 0);
 
-    if (client_timeout < 5) {
+    if (client_timeout <= 0) {
         client_timeout = 5;
     }
 
@@ -375,6 +375,10 @@ GgError gg_test_expect_packet_sequence(
     } while ((epoll_ret == -1) && (errno == EINTR));
     if (epoll_ret == -1) {
         GG_LOGE("Failed to wait for test client connect (%d).", errno);
+        return GG_ERR_TIMEOUT;
+    }
+    if (epoll_ret == 0) {
+        GG_LOGE("Client exited before connecting.");
         return GG_ERR_TIMEOUT;
     }
     struct sockaddr_un addr = { .sun_family = AF_UNIX, .sun_path = { 0 } };

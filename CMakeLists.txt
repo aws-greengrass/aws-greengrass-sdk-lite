@@ -26,6 +26,13 @@ if(PROJECT_IS_TOP_LEVEL)
   if(BUILD_TESTING)
     find_package(PkgConfig REQUIRED)
     pkg_search_module(unity REQUIRED IMPORTED_TARGET unity)
+
+    file(GLOB_RECURSE UNITY_CFG_SRCS CONFIGURE_DEPENDS "unity_config/*.c")
+    add_library(unity-config STATIC ${UNITY_CFG_SRCS})
+    target_include_directories(unity-config PUBLIC unity_config)
+    target_compile_definitions(PkgConfig::unity
+                               INTERFACE "UNITY_INCLUDE_CONFIG_H=1")
+    target_link_libraries(unity-config PRIVATE PkgConfig::unity)
   endif()
 
   # Put outputs in build/bin and build/lib
@@ -245,8 +252,9 @@ if(PROJECT_IS_TOP_LEVEL)
         APPEND_STRING
         PROPERTY COMPILE_FLAGS "-frandom-seed=${test_dir}/main.c")
       add_executable(test_${test_name} ${test_dir}/main.c)
-      target_link_libraries(test_${test_name} PRIVATE gg-sdk gg-ipc-mock
-                                                      PkgConfig::unity)
+      target_link_libraries(
+        test_${test_name} PRIVATE gg-sdk gg-ipc-mock unity-config
+                                  PkgConfig::unity)
       target_compile_options(test_${test_name} PRIVATE)
       target_link_options(test_${test_name} PUBLIC)
       install(TARGETS test_${test_name})

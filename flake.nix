@@ -20,6 +20,7 @@
             ./mock
             ./samples
             ./test
+            ./unity_config
             ./cpp/CMakeLists.txt
             ./cpp/include
             ./cpp/priv_include
