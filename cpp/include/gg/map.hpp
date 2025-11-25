@@ -221,6 +221,10 @@ public:
         constexpr bool operator<=>(const MapIterator &rhs) const noexcept
             = default;
 
+        constexpr bool operator!=(const MapIterator &rhs) const noexcept {
+            return kv != rhs.kv;
+        }
+
         value_type operator*() const noexcept {
             return { kv->key(), kv->value() };
         }
