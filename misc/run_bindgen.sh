@@ -15,6 +15,7 @@ bindgen wrapper.h \
   --with-derive-default \
   --disable-header-comment \
   --no-doc-comments \
+  --no-layout-tests \
   --use-core \
   --generate-cstr \
   --sort-semantically \
