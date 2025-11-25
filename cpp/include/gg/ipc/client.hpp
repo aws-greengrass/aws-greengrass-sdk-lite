@@ -82,6 +82,8 @@ public:
     ) = 0;
 };
 
+using IoTCoreCallback = IotTopicCallback;
+
 class ConfigurationUpdateCallback {
 public:
     virtual ~ConfigurationUpdateCallback() noexcept = default;
