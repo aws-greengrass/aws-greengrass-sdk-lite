@@ -36,7 +36,6 @@ fn main() {
     }
 
     build
-        .compiler("clang")
         .files(&src_files)
         .include(project_root.join("include"))
         .include(project_root.join("priv_include"))
