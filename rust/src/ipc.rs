@@ -432,7 +432,7 @@ impl Sdk {
             })
         };
 
-        let mut obj = c::GG_OBJ_NULL;
+        let mut obj = c::GgObject::default();
 
         Result::from(unsafe {
             c::ggipc_get_config(

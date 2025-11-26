@@ -79,7 +79,9 @@ pub enum UnpackedObject<'a> {
 
 impl Object {
     /// Null object constant.
-    pub const NULL: Self = Self { c: c::GG_OBJ_NULL };
+    pub const NULL: Self = Self {
+        c: c::GgObject { _private: [0; _] },
+    };
 
     /// Create a boolean object.
     ///
@@ -233,7 +235,7 @@ impl Object {
 impl<'a> ObjectRef<'a> {
     /// Null object reference constant.
     pub const NULL: Self = Self {
-        c: c::GG_OBJ_NULL,
+        c: c::GgObject { _private: [0; _] },
         phantom: PhantomData,
     };
 
