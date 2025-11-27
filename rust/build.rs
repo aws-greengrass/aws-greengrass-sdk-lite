@@ -16,6 +16,40 @@ fn main() {
     let project_root =
         PathBuf::from(&manifest_dir).parent().unwrap().to_path_buf();
 
+    bindgen::Builder::default()
+        .header(
+            PathBuf::from(&manifest_dir)
+                .join("wrapper.h")
+                .to_str()
+                .unwrap(),
+        )
+        .clang_arg(format!("-I{}", project_root.join("include").display()))
+        .default_enum_style(bindgen::EnumVariation::Rust {
+            non_exhaustive: false,
+        })
+        .generate_inline_functions(true)
+        .enable_function_attribute_detection()
+        .disable_nested_struct_naming()
+        .derive_default(true)
+        .generate_comments(false)
+        .use_core()
+        .generate_cstr(true)
+        .sort_semantically(true)
+        .allowlist_function("gg_.*")
+        .allowlist_function("ggipc_.*")
+        .allowlist_type("Gg.*")
+        .allowlist_type("GgIpc.*")
+        .allowlist_var("GG_.*")
+        .raw_line("#![allow(non_upper_case_globals)]")
+        .raw_line("#![allow(non_camel_case_types)]")
+        .raw_line("#![allow(non_snake_case)]")
+        .raw_line("#![allow(dead_code)]")
+        .raw_line("#![allow(clippy::pedantic)]")
+        .generate()
+        .unwrap()
+        .write_to_file(PathBuf::from(&manifest_dir).join("src/c.rs"))
+        .unwrap();
+
     let mut src_files = Vec::new();
     let mut dirs = vec![project_root.join("src")];
     while let Some(dir) = dirs.pop() {
@@ -60,6 +94,7 @@ fn main() {
 
     build.compile("gg-sdk");
 
+    println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rerun-if-changed=../src");
     println!("cargo:rerun-if-changed=../include");
     println!("cargo:rerun-if-changed=../priv_include");
