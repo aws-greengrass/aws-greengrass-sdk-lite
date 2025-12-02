@@ -12,7 +12,7 @@ use std::{
 use crate::{
     c,
     error::{Error, Result},
-    object::{KvRef, MapRef, ObjectRef},
+    object::{Kv, Map, Object},
 };
 
 static INIT: OnceLock<()> = OnceLock::new();
@@ -52,7 +52,7 @@ pub enum ComponentState {
 #[derive(Debug, Clone, Copy)]
 pub enum SubscribeToTopicPayload<'a> {
     /// JSON payload
-    Json(MapRef<'a>),
+    Json(Map<'a>),
     /// Binary payload
     Binary(&'a [u8]),
 }
@@ -133,7 +133,7 @@ impl Sdk {
     ///     Kv::new("temperature", Object::f64(72.5)),
     ///     Kv::new("humidity", Object::i64(45)),
     /// ];
-    /// sdk.publish_to_topic_json("sensor/data", &payload)?;
+    /// sdk.publish_to_topic_json("sensor/data", &payload[..])?;
     /// # Ok::<(), gg_sdk::Error>(())
     /// ```
     ///
@@ -142,9 +142,9 @@ impl Sdk {
     pub fn publish_to_topic_json<'a>(
         &self,
         topic: impl Into<&'a str>,
-        payload: impl Into<MapRef<'a>>,
+        payload: impl Into<Map<'a>>,
     ) -> Result<()> {
-        fn inner(topic: &str, payload: &MapRef<'_>) -> Result<()> {
+        fn inner(topic: &str, payload: &Map<'_>) -> Result<()> {
             let topic_buf = c::GgBuffer {
                 data: topic.as_ptr().cast_mut(),
                 len: topic.len(),
@@ -238,11 +238,8 @@ impl Sdk {
             let unpacked = match unsafe { c::gg_obj_type(payload) } {
                 c::GgObjectType::GG_TYPE_MAP => {
                     let map = unsafe { c::gg_obj_into_map(payload) };
-                    SubscribeToTopicPayload::Json(MapRef(unsafe {
-                        slice::from_raw_parts(
-                            map.pairs as *const KvRef,
-                            map.len,
-                        )
+                    SubscribeToTopicPayload::Json(Map(unsafe {
+                        slice::from_raw_parts(map.pairs as *const Kv, map.len)
                     }))
                 }
                 c::GgObjectType::GG_TYPE_BUF => {
@@ -406,7 +403,7 @@ impl Sdk {
         key_path: &[&str],
         component_name: Option<&str>,
         result_mem: &'a mut [mem::MaybeUninit<u8>],
-    ) -> Result<ObjectRef<'a>> {
+    ) -> Result<Object<'a>> {
         let bufs: Box<[c::GgBuffer]> = key_path
             .iter()
             .map(|k| c::GgBuffer {
@@ -526,7 +523,7 @@ impl Sdk {
         &self,
         key_path: &[&str],
         timestamp: Option<std::time::SystemTime>,
-        value_to_merge: impl Into<ObjectRef<'a>>,
+        value_to_merge: impl Into<Object<'a>>,
     ) -> Result<()> {
         let value_to_merge = value_to_merge.into();
         let bufs: Box<[c::GgBuffer]> = key_path
@@ -713,31 +710,31 @@ impl Sdk {
     pub fn call<
         'a,
         'b,
-        F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+        F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
-        params: &[KvRef<'a>],
+        params: &[Kv<'a>],
         mut callback: F,
     ) -> Result<()> {
         extern "C" fn result_trampoline<
             'b,
-            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+            F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             result: c::GgMap,
         ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
-                slice::from_raw_parts(result.pairs as *const KvRef, result.len)
+                slice::from_raw_parts(result.pairs as *const Kv, result.len)
             };
             cb(Ok(result_slice)).into()
         }
 
         extern "C" fn error_trampoline<
             'b,
-            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+            F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             error_code: c::GgBuffer,
@@ -794,34 +791,34 @@ impl Sdk {
         'a,
         'b,
         'c,
-        F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
-        G: FnMut(usize, &str, &'b [KvRef<'b>]) -> Result<()> + 'c,
+        F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
+        G: FnMut(usize, &str, &'b [Kv<'b>]) -> Result<()> + 'c,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
-        params: &[KvRef<'a>],
+        params: &[Kv<'a>],
         mut response_callback: F,
         sub_callback: G,
         aux_ctx: usize,
     ) -> Result<Subscription<'c, G>> {
         extern "C" fn result_trampoline<
             'b,
-            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+            F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             result: c::GgMap,
         ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
             let result_slice = unsafe {
-                slice::from_raw_parts(result.pairs as *const KvRef, result.len)
+                slice::from_raw_parts(result.pairs as *const Kv, result.len)
             };
             cb(Ok(result_slice)).into()
         }
 
         extern "C" fn error_trampoline<
             'b,
-            F: FnOnce(result::Result<&'b [KvRef<'b>], IpcError<'b>>) -> Result<()>,
+            F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             error_code: c::GgBuffer,
@@ -846,7 +843,7 @@ impl Sdk {
         extern "C" fn sub_trampoline<
             'b,
             'c,
-            G: FnMut(usize, &str, &'b [KvRef<'b>]) -> Result<()> + 'c,
+            G: FnMut(usize, &str, &'b [Kv<'b>]) -> Result<()> + 'c,
         >(
             ctx: *mut ffi::c_void,
             aux_ctx: *mut ffi::c_void,
@@ -864,7 +861,7 @@ impl Sdk {
             })
             .unwrap();
             let map = unsafe {
-                slice::from_raw_parts(data.pairs.cast::<KvRef>(), data.len)
+                slice::from_raw_parts(data.pairs.cast::<Kv>(), data.len)
             };
             cb(aux, smt, map).into()
         }

@@ -16,6 +16,4 @@ pub use error::{Error, Result};
 pub use ipc::{
     ComponentState, Qos, Sdk, SubscribeToTopicPayload, Subscription,
 };
-pub use object::{
-    Kv, KvRef, List, ListRef, Map, MapRef, Object, ObjectRef, UnpackedObject,
-};
+pub use object::{Kv, List, Map, Object, UnpackedObject};
