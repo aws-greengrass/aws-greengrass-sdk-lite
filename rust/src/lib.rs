@@ -4,6 +4,7 @@
 
 //! Lightweight AWS IoT Greengrass SDK for making IPC calls.
 
+#![no_std]
 #![warn(missing_docs, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::enum_glob_use)]
 

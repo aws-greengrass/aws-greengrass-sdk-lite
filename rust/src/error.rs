@@ -4,7 +4,7 @@
 
 use crate::c;
 use c::GgError::*;
-use std::fmt;
+use core::fmt;
 
 /// GG error codes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -44,21 +44,19 @@ pub enum Error {
     Timeout = GG_ERR_TIMEOUT as u32,
 }
 
-impl std::error::Error for Error {}
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = unsafe {
             let ptr = c::gg_strerror((*self).into());
-            let cstr = std::ffi::CStr::from_ptr(ptr);
-            std::str::from_utf8_unchecked(cstr.to_bytes())
+            let cstr = core::ffi::CStr::from_ptr(ptr.cast());
+            core::str::from_utf8_unchecked(cstr.to_bytes())
         };
         write!(f, "{s}")
     }
 }
 
 /// Result type alias using SDK Error.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 impl From<Error> for c::GgError {
     fn from(val: Error) -> Self {

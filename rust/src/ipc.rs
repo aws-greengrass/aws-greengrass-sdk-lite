@@ -2,12 +2,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
-    env, ffi,
+use core::{
+    ffi,
     marker::PhantomData,
     mem::MaybeUninit,
     ptr, result, slice, str,
-    sync::{Mutex, OnceLock},
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 use crate::{
@@ -16,8 +16,8 @@ use crate::{
     object::{Kv, Map, Object},
 };
 
-static INIT: OnceLock<()> = OnceLock::new();
-static CONNECTED: Mutex<bool> = Mutex::new(false);
+static INIT: AtomicBool = AtomicBool::new(false);
+static CONNECTED: AtomicBool = AtomicBool::new(false);
 
 /// AWS IoT Greengrass IPC SDK client.
 #[non_exhaustive]
@@ -62,8 +62,13 @@ impl Sdk {
     /// Initialize the SDK.
     ///
     /// Must be called before using any IPC operations.
+    ///
+    /// # Panics
+    /// Panics if called more than once.
     pub fn init() -> Self {
-        INIT.get_or_init(|| unsafe { c::gg_sdk_init() });
+        let already_init = INIT.swap(true, Ordering::AcqRel);
+        assert!(!already_init, "Sdk::init() called more than once");
+        unsafe { c::gg_sdk_init() };
         Self {}
     }
 
@@ -73,28 +78,26 @@ impl Sdk {
     /// environment variables set by the Greengrass nucleus.
     ///
     /// # Errors
-    /// Returns error if environment variables are missing, already connected, or connection fails.
+    /// Returns error if environment variables are missing, connected or connecting, or connection fails.
     pub fn connect(&self) -> Result<()> {
-        let svcuid = env::var("SVCUID").map_err(|_| Error::Config)?;
-        let socket_path =
-            env::var("AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT")
-                .map_err(|_| Error::Config)?;
-
-        self.connect_with_token(&socket_path, &svcuid)
+        let already_connected = CONNECTED.swap(true, Ordering::AcqRel);
+        if already_connected {
+            return Err(Error::Failure);
+        }
+        Result::from(unsafe { c::ggipc_connect() })
     }
 
     /// Connect to the AWS IoT Greengrass Core IPC service with explicit credentials.
     ///
     /// # Errors
-    /// Returns error if already connected or connection fails.
-    #[expect(clippy::missing_panics_doc)]
+    /// Returns error if connected or connecting, or if connection fails.
     pub fn connect_with_token(
         &self,
         socket_path: &str,
         auth_token: &str,
     ) -> Result<()> {
-        let mut connected = CONNECTED.lock().unwrap();
-        if *connected {
+        let already_connected = CONNECTED.swap(true, Ordering::AcqRel);
+        if already_connected {
             return Err(Error::Failure);
         }
 
@@ -111,7 +114,6 @@ impl Sdk {
             c::ggipc_connect_with_token(socket_buf, token_buf)
         })?;
 
-        *connected = true;
         Ok(())
     }
 
@@ -492,22 +494,15 @@ impl Sdk {
     pub fn update_config<'a>(
         &self,
         key_path: &[&str],
-        timestamp: Option<std::time::SystemTime>,
+        timestamp: Option<(i64, i64)>,
         value_to_merge: impl Into<Object<'a>>,
     ) -> Result<()> {
         let value_to_merge = value_to_merge.into();
         let mut c_key_path_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
         let c_key_path = key_path_to_buf_list(key_path, &mut c_key_path_mem)?;
 
-        let timespec = timestamp.map(|t| {
-            let duration =
-                t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
-            #[expect(clippy::cast_possible_wrap)]
-            c::timespec {
-                tv_sec: duration.as_secs() as i64,
-                tv_nsec: i64::from(duration.subsec_nanos()),
-            }
-        });
+        let timespec =
+            timestamp.map(|(tv_sec, tv_nsec)| c::timespec { tv_sec, tv_nsec });
 
         Result::from(unsafe {
             c::ggipc_update_config(

@@ -2,7 +2,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
+use core::{
     fmt, marker::PhantomData, ops::Deref, ptr, ptr::NonNull, slice, str,
 };
 
