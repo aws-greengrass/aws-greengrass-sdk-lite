@@ -5,7 +5,8 @@
 use std::{
     env, ffi,
     marker::PhantomData,
-    mem, ptr, result, slice, str,
+    mem::MaybeUninit,
+    ptr, result, slice, str,
     sync::{Mutex, OnceLock},
 };
 
@@ -402,20 +403,10 @@ impl Sdk {
         &self,
         key_path: &[&str],
         component_name: Option<&str>,
-        result_mem: &'a mut [mem::MaybeUninit<u8>],
+        result_mem: &'a mut [MaybeUninit<u8>],
     ) -> Result<Object<'a>> {
-        let bufs: Box<[c::GgBuffer]> = key_path
-            .iter()
-            .map(|k| c::GgBuffer {
-                data: k.as_ptr().cast_mut(),
-                len: k.len(),
-            })
-            .collect();
-
-        let key_path_list = c::GgBufList {
-            bufs: bufs.as_ptr().cast_mut(),
-            len: bufs.len(),
-        };
+        let mut c_key_path_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
+        let c_key_path = key_path_to_buf_list(key_path, &mut c_key_path_mem)?;
 
         let component_buf = component_name.map(|name| c::GgBuffer {
             data: name.as_ptr().cast_mut(),
@@ -433,7 +424,7 @@ impl Sdk {
 
         Result::from(unsafe {
             c::ggipc_get_config(
-                key_path_list,
+                c_key_path,
                 component_buf.as_ref().map_or(ptr::null(), ptr::from_ref),
                 &raw mut arena,
                 &raw mut obj,
@@ -459,20 +450,10 @@ impl Sdk {
         &self,
         key_path: &[&str],
         component_name: Option<&str>,
-        value_buf: &'a mut [mem::MaybeUninit<u8>],
+        value_buf: &'a mut [MaybeUninit<u8>],
     ) -> Result<&'a str> {
-        let bufs: Box<[c::GgBuffer]> = key_path
-            .iter()
-            .map(|k| c::GgBuffer {
-                data: k.as_ptr().cast_mut(),
-                len: k.len(),
-            })
-            .collect();
-
-        let key_path_list = c::GgBufList {
-            bufs: bufs.as_ptr().cast_mut(),
-            len: bufs.len(),
-        };
+        let mut c_key_path_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
+        let c_key_path = key_path_to_buf_list(key_path, &mut c_key_path_mem)?;
 
         let component_buf = component_name.map(|name| c::GgBuffer {
             data: name.as_ptr().cast_mut(),
@@ -486,7 +467,7 @@ impl Sdk {
 
         Result::from(unsafe {
             c::ggipc_get_config_str(
-                key_path_list,
+                c_key_path,
                 component_buf.as_ref().map_or(ptr::null(), ptr::from_ref),
                 &raw mut value,
             )
@@ -526,18 +507,8 @@ impl Sdk {
         value_to_merge: impl Into<Object<'a>>,
     ) -> Result<()> {
         let value_to_merge = value_to_merge.into();
-        let bufs: Box<[c::GgBuffer]> = key_path
-            .iter()
-            .map(|k| c::GgBuffer {
-                data: k.as_ptr().cast_mut(),
-                len: k.len(),
-            })
-            .collect();
-
-        let key_path_list = c::GgBufList {
-            bufs: bufs.as_ptr().cast_mut(),
-            len: bufs.len(),
-        };
+        let mut c_key_path_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
+        let c_key_path = key_path_to_buf_list(key_path, &mut c_key_path_mem)?;
 
         let timespec = timestamp.map(|t| {
             let duration =
@@ -551,7 +522,7 @@ impl Sdk {
 
         Result::from(unsafe {
             c::ggipc_update_config(
-                key_path_list,
+                c_key_path,
                 timespec.as_ref().map_or(ptr::null(), ptr::from_ref),
                 *ptr::from_ref(&value_to_merge).cast::<c::GgObject>(),
             )
@@ -645,32 +616,28 @@ impl Sdk {
             .unwrap();
             let path_objs =
                 unsafe { slice::from_raw_parts(key_path.items, key_path.len) };
-            let path_strs: Box<[&str]> = path_objs
-                .iter()
-                .map(|obj| {
-                    let buf = unsafe { c::gg_obj_into_buf(*obj) };
-                    str::from_utf8(unsafe {
-                        slice::from_raw_parts(buf.data, buf.len)
-                    })
-                    .unwrap()
-                })
-                .collect();
 
-            cb(component_str, &path_strs);
+            let mut path_strs_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
+            for (i, obj) in path_objs.iter().enumerate() {
+                let buf = unsafe { c::gg_obj_into_buf(*obj) };
+                let s = str::from_utf8(unsafe {
+                    slice::from_raw_parts(buf.data, buf.len)
+                })
+                .unwrap();
+                path_strs_mem[i].write(s);
+            }
+            let path_strs = unsafe {
+                slice::from_raw_parts(
+                    path_strs_mem.as_ptr().cast::<&str>(),
+                    path_objs.len(),
+                )
+            };
+
+            cb(component_str, path_strs);
         }
 
-        let bufs: Box<[c::GgBuffer]> = key_path
-            .iter()
-            .map(|k| c::GgBuffer {
-                data: k.as_ptr().cast_mut(),
-                len: k.len(),
-            })
-            .collect();
-
-        let key_path_list = c::GgBufList {
-            bufs: bufs.as_ptr().cast_mut(),
-            len: bufs.len(),
-        };
+        let mut c_key_path_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
+        let c_key_path = key_path_to_buf_list(key_path, &mut c_key_path_mem)?;
 
         let component_buf = component_name.map(|name| c::GgBuffer {
             data: name.as_ptr().cast_mut(),
@@ -683,7 +650,7 @@ impl Sdk {
         Result::from(unsafe {
             c::ggipc_subscribe_to_configuration_update(
                 component_buf.as_ref().map_or(ptr::null(), ptr::from_ref),
-                key_path_list,
+                c_key_path,
                 Some(trampoline::<F>),
                 ctx.cast::<ffi::c_void>(),
                 &raw mut handle,
@@ -935,4 +902,25 @@ impl<T> Default for Subscription<'_, T> {
             phantom: PhantomData,
         }
     }
+}
+
+const MAX_KEY_PATH_LEN: usize = (c::GG_MAX_OBJECT_DEPTH - 1) as usize;
+
+fn key_path_to_buf_list(
+    key_path: &[&str],
+    bufs: &mut [MaybeUninit<c::GgBuffer>; MAX_KEY_PATH_LEN],
+) -> Result<c::GgBufList> {
+    if key_path.len() > MAX_KEY_PATH_LEN {
+        return Err(Error::Range);
+    }
+    for (i, k) in key_path.iter().enumerate() {
+        bufs[i].write(c::GgBuffer {
+            data: k.as_ptr().cast_mut(),
+            len: k.len(),
+        });
+    }
+    Ok(c::GgBufList {
+        bufs: bufs.as_mut_ptr().cast(),
+        len: key_path.len(),
+    })
 }
