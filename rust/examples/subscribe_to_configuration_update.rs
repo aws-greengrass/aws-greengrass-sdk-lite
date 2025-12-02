@@ -9,25 +9,23 @@ fn main() {
 
     let (tx, rx) = mpsc::sync_channel(1);
 
-    let _sub = sdk
-        .subscribe_to_configuration_update(
-            None,
-            &["test_str"],
-            move |component_name, key_path| {
-                println!("Configuration update received:");
-                println!("  Component: {component_name}");
-                print!("  Key path: [");
-                for (i, key) in key_path.iter().enumerate() {
-                    if i > 0 {
-                        print!(", ");
-                    }
-                    print!("\"{key}\"");
-                }
-                println!("]");
+    let callback = move |component_name: &str, key_path: &[&str]| {
+        println!("Configuration update received:");
+        println!("  Component: {component_name}");
+        print!("  Key path: [");
+        for (i, key) in key_path.iter().enumerate() {
+            if i > 0 {
+                print!(", ");
+            }
+            print!("\"{key}\"");
+        }
+        println!("]");
 
-                let _ = tx.try_send(());
-            },
-        )
+        let _ = tx.try_send(());
+    };
+
+    let _sub = sdk
+        .subscribe_to_configuration_update(None, &["test_str"], &callback)
         .expect("Failed to subscribe to configuration updates");
 
     println!("Subscribed to configuration updates. Waiting for updates...");

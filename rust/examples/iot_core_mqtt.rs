@@ -7,11 +7,13 @@ fn main() {
     sdk.connect().expect("Failed to connect to GG nucleus");
     println!("Connected to GG nucleus.");
 
+    let callback = move |topic: &str, payload: &[u8]| {
+        let payload_str = String::from_utf8_lossy(payload);
+        println!("Received [{payload_str}] on [{topic}].");
+    };
+
     let _sub = sdk
-        .subscribe_to_iot_core("hello", Qos::AtMostOnce, |topic, payload| {
-            let payload_str = String::from_utf8_lossy(payload);
-            println!("Received [{payload_str}] on [{topic}].");
-        })
+        .subscribe_to_iot_core("hello", Qos::AtMostOnce, &callback)
         .expect("Failed to subscribe to topic");
     println!("Subscribed to topic.");
 

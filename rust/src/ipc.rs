@@ -215,21 +215,18 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if subscription fails.
-    pub fn subscribe_to_topic<
-        'a,
-        F: FnMut(&str, SubscribeToTopicPayload) + 'a,
-    >(
+    pub fn subscribe_to_topic<'a, F: Fn(&str, SubscribeToTopicPayload)>(
         &self,
         topic: impl Into<&'a str>,
-        callback: F,
+        callback: &'a F,
     ) -> Result<Subscription<'a, F>> {
-        extern "C" fn trampoline<F: FnMut(&str, SubscribeToTopicPayload)>(
+        extern "C" fn trampoline<F: Fn(&str, SubscribeToTopicPayload)>(
             ctx: *mut ffi::c_void,
             topic: c::GgBuffer,
             payload: c::GgObject,
             _handle: c::GgIpcSubscriptionHandle,
         ) {
-            let cb = unsafe { &mut *ctx.cast::<F>() };
+            let cb = unsafe { &*ctx.cast::<F>() };
             let topic_str = unsafe {
                 str::from_utf8_unchecked(slice::from_raw_parts(
                     topic.data, topic.len,
@@ -261,25 +258,21 @@ impl Sdk {
             len: topic.len(),
         };
 
-        let ctx = Box::into_raw(Box::new(callback));
+        let ctx = callback as *const F;
         let mut handle = c::GgIpcSubscriptionHandle { val: 0 };
 
         Result::from(unsafe {
             c::ggipc_subscribe_to_topic(
                 topic_buf,
                 Some(trampoline::<F>),
-                ctx.cast::<ffi::c_void>(),
+                ctx.cast::<ffi::c_void>().cast_mut(),
                 &raw mut handle,
             )
-        })
-        .inspect_err(|_| unsafe {
-            drop(Box::from_raw(ctx));
         })?;
 
         debug_assert!(handle.val != 0);
         Ok(Subscription {
             handle,
-            ctx,
             phantom: PhantomData,
         })
     }
@@ -338,19 +331,19 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if subscription fails.
-    pub fn subscribe_to_iot_core<'a, F: FnMut(&str, &[u8]) + 'a>(
+    pub fn subscribe_to_iot_core<'a, F: Fn(&str, &[u8])>(
         &self,
         topic_filter: impl Into<&'a str>,
         qos: Qos,
-        callback: F,
+        callback: &'a F,
     ) -> Result<Subscription<'a, F>> {
-        extern "C" fn trampoline<F: FnMut(&str, &[u8])>(
+        extern "C" fn trampoline<F: Fn(&str, &[u8])>(
             ctx: *mut ffi::c_void,
             topic: c::GgBuffer,
             payload: c::GgBuffer,
             _handle: c::GgIpcSubscriptionHandle,
         ) {
-            let cb = unsafe { &mut *ctx.cast::<F>() };
+            let cb = unsafe { &*ctx.cast::<F>() };
             let topic_str = str::from_utf8(unsafe {
                 slice::from_raw_parts(topic.data, topic.len)
             })
@@ -366,7 +359,7 @@ impl Sdk {
             len: topic_filter.len(),
         };
 
-        let ctx = Box::into_raw(Box::new(callback));
+        let ctx = callback as *const F;
         let mut handle = c::GgIpcSubscriptionHandle { val: 0 };
 
         Result::from(unsafe {
@@ -374,18 +367,14 @@ impl Sdk {
                 topic_buf,
                 qos as u8,
                 Some(trampoline::<F>),
-                ctx.cast::<ffi::c_void>(),
+                ctx.cast::<ffi::c_void>().cast_mut(),
                 &raw mut handle,
             )
-        })
-        .inspect_err(|_| unsafe {
-            drop(Box::from_raw(ctx));
         })?;
 
         debug_assert!(handle.val != 0);
         Ok(Subscription {
             handle,
-            ctx,
             phantom: PhantomData,
         })
     }
@@ -594,22 +583,19 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if subscription fails.
-    pub fn subscribe_to_configuration_update<
-        'a,
-        F: FnMut(&str, &[&str]) + 'a,
-    >(
+    pub fn subscribe_to_configuration_update<'a, F: Fn(&str, &[&str])>(
         &self,
         component_name: Option<&str>,
         key_path: &[&str],
-        callback: F,
+        callback: &'a F,
     ) -> Result<Subscription<'a, F>> {
-        extern "C" fn trampoline<F: FnMut(&str, &[&str])>(
+        extern "C" fn trampoline<F: Fn(&str, &[&str])>(
             ctx: *mut ffi::c_void,
             component_name: c::GgBuffer,
             key_path: c::GgList,
             _handle: c::GgIpcSubscriptionHandle,
         ) {
-            let cb = unsafe { &mut *ctx.cast::<F>() };
+            let cb = unsafe { &*ctx.cast::<F>() };
             let component_str = str::from_utf8(unsafe {
                 slice::from_raw_parts(component_name.data, component_name.len)
             })
@@ -644,7 +630,7 @@ impl Sdk {
             len: name.len(),
         });
 
-        let ctx = Box::into_raw(Box::new(callback));
+        let ctx = callback as *const F;
         let mut handle = c::GgIpcSubscriptionHandle { val: 0 };
 
         Result::from(unsafe {
@@ -652,18 +638,14 @@ impl Sdk {
                 component_buf.as_ref().map_or(ptr::null(), ptr::from_ref),
                 c_key_path,
                 Some(trampoline::<F>),
-                ctx.cast::<ffi::c_void>(),
+                ctx.cast::<ffi::c_void>().cast_mut(),
                 &raw mut handle,
             )
-        })
-        .inspect_err(|_| unsafe {
-            drop(Box::from_raw(ctx));
         })?;
 
         debug_assert!(handle.val != 0);
         Ok(Subscription {
             handle,
-            ctx,
             phantom: PhantomData,
         })
     }
@@ -759,14 +741,14 @@ impl Sdk {
         'b,
         'c,
         F: FnOnce(result::Result<&'b [Kv<'b>], IpcError<'b>>) -> Result<()>,
-        G: FnMut(usize, &str, &'b [Kv<'b>]) -> Result<()> + 'c,
+        G: Fn(usize, &str, &'b [Kv<'b>]) -> Result<()>,
     >(
         &self,
         operation: &str,
         service_model_type: &str,
         params: &[Kv<'a>],
         mut response_callback: F,
-        sub_callback: G,
+        sub_callback: &'c G,
         aux_ctx: usize,
     ) -> Result<Subscription<'c, G>> {
         extern "C" fn result_trampoline<
@@ -809,8 +791,7 @@ impl Sdk {
 
         extern "C" fn sub_trampoline<
             'b,
-            'c,
-            G: FnMut(usize, &str, &'b [Kv<'b>]) -> Result<()> + 'c,
+            G: Fn(usize, &str, &'b [Kv<'b>]) -> Result<()>,
         >(
             ctx: *mut ffi::c_void,
             aux_ctx: *mut ffi::c_void,
@@ -818,7 +799,7 @@ impl Sdk {
             service_model_type: c::GgBuffer,
             data: c::GgMap,
         ) -> c::GgError {
-            let cb = unsafe { &mut *ctx.cast::<G>() };
+            let cb = unsafe { &*ctx.cast::<G>() };
             let aux = aux_ctx as usize;
             let smt = str::from_utf8(unsafe {
                 slice::from_raw_parts(
@@ -847,7 +828,7 @@ impl Sdk {
         };
 
         let mut handle = c::GgIpcSubscriptionHandle { val: 0 };
-        let ctx = Box::into_raw(Box::new(sub_callback));
+        let ctx = sub_callback as *const G;
 
         Result::from(unsafe {
             c::ggipc_subscribe(
@@ -857,19 +838,15 @@ impl Sdk {
                 Some(result_trampoline::<F>),
                 Some(error_trampoline::<F>),
                 (&raw mut response_callback).cast::<ffi::c_void>(),
-                Some(sub_trampoline::<'b, 'c, G>),
-                ctx.cast::<ffi::c_void>(),
+                Some(sub_trampoline::<'b, G>),
+                ctx.cast::<ffi::c_void>().cast_mut(),
                 aux_ctx as *mut ffi::c_void,
                 &raw mut handle,
             )
-        })
-        .inspect_err(|_| unsafe {
-            drop(Box::from_raw(ctx));
         })?;
 
         Ok(Subscription {
             handle,
-            ctx,
             phantom: PhantomData,
         })
     }
@@ -879,17 +856,13 @@ impl Sdk {
 #[derive(Debug)]
 pub struct Subscription<'a, T> {
     handle: c::GgIpcSubscriptionHandle,
-    ctx: *mut T,
-    phantom: PhantomData<&'a mut T>,
+    phantom: PhantomData<&'a T>,
 }
 
 impl<T> Drop for Subscription<'_, T> {
     fn drop(&mut self) {
         if self.handle.val != 0 {
             unsafe { c::ggipc_close_subscription(self.handle) };
-            if !self.ctx.is_null() {
-                let _ = unsafe { Box::from_raw(self.ctx) };
-            }
         }
     }
 }
@@ -898,7 +871,6 @@ impl<T> Default for Subscription<'_, T> {
     fn default() -> Self {
         Self {
             handle: c::GgIpcSubscriptionHandle { val: 0 },
-            ctx: ptr::null_mut(),
             phantom: PhantomData,
         }
     }
