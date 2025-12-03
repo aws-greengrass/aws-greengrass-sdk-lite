@@ -212,3 +212,187 @@ GgReader gg_json_reader(const GgObject *obj) {
     assert(obj != NULL);
     return (GgReader) { .read = obj_read, .ctx = (void *) obj };
 }
+
+#ifdef GG_TESTING
+
+#include <gg/map.h>
+#include <gg/test.h>
+#include <unity.h>
+#include <stdlib.h>
+
+GG_TEST_DEFINE(json_encode_null_ok) {
+    GgObject null = GG_OBJ_NULL;
+    GgBuffer buf = GG_BUF((uint8_t[4]) { 0 });
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GG_TEST_ASSERT_OK(gg_json_encode(null, gg_byte_vec_writer(&vec)));
+    TEST_ASSERT_EQUAL_UINT(4, vec.buf.len);
+    TEST_ASSERT_EQUAL_CHAR_ARRAY("null", (char *) vec.buf.data, vec.buf.len);
+}
+
+GG_TEST_DEFINE(json_encode_bool_ok) {
+    {
+        GgObject obj_false = gg_obj_bool(false);
+        GgBuffer buf = GG_BUF((uint8_t[5]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj_false, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("false"), vec.buf);
+    }
+
+    {
+        GgObject obj_true = gg_obj_bool(true);
+        GgBuffer buf = GG_BUF((uint8_t[4]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj_true, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("true"), vec.buf);
+    }
+}
+
+GG_TEST_DEFINE(json_encode_i64_ok) {
+    GgObject obj = gg_obj_i64(123);
+    GgBuffer buf = GG_BUF((uint8_t[3]) { 0 });
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+    GG_TEST_ASSERT_BUF_EQUAL(GG_STR("123"), vec.buf);
+}
+
+GG_TEST_DEFINE(json_encode_f64_ok) {
+    GgObject obj = gg_obj_f64(123.456);
+    GgBuffer buf = GG_BUF((uint8_t[DBL_DECIMAL_DIG + 9 + 1]) { 0 });
+    buf.len -= 1;
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+
+    // Only feasible to test that round-tripping results in a similar value
+    TEST_ASSERT_EQUAL_DOUBLE(123.456, strtod((char *) buf.data, NULL));
+}
+
+GG_TEST_DEFINE(json_encode_buf_ok) {
+    {
+        GgObject obj = gg_obj_buf(GG_BUF((uint8_t[1]) { 0x1F }));
+        GgBuffer buf = GG_BUF((uint8_t[8]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("\"\\u001F\""), vec.buf);
+    }
+
+    {
+        GgObject obj = gg_obj_buf(GG_STR("Hello, world!"));
+        GgBuffer buf = GG_BUF((uint8_t[15]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("\"Hello, world!\""), vec.buf);
+    }
+
+    {
+        GgObject obj = gg_obj_buf(GG_STR("\"escape \\ me \" \0"));
+        GgBuffer buf = GG_BUF((uint8_t[26]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(
+            GG_STR("\"\\\"escape \\\\ me \\\" \\u0000\""), vec.buf
+        );
+    }
+}
+
+GG_TEST_DEFINE(json_encode_map_ok) {
+    {
+        GgObject obj = gg_obj_map(GG_MAP(
+            gg_kv(GG_STR("a"), gg_obj_i64(1)),
+            gg_kv(GG_STR("b"), gg_obj_i64(2)),
+            gg_kv(GG_STR("c"), gg_obj_i64(3))
+        ));
+        GgBuffer buf = GG_BUF((uint8_t[20]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("{\"a\":1,\"b\":2,\"c\":3}"), vec.buf);
+    }
+}
+
+GG_TEST_DEFINE(json_encode_list_ok) {
+    {
+        GgObject obj
+            = gg_obj_list(GG_LIST(gg_obj_i64(1), gg_obj_i64(2), gg_obj_i64(3)));
+        GgBuffer buf = GG_BUF((uint8_t[7]) { 0 });
+        GgByteVec vec = gg_byte_vec_init(buf);
+        GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
+        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("[1,2,3]"), vec.buf);
+    }
+}
+
+GG_TEST_DEFINE(json_encode_map_too_nested) {
+    GgKV pairs[GG_MAX_OBJECT_DEPTH + 1];
+    GgObject too_nested[GG_MAX_OBJECT_DEPTH + 1];
+    // {"a"={"a"={...}}}
+    size_t too_nested_len = sizeof(too_nested) / sizeof(too_nested[0]);
+    static_assert(
+        sizeof(too_nested) / sizeof(too_nested[0])
+            == sizeof(pairs) / sizeof(pairs[0]),
+        "size mismatch"
+    );
+    for (size_t i = 0; i != too_nested_len; i++) {
+        pairs[i] = gg_kv(GG_STR("a"), GG_OBJ_NULL);
+        too_nested[i] = gg_obj_map((GgMap) { .pairs = &pairs[i], .len = 1 });
+    }
+    for (size_t i = 0; i != too_nested_len - 1; ++i) {
+        *gg_kv_val(&pairs[i]) = too_nested[i + 1];
+    }
+
+    GgBuffer buf = GG_BUF((uint8_t[16 *(GG_MAX_OBJECT_DEPTH + 1)]) { 0 });
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GgError ret = gg_json_encode(too_nested[0], gg_byte_vec_writer(&vec));
+    TEST_ASSERT_EQUAL(GG_ERR_RANGE, ret);
+}
+
+GG_TEST_DEFINE(json_encode_map_too_large) {
+    GgKV too_large[GG_MAX_OBJECT_SUBOBJECTS / 2 + 1];
+    // {"a"=0,"a"=1,...}
+    size_t too_large_len = sizeof(too_large) / sizeof(too_large[0]);
+    for (size_t i = 0; i != too_large_len; i++) {
+        too_large[i] = gg_kv(GG_STR("a"), gg_obj_i64((int64_t) i));
+    }
+
+    GgBuffer buf
+        = GG_BUF((uint8_t[16 *(GG_MAX_OBJECT_SUBOBJECTS / 2 + 1)]) { 0 });
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GgError ret = gg_json_encode(
+        gg_obj_map((GgMap) { .pairs = too_large, .len = too_large_len }),
+        gg_byte_vec_writer(&vec)
+    );
+    TEST_ASSERT_EQUAL(GG_ERR_RANGE, ret);
+}
+
+GG_TEST_DEFINE(json_encode_list_too_nested) {
+    GgObject too_nested[GG_MAX_OBJECT_DEPTH + 1];
+    // [[[...[null]...]]]
+    size_t too_nested_len = sizeof(too_nested) / sizeof(too_nested[0]);
+    for (size_t i = 0; i != too_nested_len - 1; i++) {
+        too_nested[i]
+            = gg_obj_list((GgList) { .items = &too_nested[i + 1], .len = 1 });
+    }
+    too_nested[too_nested_len - 1] = GG_OBJ_NULL;
+
+    GgBuffer buf = GG_BUF((uint8_t[16 *(GG_MAX_OBJECT_DEPTH + 1)]) { 0 });
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GgError ret = gg_json_encode(too_nested[0], gg_byte_vec_writer(&vec));
+    TEST_ASSERT_EQUAL(GG_ERR_RANGE, ret);
+}
+
+GG_TEST_DEFINE(json_encode_list_too_large) {
+    GgObject too_large[GG_MAX_OBJECT_SUBOBJECTS + 1];
+    // [null,null,null,...,null]
+    size_t too_large_len = sizeof(too_large) / sizeof(too_large[0]);
+    for (size_t i = 0; i != too_large_len; i++) {
+        too_large[i] = GG_OBJ_NULL;
+    }
+
+    GgBuffer buf = GG_BUF((uint8_t[16 *(GG_MAX_OBJECT_SUBOBJECTS + 1)]) { 0 });
+
+    GgByteVec vec = gg_byte_vec_init(buf);
+    GgError ret = gg_json_encode(
+        gg_obj_list((GgList) { .items = too_large, .len = too_large_len }),
+        gg_byte_vec_writer(&vec)
+    );
+    TEST_ASSERT_EQUAL(GG_ERR_RANGE, ret);
+}
+
+#endif

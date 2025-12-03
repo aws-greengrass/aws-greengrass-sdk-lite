@@ -283,15 +283,26 @@ if(PROJECT_IS_TOP_LEVEL)
           APPEND_STRING
           PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
       endforeach()
+      if(NOT "${test_dir}/main.c" IN_LIST TEST_SRCS)
+        list(APPEND TEST_SRCS test/default_main.c)
+      endif()
       add_executable(c_${test_name}_tests ${TEST_SRCS})
       target_link_libraries(
-        c_${test_name}_tests PRIVATE gg-sdk++ gg-sdk gg-ipc-mock unity-config
+        c_${test_name}_tests PRIVATE gg-sdk gg-ipc-mock unity-config
                                      unity)
       install(TARGETS c_${test_name}_tests)
       add_test(c_${test_name}_tests
                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/c_${test_name}_tests)
     endforeach()
   endif()
+
+  target_compile_definitions(gg-sdk PUBLIC GG_TESTING)
+    target_link_libraries(gg-sdk PRIVATE unity-config unity)
+
+  add_executable(gg-sdk-test test/default_main.c)
+  target_link_libraries(gg-sdk-test PRIVATE unity-config unity gg-sdk)
+  add_test(gg-sdk-test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/gg-sdk-test)
+
 endif()
 
 if(BUILD_CPP)

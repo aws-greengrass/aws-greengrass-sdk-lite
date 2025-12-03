@@ -2,6 +2,7 @@
 #define GG_TEST_UNITY_HELPERS_H
 
 #include <sys/types.h>
+#include <unity.h>
 #include <stddef.h>
 
 typedef void (*GgTestFunction)(void);
@@ -36,6 +37,19 @@ void gg_test_register(GgTestListNode *entry);
 #define GG_TEST_FOR_EACH(name) \
     for (GgTestListNode * (name) = gg_test_list_head; (name) != NULL; \
          (name) = (name)->next)
+
+#define GG_TEST_ASSERT_OK(expr) TEST_ASSERT_EQUAL(GG_ERR_OK, (expr))
+#define GG_TEST_ASSERT_BAD(expr) TEST_ASSERT_NOT_EQUAL(GG_ERR_OK, (expr))
+
+#define GG_TEST_ASSERT_BUF_EQUAL(expected, actual) \
+    do { \
+        TEST_ASSERT_EQUAL_size_t_MESSAGE( \
+            (expected).len, (actual).len, "Size mismatch" \
+        ); \
+        TEST_ASSERT_EQUAL_CHAR_ARRAY( \
+            (char *) (expected).data, (char *) (actual).data, (expected).len \
+        ); \
+    } while (0)
 
 int gg_test_run_suite(void);
 

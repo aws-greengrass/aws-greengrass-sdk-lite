@@ -1,6 +1,3 @@
-
-#include "bits/time.h"
-#include "unity_internals.h"
 #include <errno.h>
 #include <gg/arena.h>
 #include <gg/base64.h>
@@ -25,9 +22,6 @@
 #include <stdlib.h>
 
 #define GG_MODULE "test_mqtt"
-
-#define GG_TEST_ASSERT_OK(expr) TEST_ASSERT_EQUAL(GG_ERR_OK, (expr))
-#define GG_TEST_ASSERT_BAD(expr) TEST_ASSERT_NOT_EQUAL(GG_ERR_OK, (expr))
 
 static uint8_t too_large_payload[0x20000];
 
@@ -239,13 +233,9 @@ static void subscribe_to_iot_core_okay_subscription_response(
 ) {
     SubscribeOkayContext *context = ctx;
     TEST_ASSERT_EQUAL_PTR(&subscribe_okay_context, context);
-    TEST_ASSERT_EQUAL_size_t(GG_STR("my/topic").len, topic.len);
-    TEST_ASSERT_EQUAL_CHAR_ARRAY("my/topic", topic.data, topic.len);
+    GG_TEST_ASSERT_BUF_EQUAL(GG_STR("my/topic"), topic);
 
-    TEST_ASSERT_EQUAL_size_t(payloads[0].payload.len, payload.len);
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(
-        payloads[0].payload.data, payload.data, payload.len
-    );
+    GG_TEST_ASSERT_BUF_EQUAL(payloads[0].payload, payload);
 
     TEST_ASSERT_EQUAL_UINT32(context->handle.val, handle.val);
 

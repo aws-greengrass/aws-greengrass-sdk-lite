@@ -11,9 +11,6 @@ extern "C" {
 #include <unity.h>
 }
 
-#define GG_TEST_ASSERT_OK(expr) TEST_ASSERT_EQUAL(GG_ERR_OK, (expr))
-#define GG_TEST_ASSERT_BAD(expr) TEST_ASSERT_NOT_EQUAL(GG_ERR_OK, (expr))
-
 namespace {
 std::string_view as_view(gg::Buffer buf) noexcept {
     return { reinterpret_cast<char *>(buf.data()), buf.size() };

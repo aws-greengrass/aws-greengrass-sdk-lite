@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <gg/arena.h>
 #include <gg/buffer.h>
@@ -18,9 +17,6 @@
 #include <unistd.h>
 #include <unity.h>
 #include <stdlib.h>
-
-#define GG_TEST_ASSERT_OK(expr) TEST_ASSERT_EQUAL(GG_ERR_OK, (expr))
-#define GG_TEST_ASSERT_BAD(expr) TEST_ASSERT_NOT_EQUAL(GG_ERR_OK, (expr))
 
 GG_TEST_DEFINE(connect_okay) {
     GgipcPacketSequence seq
