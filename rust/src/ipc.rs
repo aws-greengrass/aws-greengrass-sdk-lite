@@ -346,10 +346,11 @@ impl Sdk {
             _handle: c::GgIpcSubscriptionHandle,
         ) {
             let cb = unsafe { &*ctx.cast::<F>() };
-            let topic_str = str::from_utf8(unsafe {
-                slice::from_raw_parts(topic.data, topic.len)
-            })
-            .unwrap();
+            let topic_str = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    topic.data, topic.len,
+                ))
+            };
             let payload_bytes =
                 unsafe { slice::from_raw_parts(payload.data, payload.len) };
             cb(topic_str, payload_bytes);
@@ -434,9 +435,6 @@ impl Sdk {
     ///
     /// # Errors
     /// Returns error if config retrieval fails.
-    ///
-    /// # Panics
-    /// Panics if the config value is not valid UTF-8.
     pub fn get_config_str<'a>(
         &self,
         key_path: &[&str],
@@ -464,10 +462,11 @@ impl Sdk {
             )
         })?;
 
-        Ok(str::from_utf8(unsafe {
-            slice::from_raw_parts(value.data, value.len)
+        Ok(unsafe {
+            str::from_utf8_unchecked(slice::from_raw_parts(
+                value.data, value.len,
+            ))
         })
-        .unwrap())
     }
 
     /// Update component configuration.
@@ -591,20 +590,23 @@ impl Sdk {
             _handle: c::GgIpcSubscriptionHandle,
         ) {
             let cb = unsafe { &*ctx.cast::<F>() };
-            let component_str = str::from_utf8(unsafe {
-                slice::from_raw_parts(component_name.data, component_name.len)
-            })
-            .unwrap();
+            let component_str = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    component_name.data,
+                    component_name.len,
+                ))
+            };
             let path_objs =
                 unsafe { slice::from_raw_parts(key_path.items, key_path.len) };
 
             let mut path_strs_mem = [MaybeUninit::uninit(); MAX_KEY_PATH_LEN];
             for (i, obj) in path_objs.iter().enumerate() {
                 let buf = unsafe { c::gg_obj_into_buf(*obj) };
-                let s = str::from_utf8(unsafe {
-                    slice::from_raw_parts(buf.data, buf.len)
-                })
-                .unwrap();
+                let s = unsafe {
+                    str::from_utf8_unchecked(slice::from_raw_parts(
+                        buf.data, buf.len,
+                    ))
+                };
                 path_strs_mem[i].write(s);
             }
             let path_strs = unsafe {
@@ -685,14 +687,18 @@ impl Sdk {
             message: c::GgBuffer,
         ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
-            let code = str::from_utf8(unsafe {
-                slice::from_raw_parts(error_code.data, error_code.len)
-            })
-            .unwrap();
-            let msg = str::from_utf8(unsafe {
-                slice::from_raw_parts(message.data, message.len)
-            })
-            .unwrap();
+            let code = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    error_code.data,
+                    error_code.len,
+                ))
+            };
+            let msg = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    message.data,
+                    message.len,
+                ))
+            };
             cb(Err(IpcError {
                 error_code: code,
                 message: msg,
@@ -769,14 +775,18 @@ impl Sdk {
             message: c::GgBuffer,
         ) -> c::GgError {
             let cb = unsafe { ctx.cast::<F>().read() };
-            let code = str::from_utf8(unsafe {
-                slice::from_raw_parts(error_code.data, error_code.len)
-            })
-            .unwrap();
-            let msg = str::from_utf8(unsafe {
-                slice::from_raw_parts(message.data, message.len)
-            })
-            .unwrap();
+            let code = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    error_code.data,
+                    error_code.len,
+                ))
+            };
+            let msg = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
+                    message.data,
+                    message.len,
+                ))
+            };
             cb(Err(IpcError {
                 error_code: code,
                 message: msg,
@@ -796,13 +806,12 @@ impl Sdk {
         ) -> c::GgError {
             let cb = unsafe { &*ctx.cast::<G>() };
             let aux = aux_ctx as usize;
-            let smt = str::from_utf8(unsafe {
-                slice::from_raw_parts(
+            let smt = unsafe {
+                str::from_utf8_unchecked(slice::from_raw_parts(
                     service_model_type.data,
                     service_model_type.len,
-                )
-            })
-            .unwrap();
+                ))
+            };
             let map = unsafe {
                 slice::from_raw_parts(data.pairs.cast::<Kv>(), data.len)
             };

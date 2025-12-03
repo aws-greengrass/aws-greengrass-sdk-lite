@@ -204,9 +204,6 @@ impl<'a> Object<'a> {
     ///     assert_eq!(pairs[0].key(), "key");
     /// }
     /// ```
-    ///
-    /// # Panics
-    /// Panics if the buffer is not valid UTF-8.
     #[must_use]
     pub fn unpack(&self) -> UnpackedObject<'_> {
         use c::GgObjectType::*;
@@ -222,7 +219,7 @@ impl<'a> Object<'a> {
                 GG_TYPE_BUF => {
                     let buf = c::gg_obj_into_buf(self.c);
                     let ptr = slice_from_c(buf.data, buf.len);
-                    UnpackedObject::Buf(str::from_utf8(ptr).unwrap())
+                    UnpackedObject::Buf(str::from_utf8_unchecked(ptr))
                 }
                 GG_TYPE_LIST => {
                     let list = c::gg_obj_into_list(self.c);
@@ -349,7 +346,7 @@ impl<'a> Kv<'a> {
     pub fn key(&self) -> &str {
         let buf = unsafe { c::gg_kv_key(self.c) };
         unsafe {
-            str::from_utf8(slice::from_raw_parts(buf.data, buf.len)).unwrap()
+            str::from_utf8_unchecked(slice::from_raw_parts(buf.data, buf.len))
         }
     }
 
