@@ -52,4 +52,14 @@ int gg_test_run_suite(void);
         ); \
     } while (0)
 
+#define GG_TEST_ASSERT_BUF_EQUAL_STR(expected, actual) \
+    do { \
+        TEST_ASSERT_EQUAL_size_t_MESSAGE( \
+            (expected).len, (actual).len, "Size mismatch" \
+        ); \
+        TEST_ASSERT_EQUAL_STRING_LEN( \
+            (expected).data, (actual).data, (expected).len \
+        ); \
+    } while (0)
+
 #endif

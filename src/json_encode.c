@@ -225,8 +225,7 @@ GG_TEST_DEFINE(json_encode_null_ok) {
     GgBuffer buf = GG_BUF((uint8_t[4]) { 0 });
     GgByteVec vec = gg_byte_vec_init(buf);
     GG_TEST_ASSERT_OK(gg_json_encode(null, gg_byte_vec_writer(&vec)));
-    TEST_ASSERT_EQUAL_UINT(4, vec.buf.len);
-    TEST_ASSERT_EQUAL_CHAR_ARRAY("null", (char *) vec.buf.data, vec.buf.len);
+    GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("null"), vec.buf);
 }
 
 GG_TEST_DEFINE(json_encode_bool_ok) {
@@ -235,7 +234,7 @@ GG_TEST_DEFINE(json_encode_bool_ok) {
         GgBuffer buf = GG_BUF((uint8_t[5]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj_false, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("false"), vec.buf);
+        GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("false"), vec.buf);
     }
 
     {
@@ -243,7 +242,7 @@ GG_TEST_DEFINE(json_encode_bool_ok) {
         GgBuffer buf = GG_BUF((uint8_t[4]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj_true, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("true"), vec.buf);
+        GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("true"), vec.buf);
     }
 }
 
@@ -252,7 +251,7 @@ GG_TEST_DEFINE(json_encode_i64_ok) {
     GgBuffer buf = GG_BUF((uint8_t[3]) { 0 });
     GgByteVec vec = gg_byte_vec_init(buf);
     GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
-    GG_TEST_ASSERT_BUF_EQUAL(GG_STR("123"), vec.buf);
+    GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("123"), vec.buf);
 }
 
 GG_TEST_DEFINE(json_encode_f64_ok) {
@@ -272,7 +271,7 @@ GG_TEST_DEFINE(json_encode_buf_ok) {
         GgBuffer buf = GG_BUF((uint8_t[8]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("\"\\u001F\""), vec.buf);
+        GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("\"\\u001F\""), vec.buf);
     }
 
     {
@@ -280,7 +279,7 @@ GG_TEST_DEFINE(json_encode_buf_ok) {
         GgBuffer buf = GG_BUF((uint8_t[15]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("\"Hello, world!\""), vec.buf);
+        GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("\"Hello, world!\""), vec.buf);
     }
 
     {
@@ -288,7 +287,7 @@ GG_TEST_DEFINE(json_encode_buf_ok) {
         GgBuffer buf = GG_BUF((uint8_t[26]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(
+        GG_TEST_ASSERT_BUF_EQUAL_STR(
             GG_STR("\"\\\"escape \\\\ me \\\" \\u0000\""), vec.buf
         );
     }
@@ -304,7 +303,9 @@ GG_TEST_DEFINE(json_encode_map_ok) {
         GgBuffer buf = GG_BUF((uint8_t[20]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("{\"a\":1,\"b\":2,\"c\":3}"), vec.buf);
+        GG_TEST_ASSERT_BUF_EQUAL_STR(
+            GG_STR("{\"a\":1,\"b\":2,\"c\":3}"), vec.buf
+        );
     }
 }
 
@@ -315,7 +316,7 @@ GG_TEST_DEFINE(json_encode_list_ok) {
         GgBuffer buf = GG_BUF((uint8_t[7]) { 0 });
         GgByteVec vec = gg_byte_vec_init(buf);
         GG_TEST_ASSERT_OK(gg_json_encode(obj, gg_byte_vec_writer(&vec)));
-        GG_TEST_ASSERT_BUF_EQUAL(GG_STR("[1,2,3]"), vec.buf);
+        GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("[1,2,3]"), vec.buf);
     }
 }
 

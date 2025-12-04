@@ -219,7 +219,7 @@ static void subscribe_to_iot_core_okay_subscription_response(
 ) {
     SubscribeOkayContext *context = ctx;
     TEST_ASSERT_EQUAL_PTR(&subscribe_okay_context, context);
-    GG_TEST_ASSERT_BUF_EQUAL(GG_STR("my/topic"), topic);
+    GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("my/topic"), topic);
 
     GG_TEST_ASSERT_BUF_EQUAL(payloads[0].payload, payload);
 
