@@ -148,10 +148,7 @@ static GgError gg_socket_open(GgBuffer path, mode_t mode, int *socket_fd) {
 }
 
 GgError gg_test_setup_ipc(
-    const char *socket_path_prefix,
-    mode_t mode,
-    int *handle,
-    const char *auth_token
+    const char *socket_path_prefix, mode_t mode, const char *auth_token
 ) {
     GgError ret = GG_ERR_OK;
     GgByteVec auth_vec = gg_byte_vec_init(GG_BUF(ipc_auth_token));
@@ -207,8 +204,6 @@ GgError gg_test_setup_ipc(
     cleanup_sock = -1;
     cleanup_epollfd = -1;
     sock_fd = socket_fd;
-
-    *handle = 1;
 
     // test setup code should be called before creating any threads
     // NOLINTBEGIN(concurrency-mt-unsafe)
@@ -437,8 +432,7 @@ static GgError gg_test_recv_packet(const GgipcPacket *packet, int client) {
     return GG_ERR_OK;
 }
 
-GgError gg_test_accept_client(int client_timeout, int handle) {
-    assert(handle > 0);
+GgError gg_test_accept_client(int client_timeout) {
     if (client_timeout <= 0) {
         client_timeout = 5;
     }
@@ -479,16 +473,14 @@ GgError gg_test_accept_client(int client_timeout, int handle) {
 }
 
 GgError gg_test_expect_packet_sequence(
-    GgipcPacketSequence sequence, int client_timeout, int handle
+    GgipcPacketSequence sequence, int client_timeout
 ) {
-    assert(handle > 0);
-
     if (client_timeout <= 0) {
         client_timeout = 5;
     }
 
     if (client_fd < 0) {
-        GgError ret = gg_test_accept_client(client_timeout, handle);
+        GgError ret = gg_test_accept_client(client_timeout);
         if (ret != GG_ERR_OK) {
             return ret;
         }
@@ -518,8 +510,7 @@ GgError gg_test_expect_packet_sequence(
     return GG_ERR_OK;
 }
 
-GgError gg_test_disconnect(int handle) {
-    assert(handle > 0);
+GgError gg_test_disconnect(void) {
     if (client_fd < 0) {
         return GG_ERR_NOENTRY;
     }
@@ -529,8 +520,7 @@ GgError gg_test_disconnect(int handle) {
     return gg_close(old_client_fd);
 }
 
-GgError gg_test_wait_for_client_disconnect(int client_timeout, int handle) {
-    assert(handle > 0);
+GgError gg_test_wait_for_client_disconnect(int client_timeout) {
     if (client_fd < 0) {
         return GG_ERR_NOENTRY;
     }
@@ -552,7 +542,7 @@ GgError gg_test_wait_for_client_disconnect(int client_timeout, int handle) {
         return GG_ERR_FAILURE;
     }
 
-    return gg_test_disconnect(handle);
+    return gg_test_disconnect();
 }
 
 static void remove_temp_files(void) {
@@ -578,8 +568,7 @@ static void remove_temp_files(void) {
     ipc_socket_path_buf = (GgBuffer) { 0 };
 }
 
-void gg_test_close(int handle) {
-    assert(handle > 0);
+void gg_test_close(void) {
     if (client_fd >= 0) {
         (void) gg_close(client_fd);
         client_fd = -1;

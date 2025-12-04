@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define GG_MODULE "unity"
-
 static pid_t pid = -1;
 
 __attribute__((weak)) int gg_test_protect(void) {

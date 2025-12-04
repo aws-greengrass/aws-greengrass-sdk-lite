@@ -5,10 +5,12 @@
 extern "C" {
 #include <gg/ipc/mock.h>
 #include <gg/ipc/packet_sequences.h>
-#include <gg/process_wait.h>
 #include <gg/test.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <unity.h>
+
+GgError gg_process_wait(pid_t pid) noexcept;
 }
 
 namespace {
@@ -36,9 +38,7 @@ namespace tests {
                 TEST_PASS();
             }
 
-            GG_TEST_ASSERT_OK(
-                gg_test_expect_packet_sequence(seq, 30, server_handle)
-            );
+            GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 30));
 
             GG_TEST_ASSERT_OK(gg_process_wait(pid));
         }
@@ -73,11 +73,9 @@ namespace tests {
                 TEST_PASS();
             }
 
-            GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+            GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
-            GG_TEST_ASSERT_OK(
-                gg_test_expect_packet_sequence(seq, 5, server_handle)
-            );
+            GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 5));
 
             GG_TEST_ASSERT_OK(gg_process_wait(pid));
         }
@@ -98,12 +96,10 @@ namespace tests {
                 TEST_PASS();
             }
 
-            GG_TEST_ASSERT_OK(
-                gg_test_expect_packet_sequence(seq, 30, server_handle)
-            );
+            GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 30));
 
             /// TODO: verify Classic behavior
-            GG_TEST_ASSERT_OK(gg_test_disconnect(server_handle));
+            GG_TEST_ASSERT_OK(gg_test_disconnect());
 
             GG_TEST_ASSERT_OK(gg_process_wait(pid));
         }

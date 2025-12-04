@@ -15,7 +15,6 @@ typedef struct GgTestListNode {
     struct GgTestListNode *next;
 } GgTestListNode;
 
-extern int server_handle;
 extern GgTestListNode *gg_test_list_head;
 
 void gg_test_register(GgTestListNode *entry);
@@ -34,6 +33,8 @@ void gg_test_register(GgTestListNode *entry);
     } \
     static void test_gg_##testname(void)
 
+int gg_test_run_suite(void);
+
 #define GG_TEST_FOR_EACH(name) \
     for (GgTestListNode * (name) = gg_test_list_head; (name) != NULL; \
          (name) = (name)->next)
@@ -50,7 +51,5 @@ void gg_test_register(GgTestListNode *entry);
             (char *) (expected).data, (char *) (actual).data, (expected).len \
         ); \
     } while (0)
-
-int gg_test_run_suite(void);
 
 #endif

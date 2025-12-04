@@ -63,6 +63,10 @@ if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
       endif()
       get_filename_component(test_name ${test_dir} NAME_WLE)
       file(GLOB_RECURSE TEST_SRCS CONFIGURE_DEPENDS ${test_dir}/*.cpp)
+      if(NOT "${test_dir}/main.cpp" IN_LIST TEST_SRCS)
+        list(APPEND TEST_SRCS
+             ${aws-greengrass-component-sdk_C_TEST_DIR}/main_ipc_overrides.c)
+      endif()
       foreach(src ${TEST_SRCS})
         set_property(
           SOURCE ${src}
@@ -71,8 +75,8 @@ if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
       endforeach()
       add_executable(cpp_${test_name}_tests ${TEST_SRCS})
       target_link_libraries(
-        cpp_${test_name}_tests PRIVATE gg-sdk++ gg-sdk gg-ipc-mock unity-config
-                                       unity)
+        cpp_${test_name}_tests PRIVATE gg-sdk++ gg-sdk gg-ipc-mock gg-test
+                                       unity-config unity)
       install(TARGETS cpp_${test_name}_tests)
       add_test(cpp_${test_name}_tests
                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cpp_${test_name}_tests)

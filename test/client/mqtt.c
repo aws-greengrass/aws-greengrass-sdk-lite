@@ -51,23 +51,20 @@ GG_TEST_DEFINE(publish_to_iot_core_okay) {
 
     GgBuffer payload_base64 = payloads[0].payload_base64;
 
-    GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
-        gg_test_connect_accepted_sequence(gg_test_get_auth_token()),
-        5,
-        server_handle
+        gg_test_connect_accepted_sequence(gg_test_get_auth_token()), 5
     ));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
         gg_test_mqtt_publish_accepted_sequence(
             1, GG_STR("my/topic"), payload_base64, GG_STR("0")
         ),
-        5,
-        server_handle
+        5
     ));
 
-    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -88,15 +85,13 @@ GG_TEST_DEFINE(publish_to_iot_core_bad_alloc) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
-        gg_test_connect_accepted_sequence(gg_test_get_auth_token()),
-        5,
-        server_handle
+        gg_test_connect_accepted_sequence(gg_test_get_auth_token()), 5
     ));
 
-    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(30, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(30));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -116,23 +111,20 @@ GG_TEST_DEFINE(publish_to_iot_core_b64_okay) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
-        gg_test_connect_accepted_sequence(gg_test_get_auth_token()),
-        5,
-        server_handle
+        gg_test_connect_accepted_sequence(gg_test_get_auth_token()), 5
     ));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
         gg_test_mqtt_publish_accepted_sequence(
             1, GG_STR("my/topic"), payload_base64, GG_STR("0")
         ),
-        5,
-        server_handle
+        5
     ));
 
-    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -154,23 +146,20 @@ GG_TEST_DEFINE(publish_to_iot_core_rejected) {
 
     GgBuffer payload_base64 = payloads[0].payload_base64;
 
-    GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
-        gg_test_connect_accepted_sequence(gg_test_get_auth_token()),
-        5,
-        server_handle
+        gg_test_connect_accepted_sequence(gg_test_get_auth_token()), 5
     ));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
         gg_test_mqtt_publish_error_sequence(
             1, GG_STR("my/topic"), payload_base64, GG_STR("0")
         ),
-        5,
-        server_handle
+        5
     ));
 
-    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -190,12 +179,10 @@ GG_TEST_DEFINE(publish_to_iot_core_invalid_qos) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
-        gg_test_connect_accepted_sequence(gg_test_get_auth_token()),
-        5,
-        server_handle
+        gg_test_connect_accepted_sequence(gg_test_get_auth_token()), 5
     ));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
@@ -205,11 +192,10 @@ GG_TEST_DEFINE(publish_to_iot_core_invalid_qos) {
             payloads[0].payload_base64,
             GG_BUF((uint8_t[]) { '0' + 10 })
         ),
-        5,
-        server_handle
+        5
     ));
 
-    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(1));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -298,12 +284,10 @@ GG_TEST_DEFINE(subscribe_to_iot_core_okay) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
-        gg_test_connect_accepted_sequence(gg_test_get_auth_token()),
-        5,
-        server_handle
+        gg_test_connect_accepted_sequence(gg_test_get_auth_token()), 5
     ));
 
     GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(
@@ -314,11 +298,10 @@ GG_TEST_DEFINE(subscribe_to_iot_core_okay) {
             GG_STR("0"),
             EXPECTED_TIMES_CALLED
         ),
-        30,
-        server_handle
+        30
     ));
 
-    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(5, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_wait_for_client_disconnect(5));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }

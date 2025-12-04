@@ -31,7 +31,7 @@ GG_TEST_DEFINE(connect_okay) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 5, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 5));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -57,7 +57,7 @@ GG_TEST_DEFINE(connect_with_token_okay) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 5, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 5));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -75,10 +75,10 @@ GG_TEST_DEFINE(connect_bad) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 1, server_handle));
+    GG_TEST_ASSERT_OK(gg_test_expect_packet_sequence(seq, 1));
 
     /// TODO: verify Classic behavior
-    GG_TEST_ASSERT_OK(gg_test_disconnect(server_handle));
+    GG_TEST_ASSERT_OK(gg_test_disconnect());
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }
@@ -98,7 +98,7 @@ GG_TEST_DEFINE(connect_with_token_bad) {
         TEST_PASS();
     }
 
-    GG_TEST_ASSERT_BAD(gg_test_accept_client(1, server_handle));
+    GG_TEST_ASSERT_BAD(gg_test_accept_client(1));
 
     GG_TEST_ASSERT_OK(gg_process_wait(pid));
 }

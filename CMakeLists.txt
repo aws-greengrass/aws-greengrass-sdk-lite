@@ -46,22 +46,34 @@ if(PROJECT_IS_TOP_LEVEL)
       fetchcontent_makeavailable(${dep_name})
     endforeach()
 
-    set(UNITY_CONFIG_INCLUDE_DIR
-        ${CMAKE_CURRENT_SOURCE_DIR}/unity_config/include/unity)
+    set(UNITY_CONFIG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/unity/unity_config)
     add_subdirectory(${unity_SOURCE_DIR} unity)
     target_include_directories(
       unity PUBLIC $<BUILD_INTERFACE:${UNITY_CONFIG_INCLUDE_DIR}>
-                   $<INSTALL_INTERFACE:unity_config/include/unity>)
-    file(GLOB_RECURSE UNITY_CFG_SRCS CONFIGURE_DEPENDS "unity_config/*.c")
+                   $<INSTALL_INTERFACE:unity/unity_config>)
+
+    file(GLOB_RECURSE GG_TEST_SRCS CONFIGURE_DEPENDS "unity/gg_test/*.c")
+    add_library(gg-test ${GG_TEST_SRCS})
+
+    target_include_directories(gg-test SYSTEM INTERFACE unity/gg_test/include)
+    target_include_directories(gg-test PRIVATE unity/gg_test/include
+                                               priv_include)
+    target_compile_definitions(gg-test PRIVATE "GG_MODULE=(\"gg-test\")")
+
+    target_link_libraries(gg-test gg-sdk unity)
+
+    file(GLOB_RECURSE UNITY_CFG_SRCS CONFIGURE_DEPENDS "unity/unity_config/*.c")
     add_library(unity-config STATIC ${UNITY_CFG_SRCS})
     target_include_directories(unity-config PUBLIC unity_config/include/unity)
-    target_include_directories(unity-config SYSTEM
-                               INTERFACE unity_config/include)
     target_include_directories(unity-config PRIVATE priv_include
                                                     unity_config/include)
     target_compile_definitions(unity PUBLIC "UNITY_INCLUDE_CONFIG_H=1")
     target_compile_definitions(unity-config PUBLIC "UNITY_INCLUDE_CONFIG_H=1")
-    target_link_libraries(unity-config PRIVATE unity gg-sdk gg-ipc-mock)
+    target_compile_definitions(unity-config PRIVATE "GG_MODULE=(\"gg-unity\")")
+    target_link_libraries(unity-config PRIVATE unity gg-sdk)
+
+    set(aws-greengrass-component-sdk_C_TEST_DIR
+        ${CMAKE_CURRENT_SOURCE_DIR}/test)
   endif()
 
   # Put outputs in build/bin and build/lib
@@ -277,31 +289,42 @@ if(PROJECT_IS_TOP_LEVEL)
       endif()
       get_filename_component(test_name ${test_dir} NAME_WLE)
       file(GLOB_RECURSE TEST_SRCS CONFIGURE_DEPENDS ${test_dir}/*.c)
+      if(NOT "${test_dir}/main.c" IN_LIST TEST_SRCS)
+        list(APPEND TEST_SRCS test/main_ipc_overrides.c)
+      endif()
       foreach(src ${TEST_SRCS})
         set_property(
           SOURCE ${src}
           APPEND_STRING
           PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
       endforeach()
-      if(NOT "${test_dir}/main.c" IN_LIST TEST_SRCS)
-        list(APPEND TEST_SRCS test/default_main.c)
-      endif()
       add_executable(c_${test_name}_tests ${TEST_SRCS})
       target_link_libraries(
-        c_${test_name}_tests PRIVATE gg-sdk gg-ipc-mock unity-config
-                                     unity)
+        c_${test_name}_tests PRIVATE gg-sdk gg-ipc-mock unity-config unity
+                                     gg-test)
       install(TARGETS c_${test_name}_tests)
       add_test(c_${test_name}_tests
                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/c_${test_name}_tests)
     endforeach()
+
+    set_target_properties(gg-sdk PROPERTIES EXPORT_COMPILE_COMMANDS OFF)
+
+    add_executable(gg-sdk-test ${SRCS} test/main_no_overrides.c)
+    target_compile_options(gg-sdk-test PRIVATE -pthread -fno-strict-aliasing
+                                               -std=gnu11 -Wno-missing-braces)
+    target_compile_definitions(gg-sdk-test PRIVATE _GNU_SOURCE)
+    target_include_directories(gg-sdk-test PRIVATE include priv_include)
+    target_include_directories(gg-sdk-test SYSTEM INTERFACE include)
+
+    target_compile_definitions(gg-sdk-test PRIVATE "GG_MODULE=(\"gg-sdk\")")
+
+    target_compile_definitions(gg-sdk-test
+                               PUBLIC GG_LOG_LEVEL=GG_LOG_${choose_level})
+    target_compile_definitions(gg-sdk-test PUBLIC GG_TESTING)
+
+    target_link_libraries(gg-sdk-test PRIVATE unity-config unity gg-test)
+    add_test(gg-sdk-test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/gg-sdk-test)
   endif()
-
-  target_compile_definitions(gg-sdk PUBLIC GG_TESTING)
-    target_link_libraries(gg-sdk PRIVATE unity-config unity)
-
-  add_executable(gg-sdk-test test/default_main.c)
-  target_link_libraries(gg-sdk-test PRIVATE unity-config unity gg-sdk)
-  add_test(gg-sdk-test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/gg-sdk-test)
 
 endif()
 
