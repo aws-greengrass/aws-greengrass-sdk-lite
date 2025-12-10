@@ -9,6 +9,7 @@
 #include <gg/ipc/mock_types.hpp>
 #include <gg/types.hpp>
 #else
+#include <gg/buffer.h>
 #include <gg/eventstream/rpc.h>
 #include <gg/eventstream/types.h>
 #include <gg/object.h>
