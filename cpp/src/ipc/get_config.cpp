@@ -25,6 +25,29 @@
 #include <system_error>
 #include <utility>
 
+namespace {
+GgError get_resp_value(
+    const gg::Map &resp, gg::Object &value, const gg::Buffer *final_key
+) noexcept {
+    gg::Map map;
+    auto ret = validate_map(resp, gg::MapSchema { "value", map });
+    if (ret) {
+        return GG_ERR_INVALID;
+    }
+
+    // Maps IPC response according to classic behavior
+    if ((final_key != nullptr) && (map.size() == 1)
+        && (gg::Buffer { map[0].key() } == *final_key)
+        && (map[0].value()->index() != GG_TYPE_MAP)) {
+        value = *(map[0].value());
+    } else {
+        value = map;
+    }
+
+    return GG_ERR_OK;
+}
+}
+
 namespace gg::ipc::detail {
 
 constexpr size_t gg_max_object_depth = 15U;
@@ -34,21 +57,33 @@ extern "C" {
 struct GetConfigObjectContext {
     AllocatedObject *obj;
     GgObjectType expected_type;
+    const gg::Buffer *expected_key;
+};
+
+struct GetConfigStrContext {
+    std::string *value;
+    const gg::Buffer *expected_key;
 };
 
 GgError gg_arena_claim_obj(GgObject *obj, GgArena *arena) noexcept;
 
 GgError get_config_str_callback(void *ctx, GgMap result) noexcept {
-    std::string &str = *static_cast<std::string *>(ctx);
+    GetConfigStrContext &context = *static_cast<GetConfigStrContext *>(ctx);
 
-    std::string_view value;
-    std::error_code error = validate_map(result, MapSchema { "value", value });
-    if (error) {
-        return GG_ERR_PARSE;
+    Object value;
+    GgError error = get_resp_value(result, value, context.expected_key);
+    if (error != GG_ERR_OK) {
+        return error;
     }
 
     try {
-        str = value;
+        if (auto buffer = get_if<gg::Buffer>(&value); buffer) {
+            context.value->assign(
+                reinterpret_cast<const char *>(buffer->data()), buffer->size()
+            );
+        } else {
+            return GG_ERR_PARSE;
+        }
     } catch (...) {
         return GG_ERR_NOMEM;
     }
@@ -58,12 +93,12 @@ GgError get_config_str_callback(void *ctx, GgMap result) noexcept {
 
 GgError get_config_obj_callback(void *ctx, GgMap result) noexcept {
     auto &context = *static_cast<GetConfigObjectContext *>(ctx);
-
     Object value;
-    std::error_code error = validate_map(result, MapSchema { "value", value });
-    if (error) {
-        return GG_ERR_PARSE;
+    GgError error = get_resp_value(result, value, context.expected_key);
+    if (error != GG_ERR_OK) {
+        return error;
     }
+
     if ((context.expected_type != GG_TYPE_NULL)
         && (context.expected_type != value.index())) {
         return GG_ERR_PARSE;
@@ -71,7 +106,7 @@ GgError get_config_obj_callback(void *ctx, GgMap result) noexcept {
 
     size_t len = 0;
     error = gg_obj_mem_usage(value, &len);
-    if (error) {
+    if (error != GG_ERR_OK) {
         return GG_ERR_INVALID;
     }
 
@@ -88,7 +123,7 @@ GgError get_config_obj_callback(void *ctx, GgMap result) noexcept {
     Arena arena { alloc.get(), len };
     error = gg_arena_claim_obj(&value, &arena);
     [[unlikely]] // Object traversal errors won't occur
-    if (error) {
+    if (error != GG_ERR_OK) {
         return GG_ERR_NOMEM;
     }
     *context.obj = AllocatedObject { value, std::move(alloc) };
@@ -108,6 +143,7 @@ GgError get_config_error_callback(
 }
 
 namespace {
+
     GgError get_config_common(
         std::span<const Buffer> key_path,
         std::optional<std::string_view> component_name,
@@ -152,8 +188,12 @@ std::error_code Client::get_config(
     std::optional<std::string_view> component_name,
     std::string &value
 ) noexcept {
+    detail::GetConfigStrContext context { .value = &value,
+                                          .expected_key = key_path.empty()
+                                              ? nullptr
+                                              : &key_path.back() };
     return detail::get_config_common(
-        key_path, component_name, &value, detail::get_config_str_callback
+        key_path, component_name, &context, detail::get_config_str_callback
     );
 }
 
@@ -163,7 +203,10 @@ std::error_code Client::get_config(
     AllocatedObject &value
 ) noexcept {
     detail::GetConfigObjectContext ctx { .obj = &value,
-                                         .expected_type = GG_TYPE_NULL };
+                                         .expected_type = GG_TYPE_NULL,
+                                         .expected_key = key_path.empty()
+                                             ? nullptr
+                                             : &key_path.back() };
     return detail::get_config_common(
         key_path, component_name, &ctx, detail::get_config_obj_callback
     );
@@ -179,7 +222,10 @@ namespace {
         constexpr auto expected_type = gg::index_for_type<T>();
         AllocatedObject alloc {};
         detail::GetConfigObjectContext ctx { .obj = &alloc,
-                                             .expected_type = expected_type };
+                                             .expected_type = expected_type,
+                                             .expected_key = key_path.empty()
+                                                 ? nullptr
+                                                 : &key_path.back() };
         GgError error = detail::get_config_common(
             key_path, component_name, &ctx, detail::get_config_obj_callback
         );

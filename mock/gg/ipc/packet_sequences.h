@@ -9,6 +9,13 @@ GgipcPacketSequence gg_test_connect_accepted_sequence(GgBuffer auth_token);
 /// connect with no server response.
 GgipcPacketSequence gg_test_connect_hangup_sequence(GgBuffer auth_token);
 
+GgipcPacketSequence gg_test_config_get_object_sequence(
+    int32_t stream_id,
+    GgBufList key_path,
+    GgBuffer *component_name,
+    GgObject value
+);
+
 GgipcPacketSequence gg_test_mqtt_publish_accepted_sequence(
     int32_t stream_id, GgBuffer topic, GgBuffer payload_base64, GgBuffer qos
 );

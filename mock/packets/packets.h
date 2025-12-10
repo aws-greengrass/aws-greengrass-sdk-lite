@@ -6,6 +6,7 @@
 #include <gg/error.h>
 #include <gg/ipc/mock.h>
 #include <gg/log.h>
+#include <gg/object.h>
 #include <stdlib.h>
 
 #define GG_IPC_REQUEST_HEADERS(stream_id, operation) \
@@ -93,6 +94,19 @@ GgipcPacket gg_test_connect_packet(GgBuffer auth_token);
 
 /// server->client ack of successful connection
 GgipcPacket gg_test_connect_ack_packet(void);
+
+/// If component_name not set, not present in request packet
+GgipcPacket gg_test_config_get_object_request_packet(
+    int32_t stream_id, GgBufList key_path, GgBuffer *component_name
+);
+
+/// If component_name not set, a default is used instead
+GgipcPacket gg_test_config_get_object_accepted_packet(
+    int32_t stream_id,
+    GgBuffer *component_name,
+    GgBuffer *last_key,
+    GgObject value
+);
 
 /// server->client generic ServiceError response
 GgipcPacket gg_test_ipc_service_error_packet(int32_t stream_id);
