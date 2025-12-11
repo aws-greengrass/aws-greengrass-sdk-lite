@@ -19,6 +19,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_TESTING "Build C/C++ testing" OFF)
 
+  option(ENABLE_COVERAGE "Enable code coverage" OFF)
+
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
   include(GNUInstallDirs)
@@ -56,6 +58,12 @@ if(PROJECT_IS_TOP_LEVEL)
   if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(WARNING "CMAKE_BUILD_TYPE not set, using MinSizeRel.")
     set(CMAKE_BUILD_TYPE MinSizeRel)
+  endif()
+
+  if(ENABLE_COVERAGE)
+    add_compile_options(--coverage -fprofile-arcs -ftest-coverage)
+    add_link_options(--coverage)
+    add_compile_definitions(ENABLE_COVERAGE)
   endif()
 
   # Enable a compiler option for compile and link
