@@ -8,27 +8,41 @@
   outputs = { flakelight, ... }@inputs: flakelight ./.
     ({ lib, config, ... }:
       let
+        testFileset = lib.fileset.unions [
+          ./mock
+          ./test
+          ./unity
+          ./cpp/test
+          ./unity-test-suite.cmake
+          ./fc_deps.json
+        ];
+
+        srcFileset = lib.fileset.unions [
+          ./CMakeLists.txt
+          ./include
+          ./priv_include
+          ./src
+          ./.clang-tidy
+          ./.clangd
+          ./samples
+          ./cpp/CMakeLists.txt
+          ./cpp/include
+          ./cpp/priv_include
+          ./cpp/src
+          ./cpp/.clang-tidy
+          ./cpp/samples
+        ];
+
         filteredSrc = lib.fileset.toSource {
           root = ./.;
+          fileset = srcFileset;
+        };
+
+        filteredTestSrc = lib.fileset.toSource {
+          root = ./.;
           fileset = lib.fileset.unions [
-            ./CMakeLists.txt
-            ./include
-            ./priv_include
-            ./src
-            ./.clang-tidy
-            ./.clangd
-            ./mock
-            ./samples
-            ./test
-            ./unity
-            ./cpp/CMakeLists.txt
-            ./cpp/include
-            ./cpp/priv_include
-            ./cpp/src
-            ./cpp/test
-            ./cpp/.clang-tidy
-            ./cpp/samples
-            ./fc_deps.json
+            srcFileset
+            testFileset
           ];
         };
 
@@ -97,6 +111,7 @@
             "*.cpp" = fmt-c;
             "*.hpp" = fmt-c;
             "CMakeLists.txt" = fmt-cmake;
+            "*.cmake" = fmt-cmake;
             ".clang*" = fmt-yaml;
             "*.rs" = "${rustfmt}/bin/rustfmt";
             "*.py" = "${yapf}/bin/yapf -i";
@@ -130,8 +145,10 @@
                 name = "clang-cmake-build-dir";
                 nativeBuildInputs = [ clang-tools ];
                 buildPhase = ''
-                  ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
-                    -D CMAKE_BUILD_TYPE=Debug -D BUILD_CPP=OFF
+                  ${cmake}/bin/cmake -B $out -S ${filteredTestSrc} \
+                    -D CMAKE_BUILD_TYPE=Debug -D BUILD_CPP=OFF \
+                    -D BUILD_TESTING=ON \
+                    ${toString (fetchContentFlags pkgs)}
                   rm $out/CMakeFiles/CMakeConfigureLog.yaml
                 '';
                 dontUnpack = true;
@@ -147,8 +164,9 @@
                 name = "clang-cmake-build-dir";
                 nativeBuildInputs = [ clang-tools ];
                 buildPhase = ''
-                  ${cmake}/bin/cmake -B $out -S ${filteredSrc} \
-                    -D CMAKE_BUILD_TYPE=Debug
+                  ${cmake}/bin/cmake -B $out -S ${filteredTestSrc} \
+                    -D CMAKE_BUILD_TYPE=Debug -D BUILD_TESTING=ON \
+                    ${toString (fetchContentFlags pkgs)}
                   rm $out/CMakeFiles/CMakeConfigureLog.yaml
                 '';
                 dontUnpack = true;
@@ -169,7 +187,7 @@
 
             clang-tidy = pkgs: ''
               set -eo pipefail
-              cd ${filteredSrc}
+              cd ${filteredTestSrc}
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
               clangd-tidy -j$(nproc) --color=always \
@@ -179,7 +197,7 @@
 
             clang-tidy-cpp = pkgs: ''
               set -eo pipefail
-              cd ${filteredSrc}
+              cd ${filteredTestSrc}
               PATH=${lib.makeBinPath
                 (with pkgs; [clangd-tidy clang-tools fd])}:$PATH
               clangd-tidy -j$(nproc) --color=always \
@@ -201,7 +219,7 @@
             cbmc-contracts = { stdenv, cmake, cbmc, python3, ... }:
               stdenv.mkDerivation {
                 name = "check-cbmc-contracts";
-                src = filteredSrc;
+                src = filteredTestSrc;
                 nativeBuildInputs = [ cbmc python3 ];
                 buildPhase = ''
                   ${cmake}/bin/cmake -B build -D CMAKE_BUILD_TYPE=Debug \
@@ -219,7 +237,7 @@
             unit-tests = { pkgs, stdenv, git, cmake, ninja, ... }:
               stdenv.mkDerivation {
                 name = "check-unity-tests";
-                src = filteredSrc;
+                src = filteredTestSrc;
                 nativeBuildInputs = [ git cmake ninja ];
                 cmakeBuildType = "MinSizeRel";
                 cmakeFlags = (fetchContentFlags pkgs) ++ [ "-DBUILD_TESTING=1" "-DBUILD_SAMPLES=0" ];

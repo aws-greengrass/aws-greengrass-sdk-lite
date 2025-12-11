@@ -1,9 +1,16 @@
 #ifndef GG_TEST_UNITY_HELPERS_H
 #define GG_TEST_UNITY_HELPERS_H
 
-#include <sys/types.h>
 #include <unity.h>
 #include <stddef.h>
+
+// IWYU pragma: begin_keep
+#ifdef __cplusplus
+#include <gg/error.hpp>
+#else
+#include <gg/error.h>
+#endif
+// IWYU pragma: end_keep
 
 typedef void (*GgTestFunction)(void);
 

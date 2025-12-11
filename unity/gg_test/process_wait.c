@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <gg/error.h>
 #include <gg/log.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdbool.h>

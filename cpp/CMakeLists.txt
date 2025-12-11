@@ -74,9 +74,8 @@ if(aws-greengrass-component-sdk_IS_TOP_LEVEL)
           PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
       endforeach()
       add_executable(cpp_${test_name}_tests ${TEST_SRCS})
-      target_link_libraries(
-        cpp_${test_name}_tests PRIVATE gg-sdk++ gg-sdk gg-ipc-mock gg-test
-                                       unity-config unity)
+      target_link_libraries(cpp_${test_name}_tests
+                            PRIVATE gg-sdk++ gg-sdk gg-ipc-mock gg-test unity)
       install(TARGETS cpp_${test_name}_tests)
       add_test(cpp_${test_name}_tests
                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cpp_${test_name}_tests)

@@ -1,8 +1,11 @@
-#include "gg/ipc/packet_sequences.h"
+
 #include "packets.h"
+#include <gg/eventstream/rpc.h>
 #include <gg/ipc/mock.h>
+#include <gg/ipc/packet_sequences.h>
 #include <gg/map.h>
-#include <gg/object.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 GgipcPacket gg_test_connect_packet(GgBuffer auth_token) {
     static GgKV payload[1];

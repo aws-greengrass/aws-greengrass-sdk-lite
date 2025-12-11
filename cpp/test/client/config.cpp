@@ -1,10 +1,16 @@
 #include <gg/buffer.hpp>
-#include <gg/error.hpp>
 #include <gg/ipc/client.hpp>
 #include <gg/map.hpp>
 #include <gg/object.hpp>
-#include <gg/types.hpp>
-#include <source_location>
+#include <cstdint>
+#include <array>
+#include <new>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <type_traits>
 extern "C" {
 #include <gg/ipc/mock.h>
 #include <gg/ipc/packet_sequences.h>
