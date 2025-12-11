@@ -2,6 +2,8 @@
 #define GG_IPC_PACKET_SEQUENCES_H
 
 #include <gg/ipc/mock.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /// connect followed by connect ack
 GgipcPacketSequence gg_test_connect_accepted_sequence(GgBuffer auth_token);

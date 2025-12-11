@@ -2,11 +2,10 @@
 #define GG_TEST_PACKETS_H
 
 #include <gg/arena.h>
-#include <gg/buffer.h>
-#include <gg/error.h>
+#include <gg/eventstream/rpc.h> // IWYU pragma: keep
 #include <gg/ipc/mock.h>
 #include <gg/log.h>
-#include <gg/object.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #define GG_IPC_REQUEST_HEADERS(stream_id, operation) \

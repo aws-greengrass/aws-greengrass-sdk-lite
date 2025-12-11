@@ -1,6 +1,8 @@
 #include "gg/test.h"
 #include "unity_internals.h"
+#include <gg/error.h>
 #include <gg/process_wait.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <unity.h>
 #include <stdlib.h>
@@ -48,7 +50,7 @@ __attribute__((weak)) int gg_test_run_suite(void) {
         }
 
         Unity.CurrentTestName = test->func_name;
-        Unity.CurrentTestLineNumber = test->func_line_num;
+        Unity.CurrentTestLineNumber = (UNITY_UINT) test->func_line_num;
         Unity.NumberOfTests++;
         UNITY_CLR_DETAILS();
         UNITY_EXEC_TIME_START();

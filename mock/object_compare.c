@@ -7,6 +7,7 @@
 #include <gg/object_iter.h>
 #include <inttypes.h>
 #include <math.h>
+#include <stddef.h>
 
 /// Prints info about all parents of the current subobject.
 static void print_state(const IterLevels state[static 1]) {
