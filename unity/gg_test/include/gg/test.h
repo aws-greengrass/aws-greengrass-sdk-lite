@@ -28,9 +28,8 @@ void gg_test_register(GgTestListNode *entry);
 
 #define GG_TEST_DEFINE(testname) \
     static void test_gg_##testname(void); \
-    __attribute__((constructor)) static void gg_test_register_##testname( \
-        void \
-    ) { \
+    __attribute__((constructor, no_profile_instrument_function)) static void \
+    gg_test_register_##testname(void) { \
         static GgTestListNode entry = { .func = test_gg_##testname, \
                                         .func_file_name = __FILE__, \
                                         .func_name = "test_gg_" #testname, \
@@ -68,5 +67,16 @@ int gg_test_run_suite(void);
             (expected).data, (actual).data, (expected).len \
         ); \
     } while (0)
+
+#ifdef ENABLE_COVERAGE
+// NOLINTNEXTLINE(readability-identifier-naming)
+extern void __gcov_dump(void);
+#undef TEST_PASS
+#define TEST_PASS() \
+    do { \
+        __gcov_dump(); \
+        TEST_ABORT(); \
+    } while (0)
+#endif
 
 #endif
