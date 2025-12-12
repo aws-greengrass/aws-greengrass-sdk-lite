@@ -1,12 +1,10 @@
 #include "gg/ipc/mock.h"
 #include "gg/ipc/packet_sequences.h"
 #include "packets/packets.h"
-#include "stdlib.h"
 #include <assert.h>
-#include <gg/buffer.h>
 #include <gg/map.h>
-#include <gg/object.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 GgipcPacket gg_test_config_get_object_request_packet(

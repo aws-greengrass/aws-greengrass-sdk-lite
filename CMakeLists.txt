@@ -19,6 +19,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
   option(BUILD_TESTING "Build C/C++ testing" OFF)
 
+  option(ENABLE_COVERAGE "Enable code coverage" OFF)
+
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
   include(GNUInstallDirs)
@@ -45,35 +47,6 @@ if(PROJECT_IS_TOP_LEVEL)
         SOURCE_SUBDIR nonexistent_dir)
       fetchcontent_makeavailable(${dep_name})
     endforeach()
-
-    set(UNITY_CONFIG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/unity/unity_config)
-    add_subdirectory(${unity_SOURCE_DIR} unity)
-    target_include_directories(
-      unity PUBLIC $<BUILD_INTERFACE:${UNITY_CONFIG_INCLUDE_DIR}>
-                   $<INSTALL_INTERFACE:unity/unity_config>)
-
-    file(GLOB_RECURSE GG_TEST_SRCS CONFIGURE_DEPENDS "unity/gg_test/*.c")
-    add_library(gg-test ${GG_TEST_SRCS})
-
-    target_include_directories(gg-test SYSTEM INTERFACE unity/gg_test/include)
-    target_include_directories(gg-test PRIVATE unity/gg_test/include
-                                               priv_include)
-    target_compile_definitions(gg-test PRIVATE "GG_MODULE=(\"gg-test\")")
-
-    target_link_libraries(gg-test gg-sdk unity)
-
-    file(GLOB_RECURSE UNITY_CFG_SRCS CONFIGURE_DEPENDS "unity/unity_config/*.c")
-    add_library(unity-config STATIC ${UNITY_CFG_SRCS})
-    target_include_directories(unity-config PUBLIC unity_config/include/unity)
-    target_include_directories(unity-config PRIVATE priv_include
-                                                    unity_config/include)
-    target_compile_definitions(unity PUBLIC "UNITY_INCLUDE_CONFIG_H=1")
-    target_compile_definitions(unity-config PUBLIC "UNITY_INCLUDE_CONFIG_H=1")
-    target_compile_definitions(unity-config PRIVATE "GG_MODULE=(\"gg-unity\")")
-    target_link_libraries(unity-config PRIVATE unity gg-sdk)
-
-    set(aws-greengrass-component-sdk_C_TEST_DIR
-        ${CMAKE_CURRENT_SOURCE_DIR}/test)
   endif()
 
   # Put outputs in build/bin and build/lib
@@ -85,6 +58,12 @@ if(PROJECT_IS_TOP_LEVEL)
   if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(WARNING "CMAKE_BUILD_TYPE not set, using MinSizeRel.")
     set(CMAKE_BUILD_TYPE MinSizeRel)
+  endif()
+
+  if(ENABLE_COVERAGE)
+    add_compile_options(--coverage -fprofile-arcs -ftest-coverage)
+    add_link_options(--coverage)
+    add_compile_definitions(ENABLE_COVERAGE)
   endif()
 
   # Enable a compiler option for compile and link
@@ -249,6 +228,10 @@ string(TOUPPER "${GG_LOG_LEVEL}" log_level)
 set(choose_level "$<IF:$<BOOL:${log_level}>,${log_level},DEBUG>")
 target_compile_definitions(gg-sdk PUBLIC GG_LOG_LEVEL=GG_LOG_${choose_level})
 
+if(BUILD_TESTING)
+  include(unity-test-suite.cmake)
+endif()
+
 if(PROJECT_IS_TOP_LEVEL)
   install(TARGETS gg-sdk)
 
@@ -271,16 +254,6 @@ if(PROJECT_IS_TOP_LEVEL)
 
   if(BUILD_TESTING)
     include(CTest)
-    file(GLOB_RECURSE MOCKS CONFIGURE_DEPENDS "mock/*.c")
-    add_library(gg-ipc-mock ${MOCKS})
-
-    target_compile_options(gg-ipc-mock PRIVATE -pthread -fno-strict-aliasing
-                                               -std=gnu11 -Wno-missing-braces)
-    target_compile_definitions(gg-ipc-mock PRIVATE _GNU_SOURCE)
-    target_include_directories(gg-ipc-mock PRIVATE mock include priv_include)
-    target_include_directories(gg-ipc-mock SYSTEM INTERFACE mock priv_include)
-    target_compile_definitions(gg-ipc-mock PRIVATE "GG_MODULE=(\"gg-test\")")
-    target_link_libraries(gg-ipc-mock PRIVATE gg-sdk m)
 
     file(GLOB TEST_DIRS CONFIGURE_DEPENDS "test/*")
     foreach(test_dir ${TEST_DIRS})
@@ -299,9 +272,8 @@ if(PROJECT_IS_TOP_LEVEL)
           PROPERTY COMPILE_FLAGS "-frandom-seed=${src}")
       endforeach()
       add_executable(c_${test_name}_tests ${TEST_SRCS})
-      target_link_libraries(
-        c_${test_name}_tests PRIVATE gg-sdk gg-ipc-mock unity-config unity
-                                     gg-test)
+      target_link_libraries(c_${test_name}_tests PRIVATE gg-sdk gg-ipc-mock
+                                                         unity gg-test)
       install(TARGETS c_${test_name}_tests)
       add_test(c_${test_name}_tests
                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/c_${test_name}_tests)
@@ -320,9 +292,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
     target_compile_definitions(gg-sdk-test
                                PUBLIC GG_LOG_LEVEL=GG_LOG_${choose_level})
-    target_compile_definitions(gg-sdk-test PUBLIC GG_TESTING)
+    target_compile_definitions(gg-sdk-test PUBLIC GG_SDK_TESTING)
 
-    target_link_libraries(gg-sdk-test PRIVATE unity-config unity gg-test)
+    target_link_libraries(gg-sdk-test PRIVATE unity gg-test)
     add_test(gg-sdk-test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/gg-sdk-test)
   endif()
 

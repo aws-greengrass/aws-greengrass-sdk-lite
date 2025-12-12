@@ -2,13 +2,11 @@
 #include "gg/ipc/packet_sequences.h"
 #include "packets.h"
 #include <assert.h>
-#include <gg/arena.h>
-#include <gg/buffer.h>
-#include <gg/error.h>
 #include <gg/ipc/mock.h>
-#include <gg/log.h>
 #include <gg/map.h>
-#include <gg/object.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 GgipcPacket gg_test_mqtt_publish_request_packet(
     int32_t stream_id, GgBuffer topic, GgBuffer payload_base64, GgBuffer qos

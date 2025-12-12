@@ -1,6 +1,6 @@
 #include <gg/ipc/mock.h>
 #include <gg/test.h>
-#include <unistd.h>
+#include <unity.h>
 #include <stdlib.h>
 
 #ifndef GG_TEST_SOCKET_DIR

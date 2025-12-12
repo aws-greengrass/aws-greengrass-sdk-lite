@@ -32,5 +32,6 @@ nsec
 pthread
 repr
 rustc
+SRCS
 strs
 svcuid

@@ -1,7 +1,7 @@
 #ifndef GG_UNITY_CONFIG_H
 #define GG_UNITY_CONFIG_H
 
-#include "unity_handlers.h"
+#include "unity_handlers.h" // IWYU pragma: export
 
 #define UNITY_TEST_PROTECT() gg_test_protect()
 #define UNITY_TEST_ABORT() gg_test_abort()

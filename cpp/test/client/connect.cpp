@@ -1,11 +1,12 @@
 #include <gg/buffer.hpp>
-#include <gg/error.hpp>
 #include <gg/ipc/client.hpp>
-#include <source_location>
+#include <string_view>
+#include <system_error>
 extern "C" {
 #include <gg/ipc/mock.h>
 #include <gg/ipc/packet_sequences.h>
 #include <gg/test.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unity.h>

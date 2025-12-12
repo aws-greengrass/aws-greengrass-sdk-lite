@@ -1,11 +1,9 @@
 
 #include "packets.h"
-#include "gg/ipc/packet_sequences.h"
-#include <gg/arena.h>
-#include <gg/error.h>
+#include "gg/eventstream/rpc.h"
 #include <gg/ipc/mock.h>
-#include <gg/log.h>
 #include <gg/map.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 GgipcPacket gg_test_ipc_service_error_packet(int32_t stream_id) {

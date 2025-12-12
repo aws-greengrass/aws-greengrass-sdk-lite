@@ -1,25 +1,17 @@
-#include <errno.h>
-#include <gg/arena.h>
-#include <gg/base64.h>
-#include <gg/buffer.h>
-#include <gg/error.h>
-#include <gg/eventstream/rpc.h>
-#include <gg/file.h>
 #include <gg/ipc/client.h>
 #include <gg/ipc/mock.h>
 #include <gg/ipc/packet_sequences.h>
 #include <gg/log.h>
-#include <gg/map.h>
-#include <gg/object.h>
 #include <gg/process_wait.h>
 #include <gg/sdk.h>
 #include <gg/test.h>
 #include <pthread.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include <unity.h>
 #include <stdatomic.h>
-#include <stdlib.h>
+#include <stdint.h>
 
 #define GG_MODULE "test_mqtt"
 

@@ -3,34 +3,31 @@
 #include <assert.h>
 #include <errno.h>
 #include <gg/arena.h>
-#include <gg/attr.h>
 #include <gg/buffer.h>
 #include <gg/cleanup.h>
 #include <gg/error.h>
 #include <gg/eventstream/decode.h>
 #include <gg/eventstream/encode.h>
 #include <gg/eventstream/rpc.h>
-#include <gg/eventstream/types.h>
 #include <gg/file.h>
 #include <gg/io.h>
 #include <gg/ipc/limits.h>
 #include <gg/json_decode.h>
 #include <gg/json_encode.h>
 #include <gg/log.h>
-#include <gg/map.h>
-#include <gg/object.h>
-#include <gg/object_visit.h>
 #include <gg/socket.h>
 #include <gg/socket_epoll.h>
 #include <gg/vector.h>
 #include <inttypes.h>
+#include <limits.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 static uint8_t ipc_recv_mem[GG_IPC_MAX_MSG_LEN];
@@ -164,6 +161,7 @@ GgError gg_test_setup_ipc(
 
     GgBuffer socket_path_buf
         = gg_buffer_from_null_term((char *) socket_path_prefix);
+    memset(ipc_socket_path, 0, sizeof(ipc_socket_path));
     GgByteVec socket_vec = gg_byte_vec_init(GG_BUF(ipc_socket_path));
     gg_byte_vec_chain_append(&ret, &socket_vec, socket_path_buf);
     gg_byte_vec_chain_append(&ret, &socket_vec, GG_STR("_XXXXXX\0"));
@@ -462,7 +460,7 @@ GgError gg_test_accept_client(int client_timeout) {
     struct sockaddr_un addr = { .sun_family = AF_UNIX, .sun_path = { 0 } };
     socklen_t len = sizeof(addr);
     do {
-        client_fd = accept(sock_fd, &addr, &len);
+        client_fd = accept(sock_fd, (struct sockaddr *) &addr, &len);
     } while ((client_fd == -1) && (errno == EINTR));
     if (client_fd < 0) {
         GG_LOGE("Failed to accept test client.");
