@@ -35,6 +35,11 @@ bool gg_map_get(GgMap map, GgBuffer key, GgObject **result);
 ACCESS(write_only, 3)
 bool gg_map_get_path(GgMap map, GgBufList path, GgObject **result);
 
+/// Sorts and removes duplicates from the top-level keys of the map
+void gg_map_canonicalize_shallow(GgMap *map);
+
+bool gg_map_is_canonical(GgMap map);
+
 /// Construct a GgKV.
 CONST
 GgKV gg_kv(GgBuffer key, GgObject val);

@@ -1,10 +1,12 @@
 #include "gg/object_compare.h"
 #include <float.h>
 #include <gg/buffer.h>
+#include <gg/error.h>
 #include <gg/log.h>
 #include <gg/map.h>
 #include <gg/object.h>
 #include <gg/object_iter.h>
+#include <gg/object_visit.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stddef.h>
@@ -81,28 +83,25 @@ static bool buf_eq(GgBuffer lhs, GgBuffer rhs) {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 bool gg_obj_eq(GgObject lhs, GgObject rhs) {
+    // lhs state is used for both objects' iteration
     IterLevels lhs_state;
-    IterLevels rhs_state;
+    GgObject *rhs_objs[GG_MAX_OBJECT_DEPTH];
 
     lhs_state.index = 0;
     lhs_state.obj[0] = &lhs;
     lhs_state.state[0] = LEVEL_DEFAULT;
     lhs_state.elem_index[0] = 0;
 
-    rhs_state.index = 0;
-    rhs_state.obj[0] = &rhs;
-    // lhs state array is used for both iter levels
-    rhs_state.elem_index[0] = 0;
+    rhs_objs[0] = &rhs;
 
     uint8_t subobjects = 0;
 
     while (true) {
         GgObject *lhs_obj = lhs_state.obj[lhs_state.index];
-        GgObject *rhs_obj = rhs_state.obj[rhs_state.index];
+        GgObject *rhs_obj = rhs_objs[lhs_state.index];
 
         IterLevelState cur_state = lhs_state.state[lhs_state.index];
         uint8_t lhs_index = lhs_state.elem_index[lhs_state.index];
-        uint8_t rhs_index = rhs_state.elem_index[rhs_state.index];
 
         switch (cur_state) {
         case LEVEL_DEFAULT: {
@@ -197,7 +196,6 @@ bool gg_obj_eq(GgObject lhs, GgObject rhs) {
                 return false;
             }
             lhs_state.index += 1;
-            rhs_state.index += 1;
 
             lhs_state.obj[lhs_state.index] = &lhs_list.items[lhs_index];
             lhs_state.state[lhs_state.index] = LEVEL_DEFAULT;
@@ -205,10 +203,8 @@ bool gg_obj_eq(GgObject lhs, GgObject rhs) {
 
             lhs_state.elem_index[lhs_state.index - 1] += 1;
 
-            rhs_state.obj[rhs_state.index] = &rhs_list.items[rhs_index];
-            rhs_state.elem_index[rhs_state.index] = 0;
+            rhs_objs[lhs_state.index] = &rhs_list.items[lhs_index];
 
-            rhs_state.elem_index[rhs_state.index - 1] += 1;
             continue;
         }
         case LEVEL_MAP: {
@@ -220,10 +216,8 @@ bool gg_obj_eq(GgObject lhs, GgObject rhs) {
 
             GgKV *kv = &lhs_map.pairs[lhs_index];
 
-            // GgMap is unordered, so each rhs key must be found
-            GgObject *rhs_val = NULL;
             GgBuffer key = gg_kv_key(*kv);
-            if (!gg_map_get(rhs_map, key, &rhs_val)) {
+            if (!gg_buffer_eq(key, gg_kv_key(rhs_map.pairs[lhs_index]))) {
                 GG_LOGE("Map key %.*s not found.", (int) key.len, key.data);
                 print_state(&lhs_state);
                 return false;
@@ -235,7 +229,6 @@ bool gg_obj_eq(GgObject lhs, GgObject rhs) {
                 return false;
             }
             lhs_state.index += 1;
-            rhs_state.index += 1;
 
             lhs_state.obj[lhs_state.index] = gg_kv_val(kv);
             lhs_state.state[lhs_state.index] = LEVEL_DEFAULT;
@@ -243,11 +236,7 @@ bool gg_obj_eq(GgObject lhs, GgObject rhs) {
 
             lhs_state.elem_index[lhs_state.index - 1] += 1;
 
-            rhs_state.obj[rhs_state.index] = rhs_val;
-            rhs_state.elem_index[rhs_state.index] = 0;
-
-            rhs_state.elem_index[rhs_state.index - 1]
-                = (uint8_t) (kv - rhs_map.pairs);
+            rhs_objs[lhs_state.index] = gg_kv_val(&rhs_map.pairs[lhs_index]);
 
             continue;
         }
@@ -258,7 +247,6 @@ bool gg_obj_eq(GgObject lhs, GgObject rhs) {
         }
 
         lhs_state.index -= 1;
-        rhs_state.index -= 1;
     }
 
     return true;
