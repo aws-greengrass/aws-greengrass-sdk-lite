@@ -1,6 +1,7 @@
 #ifndef GG_TEST_UNITY_HELPERS_H
 #define GG_TEST_UNITY_HELPERS_H
 
+#include <unity_internals.h>
 #ifdef __cplusplus
 #include <gg/types.hpp>
 #else
@@ -53,8 +54,33 @@ int gg_test_run_suite(void);
     for (GgTestListNode * (name) = gg_test_list_head; (name) != NULL; \
          (name) = (name)->next)
 
-#define GG_TEST_ASSERT_OK(expr) TEST_ASSERT_EQUAL(GG_ERR_OK, (expr))
-#define GG_TEST_ASSERT_BAD(expr) TEST_ASSERT_NOT_EQUAL(GG_ERR_OK, (expr))
+static inline void gg_test_assert_ok(
+    GgError ret, const char *msg, UNITY_UINT line_no
+) {
+    if (ret != GG_ERR_OK) {
+        UnityFail(
+            (msg != NULL) ? msg : "Return value was not GG_ERR_OK", line_no
+        );
+    }
+}
+
+static inline void gg_test_assert_bad(
+    GgError ret, const char *msg, UNITY_UINT line_no
+) {
+    if (ret == GG_ERR_OK) {
+        UnityFail(
+            (msg != NULL)
+                ? msg
+                : "Return value was GG_ERR_OK when error was expected.",
+            line_no
+        );
+    }
+}
+
+#define GG_TEST_ASSERT_OK(expr) \
+    gg_test_assert_ok((GgError) (expr), NULL, __LINE__)
+#define GG_TEST_ASSERT_BAD(expr) \
+    gg_test_assert_bad((GgError) (expr), NULL, __LINE__)
 
 void gg_test_assert_obj_equal(
     GgObject expected, GgObject actual, const char *message, UNITY_UINT line_no

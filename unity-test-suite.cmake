@@ -19,7 +19,7 @@ target_include_directories(gg-test SYSTEM INTERFACE unity/gg_test/include)
 target_include_directories(gg-test PRIVATE unity/gg_test/include priv_include)
 target_compile_definitions(gg-test PRIVATE "GG_MODULE=(\"gg-test\")")
 
-target_link_libraries(gg-test PRIVATE gg-sdk unity)
+target_link_libraries(gg-test PRIVATE gg-sdk unity m)
 
 # Contains boilerplate main files for linking test executables
 set(aws-greengrass-component-sdk_C_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test)
@@ -35,5 +35,4 @@ if(NOT BUILD_SHARED_LIBS)
   target_include_directories(gg-ipc-mock SYSTEM INTERFACE mock priv_include)
   target_compile_definitions(gg-ipc-mock PRIVATE "GG_MODULE=(\"gg-test\")")
   target_link_libraries(gg-ipc-mock PUBLIC gg-sdk gg-test)
-  target_link_libraries(gg-ipc-mock PRIVATE m)
 endif()

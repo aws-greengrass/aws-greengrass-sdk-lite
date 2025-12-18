@@ -350,7 +350,7 @@ static void print_client_packet(EventStreamMessage msg) {
     }
 }
 
-static GgError gg_test_recv_packet(const GgipcPacket *packet, int client) {
+static GgError gg_test_recv_packet(GgipcPacket *packet, int client) {
     GgBuffer packet_bytes = GG_BUF(ipc_recv_mem);
     EventStreamMessage msg = { 0 };
     GgError ret
@@ -414,6 +414,13 @@ static GgError gg_test_recv_packet(const GgipcPacket *packet, int client) {
     if (gg_obj_type(payload_obj) != GG_TYPE_MAP) {
         GG_LOGE("Expected payload to be map");
         return GG_ERR_FAILURE;
+    }
+
+    if (gg_obj_canonicalize(&packet->payload) != GG_ERR_OK) {
+        GG_LOGE("Failed to canonicalize expected payload");
+    }
+    if (gg_obj_canonicalize(&payload_obj) != GG_ERR_OK) {
+        GG_LOGE("Failed to canonicalize received payload");
     }
 
     if (!gg_obj_eq(packet->payload, payload_obj)) {

@@ -142,4 +142,16 @@ GgList gg_obj_into_list(GgObject list);
 ACCESS(write_only, 2) REPRODUCIBLE
 GgError gg_obj_mem_usage(GgObject obj, size_t *size);
 
+/// performs a stable sort on keys of all contained GgMaps alphabetically.
+/// Orphans all duplicate same-level map keys (e.g. {"a":1,"a":2} -> {"a":1}).
+/// On success, all contained GgMaps are canonicalized.
+/// Returns GG_ERR_OK on success.
+GgError gg_obj_canonicalize(GgObject *obj);
+
+/// Returns true if the given object is canonical, that is:
+/// 1) Object does not exceed size and depth constraints
+/// 2) All GgMap subobjects have unique-sorted keys
+REPRODUCIBLE
+bool gg_obj_is_canonical(GgObject obj);
+
 #endif
