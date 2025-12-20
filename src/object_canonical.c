@@ -58,8 +58,8 @@ GG_TEST_DEFINE(obj_is_canonical_simple_types) {
 
 GG_TEST_DEFINE(obj_is_canonical_too_long) {
     // Too many subobjects
-    GgKV long_pairs[GG_MAX_OBJECT_SUBOBJECTS / 2 + 1] = { 0 };
-    uint8_t long_keys[GG_MAX_OBJECT_SUBOBJECTS / 2 + 1][2];
+    GgKV long_pairs[(GG_MAX_OBJECT_SUBOBJECTS / 2) + 1] = { 0 };
+    uint8_t long_keys[(GG_MAX_OBJECT_SUBOBJECTS / 2) + 1][2];
     size_t long_pairs_len = sizeof(long_pairs) / sizeof(long_pairs[0]);
     for (uint8_t i = 0; i != long_pairs_len; ++i) {
         long_keys[i][0] = 'a' + (i / 16);
