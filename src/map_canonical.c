@@ -25,8 +25,8 @@ static bool is_key_less(GgKV lhs, GgKV rhs) {
 }
 
 static void prune_duplicates(GgMap *val) {
-    // The last occurence of a key must be a duplicate
-    // if the first occurence of that key appears elsewhere.
+    // The last occurrence of a key must be a duplicate
+    // if the first occurrence of that key appears elsewhere.
     for (size_t i = val->len; i > 0; --i) {
         GgKV *pair = &val->pairs[i - 1];
         GgObject *last = gg_kv_val(pair);

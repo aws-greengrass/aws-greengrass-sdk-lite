@@ -770,7 +770,9 @@ static GgError decode_json_object(
     }
 
     if (obj != NULL) {
-        *obj = gg_obj_map((GgMap) { .pairs = pairs, .len = count });
+        GgMap map = { .pairs = pairs, .len = count };
+        gg_map_canonicalize_shallow(&map);
+        *obj = gg_obj_map(map);
     }
     return GG_ERR_OK;
 }
@@ -847,3 +849,97 @@ GgError gg_json_decode_destructive(
 
     return GG_ERR_OK;
 }
+
+#ifdef GG_SDK_TESTING
+#include <gg/object_compare.h>
+#include <gg/test.h>
+#include <unity_internals.h>
+
+GG_TEST_DEFINE(json_decode_unescape_string_identity) {
+    uint8_t escaped[] = "\"string\"";
+    GgBuffer buffer = { .data = escaped, .len = sizeof(escaped) - 1 };
+    TEST_ASSERT(unescape_string(&buffer));
+    GG_TEST_ASSERT_BUF_EQUAL_STR(GG_STR("\"string\""), buffer);
+}
+
+typedef struct {
+    GgBuffer json;
+    GgObject obj;
+} TestMappings;
+
+static void gg_test_json_decode(
+    GgObject expected, GgBuffer json, UNITY_UINT line_no
+) {
+    uint8_t arena_bytes[2048];
+    GgArena arena = gg_arena_init(GG_BUF(arena_bytes));
+    GgObject actual = GG_OBJ_NULL;
+
+    gg_test_assert_ok(
+        gg_json_decode_destructive(json, &arena, &actual),
+        "Could not decode json",
+        line_no
+    );
+    gg_test_assert_obj_equal(expected, actual, NULL, line_no);
+}
+
+#define GG_TEST_JSON_DECODE_STR(expected, json_strlit) \
+    do { \
+        uint8_t json_bytes[] = "" json_strlit ""; \
+        GgBuffer json_buf = (GgBuffer) { .data = json_bytes, \
+                                         .len = sizeof(json_bytes) - 1 }; \
+        gg_test_json_decode((expected), json_buf, __LINE__); \
+    } while (0)
+
+GG_TEST_DEFINE(json_decode_null_shape) {
+    // No arena needed if no output object is specified.
+    GG_TEST_ASSERT_OK(gg_json_decode_destructive(GG_STR("null"), NULL, NULL));
+}
+
+GG_TEST_DEFINE(json_decode_empty_string_fails) {
+    uint8_t bytes[1024];
+    {
+        GgArena arena = gg_arena_init(GG_BUF(bytes));
+        GgObject actual = GG_OBJ_NULL;
+        GG_TEST_ASSERT_BAD(
+            gg_json_decode_destructive(GG_STR(""), &arena, &actual)
+        );
+    }
+
+    {
+        GgArena arena = gg_arena_init(GG_BUF(bytes));
+        GgObject actual = GG_OBJ_NULL;
+        GG_TEST_ASSERT_BAD(
+            gg_json_decode_destructive(GG_STR("{\"a\":}"), &arena, &actual)
+        );
+    }
+
+    {
+        GgArena arena = gg_arena_init(GG_BUF(bytes));
+        GgObject actual = GG_OBJ_NULL;
+        GG_TEST_ASSERT_BAD(
+            gg_json_decode_destructive(GG_STR("{:\"string\"}"), &arena, &actual)
+        );
+    }
+}
+
+GG_TEST_DEFINE(json_decode_scalar_types) {
+    GG_TEST_JSON_DECODE_STR(GG_OBJ_NULL, "null");
+    GG_TEST_JSON_DECODE_STR(gg_obj_i64(123), "123");
+    GG_TEST_JSON_DECODE_STR(gg_obj_f64(123.456), "123.456");
+    GG_TEST_JSON_DECODE_STR(gg_obj_bool(true), "true");
+    GG_TEST_JSON_DECODE_STR(gg_obj_bool(false), "false");
+    GG_TEST_JSON_DECODE_STR(gg_obj_buf(GG_STR("string")), "\"string\"");
+}
+
+GG_TEST_DEFINE(json_decode_canon) {
+    GG_TEST_JSON_DECODE_STR(
+        gg_obj_map(GG_MAP(
+            gg_kv(GG_STR("a"), GG_OBJ_NULL),
+            gg_kv(GG_STR("b"), gg_obj_i64(1)),
+            gg_kv(GG_STR("c"), gg_obj_bool(true))
+        )),
+        "{\"a\":null,\"c\":true,\"b\":1,\"a\":\"duplicate\"}"
+    );
+}
+
+#endif
